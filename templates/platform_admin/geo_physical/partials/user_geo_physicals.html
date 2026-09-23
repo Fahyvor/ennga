@@ -1,0 +1,44 @@
+{% if user_geo_physicals %}
+
+{% for object in user_geo_physicals %}
+<div class="row my-4">
+  <div class="col-lg-3 py-2">
+    <a href="{{ object.get_absolute_url }}" style="color: black">
+    <td>{{ object.geo_political_zone }}, {{ object.state }},</td><br>
+    <td>{{ object.city }}, {{ object.clan }},</td><br>
+    <td>{{ object.date_created }}</td><br>
+    </a>
+  </div>
+  <div class="col-lg-7 py-2">
+    <div>
+      <a href="{{ object.get_absolute_url }}" style="font-size: 14px;">
+        <p>{{ object.description|safe|truncatechars:75 }}
+        </p>
+      </a>
+    </div>
+  </div>
+  <div class="col-lg-2">
+    <p>{{ object.category }}</p>
+  </div>
+</div>
+<hr>
+            {% endfor %}
+{% else %}
+<div class="centralize-div">
+  <h3 class="ui header center aligned">No results!</h3>
+</div>
+{% endif %}
+
+
+<div class="centralize-div py-5" id="load-more">
+  {% if user_geo_physicals.has_next %}
+  <div class="ui divider"></div>
+  <div class="row mt-5 centered-btn-wrapper">
+    <button class="btn btn-primary" hx-get="{% url 'platform_admin:user_geo_physicals' %}"
+    hx-vals='{"page": "{{ user_geo_physicals.next_page_number }}", "user_geo_physicals": "{{ user_geo_physicals }}"}' hx-target="#load-more"
+    hx-swap="outerHTML">
+    Load more
+  </button>
+  </div>
+  {% endif %}
+</div>

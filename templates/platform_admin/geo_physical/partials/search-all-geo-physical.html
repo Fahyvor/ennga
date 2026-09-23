@@ -1,0 +1,62 @@
+{% if geo_physicals %}
+  <div class="table-responsive">
+    <table class="table-modern">
+      <thead>
+        <tr>
+          <th>Location / Clan</th>
+          <th>Category & Sub-Category</th>
+          <th>Summary</th>
+          <th>Date Recorded</th>
+          <th class="text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for object in geo_physicals %}
+        <tr>
+          <td>
+            <div class="font-weight-600" style="color: var(--brand-dark);">
+              {{ object.clan.name|default:object.city.name|default:object.state.name|default:"Nigeria" }}
+            </div>
+            <small class="text-muted">
+              {{ object.state.name|default:"" }} {% if object.geo_political_zone %}&bull; {{ object.geo_political_zone.name }}{% endif %}
+            </small>
+          </td>
+          <td>
+            <span class="pill-badge pill-badge-cyan">{{ object.category|default:"Feature" }}</span>
+            {% if object.sub_category %}
+              <div class="mt-1"><small class="text-muted">{{ object.sub_category }}</small></div>
+            {% endif %}
+          </td>
+          <td>
+            <div class="text-muted" style="font-size: 13px; max-width: 460px; line-height: 1.5;">
+              {{ object.description|striptags|truncatechars:110 }}
+            </div>
+          </td>
+          <td>
+            <small class="text-muted">{{ object.date_created|date:"M d, Y" }}</small>
+          </td>
+          <td class="text-right">
+            <a href="{{ object.get_absolute_url }}" class="btn btn-en-outline btn-en-sm font-weight-600">
+              View &rarr;
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="text-center py-4 text-muted">
+    <p class="mb-0" style="font-size: 14px;">No geo-physical records matched your query.</p>
+  </div>
+{% endif %}
+
+<div class="text-center py-3" id="load-more">
+  {% if geo_physicals.has_next %}
+  <button class="btn btn-en-primary btn-en-sm font-weight-600" hx-get="{% url 'platform_admin:list-search-geo-physical-data-view' %}"
+    hx-vals='{"page": "{{ geo_physicals.next_page_number }}", "search": "{{ search }}"}' hx-target="#load-more"
+    hx-swap="outerHTML">
+    Load More Records &darr;
+  </button>
+  {% endif %}
+</div>

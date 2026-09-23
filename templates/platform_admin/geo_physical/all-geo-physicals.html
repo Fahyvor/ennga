@@ -1,0 +1,63 @@
+{% extends 'base-dashboard-new.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+{% block content %}
+
+
+<style>
+  .heading-wrap p {
+    font-weight: bold;
+    font-size: 18px;
+  }
+</style>
+
+<div class="main_content_iner overly_inner ">
+  <div class="container-fluid p-0 ">
+    {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+      <div class="alert alert-success text-center" role="alert">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  
+
+  <div class="container" style="color: black">
+    <div class="row edit-account-form-wrapper">
+      <div class="">
+        <div class="text-center">
+            <h2>All Geo Physical Data</h2>
+            <p>All Geo Physical Data</p>
+          </div>
+          
+          
+
+          <div class="container py-5 heading-wrap">
+            <div class="row">
+              <div class="col-lg-3 d-none d-lg-block">
+                <p class="">User/Location/Date</p>
+              </div>
+              <div class="col-lg-7 d-none d-lg-block">
+                <p class="">Description</p>
+              </div>
+              <div class="col-lg-2 d-none d-lg-block">
+                <p class="">Category</p>
+              </div><hr>
+
+              {% include 'platform_admin/geo_physical/partials/all-geo-physicals.html' %}
+
+
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+

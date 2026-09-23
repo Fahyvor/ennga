@@ -1,0 +1,60 @@
+{% extends 'base-dashboard-new.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+
+
+{% block content %}
+
+
+<div class="main_content_iner overly_inner ">
+    <div class="container-fluid p-0 ">
+
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <div class="alert alert-success" role="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+
+    {% if request.user.account_profile == object.user or request.user.is_admin  %}
+    <div class="container" style="color: black">
+        <div class="row my-5">
+            <div class="col-6 d-flex justify-content-end">
+                <button class="btn btn-secondary ml-auto" onclick="goBack()">Cancel</button>
+            </div>
+            <div class="col-6 d-flex justify-content-start">
+                <form method="post">{% csrf_token %}
+                    <input type="submit" value="Submit" class="btn btn-danger mr-auto">
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="container" style="color: black">
+        <div class="row my-5">
+            <p class="text-center" style="font-size: 18px;">
+                Oops, can't view data, you're neither an admin or the owner of 
+                this data.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+</div>
+
+
+<script>
+    function goBack() {
+        window.history.back();
+    }
+</script>
+
+
+
+{% endblock content %}

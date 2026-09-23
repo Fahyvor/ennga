@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  ennga:
+    container_name: ennga-prod
+    build:
+      context: ./
+    #command: gunicorn ennga.wsgi:application --bind 0.0.0.0:8000 & celery -A ennga worker --loglevel=info -B
+    # command: python manage.py runserver 0.0.0.0:8000
+    # command: python manage.py runserver 0.0.0.0:8000 & celery -A ennga worker --loglevel=info -B
+    command: celery -A ennga worker --loglevel=info -B
+    volumes:
+      - ./:/home/app/ennga
+      - static_volume:/home/app/ennga/static_in_env
+    expose: 
+      - 8000:8000
+    ports:
+    - "8000:8000" 
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+      - redis
+      - elasticsearch
+
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+
+  nginx:
+    build: ./nginx
+    volumes:
+      - static_volume:/home/app/ennga/static_in_env
+    ports:
+      - 1337:80
+    depends_on:
+      - ennga
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.18
+    container_name: elasticsearch
+    environment:
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.security.enabled=true
+    ports:
+      - "9200:9200"
+    env_file:
+      - ./.env
+
+volumes:
+  postgres_data:
+  static_volume:
+  elasticsearch_data:

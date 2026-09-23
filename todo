@@ -1,0 +1,53 @@
+1. To update timezone to Lagos timezone instead of Europe ✅
+2. To update the plural of the City Object to CIties instead of citys ✅
+3. To add a sub category for Market Sector Data ✅
+4. Remove the business name, phone number, and address location fields in the market sector data ✅
+5. To filter data based on categories for the various Data collections just like how we get to 
+   filter based on  the various Data types (e.g Market Sector, Historical Data) ✅
+6. Search forms for various Data collections in their respective detail pages
+7. Email Setup ✅
+8. Assigning users to various states, clans, etc. ✅
+
+#######################################################################
+1. To display sub category, category, on the list views ✅
+2. To remove the name of the user in the list view ✅
+3. Search forms for various Data collections in their respective detail pages ✅
+
+########################################################################
+1. To add a subclan ✅
+2. To add search to all the utility model instance ✅
+3. To Edit from Geo Political to Geo Physical in one of the data ✅
+
+4. To update the different data collections based on different locations. So if a data entering 
+agent wants to add data for let's say the state level, they shouldn't see LGAs and clans. 
+Instead every level of data entering should only show those data associated to the location 
+level of either state, LGA, etc. This will prompt me to now create new Create forms for the different levels of data entering.
+
+5. The Category Location Data needs to be changed to Category Checklist Data in the frontend ✅
+6. To make sure every admin user have the permission to add data in every state, LGA, clan etc and are not restricted ✅
+
+7. To work on the functionality where when permission is given to users in the LGA level, they automatically 
+have access to their respective clans. So this time, if they have permission in clans, the only 
+thing admins will have to do is to restrict in individual clans. ✅
+
+8. To create a Tribe model where every LGA will belong to.
+
+9. AWS Images updates
+
+----------------------------------------
+1. All the delete buttons has disappeared everywhere. Both on the front end and backend ✅
+
+2. The subclans does not show on the front end.
+
+3. How do you add images and tables in the editor boxes? U could copy and paste, but it tends to show a few with lots of error messages. ✅
+
+4. The tribes checklist that is in the backend and is supposed to show up at the front end has a static view on all historical 
+data slide on the front end. Not a good idea considering that the historical data has many sub options. If it canine harmonized, 
+maybe we can leave since we will be using Ai for content. The scaling problem m ight be reduced. But if there is a way, it will really help 
+
+5. The box to indicate the tribe resident in a particular territory is stil very important
+
+----------------------------------------
+1. To update the Tribe model with new fields which selects all the clans and subclans
+2. To add a search in the admin panel for all the subclans, clans, city models
+3. 

@@ -1,0 +1,336 @@
+{% load static %}
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account | ENNGA Platform</title>
+
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 4 / 5 grid & utilities -->
+    <link rel="stylesheet" href="{% static 'dashboard/css/bootstrap1.min.css' %}" />
+
+    <style>
+      :root {
+        --brand-dark: #20222A;
+        --brand-slate: #2b2d38;
+        --brand-cyan: #C4F2F4;
+        --brand-cyan-hover: #a1ecf0;
+        --brand-muted: #707DB7;
+        --bg-canvas: #0f1015;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 40px 0;
+        min-height: 100vh;
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #14151b 0%, #20222A 60%, #171821 100%);
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      .ambient-glow-1 {
+        position: absolute;
+        top: -120px;
+        left: -80px;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(196, 242, 244, 0.12) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .ambient-glow-2 {
+        position: absolute;
+        bottom: -100px;
+        right: -60px;
+        width: 420px;
+        height: 420px;
+        background: radial-gradient(circle, rgba(112, 125, 183, 0.15) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .auth-container {
+        width: 100%;
+        max-width: 580px;
+        padding: 24px;
+        position: relative;
+        z-index: 10;
+      }
+
+      .auth-brand {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+
+      .auth-brand a {
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .auth-brand .logo-text {
+        font-family: 'Outfit', sans-serif;
+        font-size: 32px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.5px;
+        margin: 0;
+      }
+
+      .auth-brand .logo-text span {
+        color: var(--brand-cyan);
+      }
+
+      .auth-brand .tagline {
+        color: #94a3b8;
+        font-size: 13px;
+        margin-top: 4px;
+      }
+
+      .auth-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 40px 36px;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      }
+
+      .auth-card h1 {
+        font-family: 'Outfit', sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--brand-dark);
+        margin-bottom: 6px;
+      }
+
+      .auth-card .subtitle {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--brand-dark);
+        margin-bottom: 6px;
+      }
+
+      .form-control-custom {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 14px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        background-color: #f8fafc;
+        color: #1e293b;
+        transition: all 0.2s ease;
+      }
+
+      .form-control-custom:focus {
+        background-color: #ffffff;
+        border-color: var(--brand-dark);
+        box-shadow: 0 0 0 3px rgba(196, 242, 244, 0.45);
+        outline: none;
+      }
+
+      .error-alert {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 13px;
+        margin-bottom: 20px;
+      }
+
+      .field-error {
+        color: #dc2626;
+        font-size: 12px;
+        margin-top: 4px;
+        font-weight: 500;
+      }
+
+      .btn-submit {
+        width: 100%;
+        padding: 13px;
+        background-color: var(--brand-dark);
+        color: #ffffff;
+        border: none;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 12px rgba(32, 34, 42, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn-submit:hover {
+        background-color: #2b2d38;
+        color: var(--brand-cyan);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(32, 34, 42, 0.35);
+      }
+
+      .auth-footer {
+        text-align: center;
+        margin-top: 24px;
+        font-size: 14px;
+        color: #64748b;
+      }
+
+      .auth-footer a {
+        color: var(--brand-dark);
+        font-weight: 700;
+        text-decoration: none;
+        border-bottom: 1.5px solid var(--brand-cyan);
+        padding-bottom: 1px;
+      }
+
+      .back-home {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .back-home a {
+        color: #94a3b8;
+        font-size: 13px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .back-home a:hover {
+        color: #ffffff;
+      }
+    </style>
+</head>
+<body>
+
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <div class="auth-container">
+    <div class="auth-brand">
+      <a href="{% url 'public:home' %}">
+        <p class="logo-text"><span>E</span>nnga</p>
+      </a>
+      <div class="tagline">Data Intelligence & Historical Archival Platform</div>
+    </div>
+
+    <div class="auth-card">
+      <h1>Create Account</h1>
+      <p class="subtitle">Join the platform to begin managing and inputting community datasets.</p>
+
+      {% if registration_form.non_field_errors %}
+        <div class="error-alert">
+          {{ registration_form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="form-group mb-3">
+          <label for="id_email">Email Address</label>
+          {{ registration_form.email|add_class:"form-control-custom"|attr:"placeholder:name@organization.com" }}
+          {% if registration_form.errors.email %}
+            <div class="field-error">{{ registration_form.errors.email|first }}</div>
+          {% endif %}
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="id_first_name">First Name</label>
+            {{ registration_form.first_name|add_class:"form-control-custom"|attr:"placeholder:First name" }}
+            {% if registration_form.errors.first_name %}
+              <div class="field-error">{{ registration_form.errors.first_name|first }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="id_last_name">Last Name</label>
+            {{ registration_form.last_name|add_class:"form-control-custom"|attr:"placeholder:Last name" }}
+            {% if registration_form.errors.last_name %}
+              <div class="field-error">{{ registration_form.errors.last_name|first }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="id_phone_number">Phone Number</label>
+          {{ registration_form.phone_number|add_class:"form-control-custom"|attr:"placeholder:+234..." }}
+          {% if registration_form.errors.phone_number %}
+            <div class="field-error">{{ registration_form.errors.phone_number|first }}</div>
+          {% endif %}
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="id_password1">Password</label>
+            {{ registration_form.password1|add_class:"form-control-custom"|attr:"placeholder:Create password" }}
+            {% if registration_form.errors.password1 %}
+              <div class="field-error">{{ registration_form.errors.password1|first }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="id_password2">Confirm Password</label>
+            {{ registration_form.password2|add_class:"form-control-custom"|attr:"placeholder:Repeat password" }}
+            {% if registration_form.errors.password2 %}
+              <div class="field-error">{{ registration_form.errors.password2|first }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <button type="submit" class="btn-submit">
+            Create Account
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+      </form>
+
+      <div class="auth-footer">
+        Already registered? <a href="{% url 'accounts:login' %}">Sign In</a>
+      </div>
+    </div>
+
+    <div class="back-home">
+      <a href="{% url 'public:home' %}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Return to Home
+      </a>
+    </div>
+  </div>
+
+</body>
+</html>

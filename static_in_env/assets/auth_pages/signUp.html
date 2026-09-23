@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../auth_pages_css/signUp.css">
+    <title>Sign Up</title>
+</head>
+<body>
+    <div class="signUpScreen">
+        <header>
+          <a href="/index.html">
+          <img src='../assets/logo.png' alt='logo'/>
+          </a>
+        </header>
+        <h1>Join us!!</h1>
+        <form class="form">
+        <div class="email">
+            <label for='emailId'>Email</label>
+            <input type='email' id="emailId" name='email' required/>
+            </div>
+            <div class="first_name">
+            <label for='first'>First Name</label>
+            <input type='text' id="first" name="first_name"/>
+            </div>
+            <div class="last_name">
+            <label for='last'>Last Name</label>
+            <input type='text' id="last" name='last_name'  />
+            </div>
+            <div class="username">
+            <label for='phone'>Phone Number</label>
+            <input type='tel' id="phone" name='phone_number' />
+            </div>
+             <div class="sex" >
+                <div class="male">
+                <label for='maleId'>Male</label>
+                <input type='radio' id="maleId"  name='gender' checked />
+                </div>
+                <div class='female'>
+                <label for='femaleId'>Female</label>
+                <input type='radio' id="femaleId" name='gender'  />
+                </div>
+            </div> 
+            <div class="password">
+            <label for='passwordId'>Password</label>
+            <input type='password' id="passwordId" name='password'/>
+            </div>
+            <div class='confirm'>
+            <label for='password2Id'>Confirm Password</label>
+            <input type='password' id="password2Id" name='password2' value={signUpValue.password2}/>
+            </div>
+            <button type='submit'>Join</button>
+        </form>
+        <p class='redirect'>
+          Already registered? Please <a href="/auth_pages/login.html">sign in</a>
+        </p>
+      </div>
+</body>
+</html>

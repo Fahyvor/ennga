@@ -1,0 +1,30 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'assets/auth_pages_css/login.css' %}">
+    <title>Invalide Activation</title>
+</head>
+<body>
+    <div class="signInScreen">
+        <header class="header__img">
+          <a href="{% url 'public:home' %}">
+            <img src="{% static 'assets/assets/logo.png' %}" alt='company-logo'/>
+          </a>
+        </header>
+        <section class="section">
+            <div class="container form">
+                <div>
+                    <h3 class="mb-4">Error</h3>
+                    <p>Please contact our support team</p>
+                    <p>Expired or invalid activation code.</p>
+                </div>
+            </div>
+        </section>
+      
+      </div>
+</body>
+</html>

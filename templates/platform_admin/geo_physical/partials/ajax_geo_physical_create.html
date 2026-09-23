@@ -1,0 +1,102 @@
+{% load static %}
+{% load static %}
+
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+
+
+{% if form %}
+
+<div id="image-upload">
+      <form class="mt-4" id='personForm' action='.' method="POST" enctype="multipart/form-data" hx-post="{{ request.path }}"
+          hx-swap="none"
+        hx-encoding="multipart/form-data"
+        hx-vals="js:{description: CKEDITOR.instances.id_description.getData()}"
+        data-cities-url="{% url 'utility:ajax-load-cities' %}"
+        data-clans-url="{% url 'utility:ajax-load-clans' %}"
+        data-states-url="{% url 'utility:ajax-load-states' %}" >
+        {% csrf_token %}
+
+
+        <div class="row">
+              <div class="col-lg-6 mb-3" id="new-ajax-geopolitical-id">
+                <label for="exampleInputPassword1" class="form-label">Geo Political Zone*</label>
+                {{ form.geo_political_zone|add_required_class:"is-required form-control" }}
+                <div id="emailHelp" class="form-text">{{form.errors.geo_political_zone}}</div>
+              </div>
+              <div class="col-lg-6 mb-3" id="new-ajax-state-id">
+                <label for="exampleInputPassword1" class="form-label">State Location*</label>
+                {{ form.state|add_required_class:"is-required form-control" }}
+                <div id="emailHelp" class="form-text">{{form.errors.state}}</div>
+              </div>
+              <div class="col-lg-6 mb-3" id="new-ajax-city-id">
+                <label for="exampleInputPassword1" class="form-label">City Location*</label>
+                {{ form.city|add_required_class:"is-required form-control" }}
+                <div id="emailHelp" class="form-text">{{form.errors.city}}</div>
+              </div>
+              <div class="col-lg-6 mb-3" id="new-ajax-clan-id">
+                <label for="exampleInputPassword1" class="form-label">Clan Location*</label>
+                {{ form.clan|add_required_class:"is-required form-control" }}
+                <div id="emailHelp" class="form-text">{{form.errors.clan}}</div>
+              </div>
+              <div class="col-lg-6 mb-3">
+                <label for="exampleInputPassword1" class="form-label">Category*</label>
+                {{ form.category|add_required_class:"is-required form-control" }}
+                <div id="emailHelp" class="form-text">{{form.errors.category}}</div>
+              </div>
+              <div class="mb-3" style="display: flex; justify-content: center;">
+                <!-- <label for="exampleInputPassword1" class="form-label">Content*</label> -->
+                {{ form.media }}
+                {{ form.description|add_required_class:"is-required form-control" }}
+                <div id="emailHelp" class="form-text">{{form.errors.description}}</div>
+              </div>
+        </div>
+        <div class="centered-btn-wrapper">
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </form>
+
+</div>
+
+{% endif %}
+
+<div class="container-fluid p-0 mt-2 d-none" id="html-file-successs">
+    <ul class="messages">
+      <div class="alert alert-success text-center" role="alert">
+        Uploaded successfully
+      </div>
+    </ul>
+  </div>
+
+<div>
+    <progress class="d-none" id='progress' value='0' max='100'></progress>
+</div>
+
+
+<script>
+    document.body.addEventListener("htmx:configRequest", (event) => {
+        event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}'
+    })
+</script>
+
+<script>
+    htmx.on('#personForm', 'htmx:xhr:progress', function (evt) {
+        htmx.find('#progress').setAttribute('value', evt.detail.loaded / evt.detail.total * 100)
+        document.getElementById("progress").classList.remove("d-none");
+    });
+
+    document.body.addEventListener('htmx:afterRequest', (event) => {
+        document.getElementById('progress').classList.add('d-none')
+        document.getElementById('html-file-successs').classList.remove('d-none')
+
+        document.getElementById("id_name").value = '';
+        document.getElementById("id_state").value = '';
+        document.getElementById("id_city").value = '';
+        document.getElementById("id_address_location").value = '';
+        document.getElementById("id_phone_number").value = '';
+        document.getElementById("id_description").value = '';
+        document.getElementById("id_clan").value = '';
+        document.getElementById("id_geo_political_zone").value = '';
+        document.getElementById("id_category").value = '';
+    });
+</script>

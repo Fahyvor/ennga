@@ -1,0 +1,42 @@
+{% if market_sectors %}
+
+{% for object in market_sectors %}
+            
+
+              <div class="row my-2">
+                <div class="col-lg-2">
+                  <td>{{ object.name }}</td>
+                </div>
+                <div class="col-lg-2">
+                  <td>{{ object.state }}, {{ object.city }}</td>
+                </div>
+                <div class="col-lg-3">
+                  <td>{{ object.phone_number }}</td>
+                </div>
+                <div class="col-lg-3">
+                  <td>{{ object.address_location }}</td>
+                </div>
+                <div class="col-lg-2">
+                  <td>{{ object.description|safe }}</td>
+                </div>
+              </div><hr>
+            {% endfor %}
+{% else %}
+<div class="centralize-div">
+  <h3 class="text-center">No results!</h3>
+</div>
+{% endif %}
+
+
+<div class="centralize-div py-5" id="load-more">
+  {% if market_sectors.has_next %}
+  <div class="ui divider"></div>
+  <div class="row mt-5 centered-btn-wrapper">
+    <button class="btn btn-primary" hx-get="{% url 'platform_admin:market_sectors' %}"
+    hx-vals='{"page": "{{ market_sectors.next_page_number }}", "market_sectors": "{{ market_sectors }}"}' hx-target="#load-more"
+    hx-swap="outerHTML">
+    Load more
+  </button>
+  </div>
+  {% endif %}
+</div>

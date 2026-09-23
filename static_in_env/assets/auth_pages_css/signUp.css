@@ -1,0 +1,86 @@
+html, body{
+    overflow-x: hidden;
+}
+.signUpScreen {
+    position: relative;
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding-block: 1rem;
+  } 
+  .signUpScreen header{
+    width: 120px;
+    height: 120px;
+
+  }
+  .signUpScreen header img{
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+  .signUpScreen h1{
+    font-weight: 400;
+  }
+  .form {
+    margin-top: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    padding: 1.5rem 1rem;
+    width: max(30%,270px);
+    padding: 1rem;
+    color: #00000099;
+  }
+
+  :is(.email,.first_name,.last_name,.username,.password,.confirm){
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  :is(.email,.first_name,.last_name,.username,.password,.confirm) input{
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+  }
+
+  .sex{
+    display: flex;
+    gap: 15px;
+  }
+  :is(.male,.female){
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .form button{
+    padding: 1rem;
+    border-radius: 30px;
+    background-color: #1c5b3c;
+    border:none;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  .signUpScreen .redirect{
+    margin-top: 15px;
+    color: #00000099;
+    font-size: 1.2rem;
+  }
+
+  .signUpScreen .redirect a{
+    color: #15442c;
+    text-decoration: none;
+  }
+
+  @media (min-width:600px) {
+    .form{
+      margin-top: 1.3rem;
+      border: 1px solid lightgrey;
+      box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+      border-radius: 8px;
+    }
+  }

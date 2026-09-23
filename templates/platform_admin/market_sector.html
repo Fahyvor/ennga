@@ -1,0 +1,70 @@
+{% extends 'base-dashboard-new.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+{% block content %}
+
+
+<style>
+  .heading-wrap p {
+    font-weight: bold;
+    font-size: 18px;
+  }
+</style>
+
+<div class="main_content_iner overly_inner ">
+  <div class="container-fluid p-0 ">
+    {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+      <div class="alert alert-success text-center" role="alert">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  
+
+  <div class="container" style="color: black">
+    <div class="row edit-account-form-wrapper">
+      <div class="">
+        <div class="text-center">
+            <h2>All Market Data</h2>
+            <p>Add market Data by either uploading a well structured csv file or add manually</p>
+          </div>
+          
+          <div style="display: flex; justify-content: right">
+            <a href="{% url 'platform_admin:market-sector-upload-view' %}" class="btn btn-success m-2">Upload Data</a>
+            <a href="{% url 'platform_admin:market-sector-create-view' %}" class="btn btn-success m-2">Add Data</a>
+          </div>
+
+          <div class="container py-5 heading-wrap">
+            <div class="row">
+              <div class="col-lg-2">
+                <p>Name</p>
+              </div>
+              <div class="col-lg-2">
+                <p>State/City</p>
+              </div>
+              <div class="col-lg-3">
+                <p>Phone Number</p>
+              </div>
+              <div class="col-lg-3">
+                <p>Address Location</p>
+              </div>
+              <div class="col-lg-2">
+                <p>Description</p>
+              </div><hr>
+
+              {% include 'platform_admin/partials/all-market_sectors.html' %}
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+

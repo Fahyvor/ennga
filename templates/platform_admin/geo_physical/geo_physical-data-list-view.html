@@ -1,0 +1,168 @@
+{% extends 'base-dashboard-new.html' %}
+{% load static %}
+{% block content %}
+
+<div class="main_content_iner overly_inner p-4">
+  <div class="container-fluid p-0">
+
+    {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+      <div class="alert alert-success alert-dismissible fade show en-card p-3 d-flex align-items-center justify-content-between" role="alert" style="border-left: 4px solid var(--brand-dark);">
+        <div>✅ <strong>{{ message }}</strong></div>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="background: none; border: none; font-size: 20px;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2">
+      <div>
+        <h2 class="font-weight-700 mb-1" style="color: var(--brand-dark);">Geo-Physical Data Explorer</h2>
+        <p class="text-muted mb-0" style="font-size: 14px;">Browse geographical boundaries, territories, and clan physical locations.</p>
+      </div>
+      <div class="mt-3 mt-md-0 d-flex gap-2">
+        {% if request.user.is_admin or request.user.is_superuser %}
+          <a href="{% url 'platform_admin:clan-access-management' %}" class="btn btn-en-cyan font-weight-600 mr-2">
+            🛡️ Clan Access Center
+          </a>
+        {% endif %}
+        <a href="{% url 'platform_admin:user-geo-physical-list-view' %}" class="btn btn-en-outline font-weight-600">
+          My Geo-Physical Submissions
+        </a>
+      </div>
+    </div>
+
+    <!-- Explorer Accordion Cards -->
+    <div class="row mb-4">
+      <!-- Geopolitical Zones -->
+      <div class="col-lg-4 mb-3">
+        <div class="en-card p-4 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center">
+              <span class="mr-2" style="font-size: 22px;">🌍</span>
+              <h5 class="font-weight-700 mb-0" style="color: var(--brand-dark); font-size: 16px;">Geopolitical Zones</h5>
+            </div>
+            <span class="pill-badge pill-badge-cyan">{{ geo_politicals.count }} Zones</span>
+          </div>
+          <p class="text-muted mb-3" style="font-size: 13px;">Review physical territories across geopolitical zones.</p>
+          
+          <button class="btn btn-en-outline btn-en-sm w-100 font-weight-600 mb-2" type="button" data-toggle="collapse" data-bs-toggle="collapse" data-target="#collapseGeoPhysZones" data-bs-target="#collapseGeoPhysZones" aria-expanded="false">
+            Expand Zones &darr;
+          </button>
+          
+          <div class="collapse mt-2" id="collapseGeoPhysZones">
+            <div class="p-3 bg-light rounded" style="max-height: 240px; overflow-y: auto;">
+              {% for geo_political in geo_politicals %}
+                <a href="{{ geo_political.get_geo_physical_geo_zone_detail_url }}" class="d-block py-2 px-2 text-dark font-weight-500 border-bottom" style="text-decoration: none; font-size: 13px;">
+                  &rsaquo; {{ geo_political.name }}
+                </a>
+              {% empty %}
+                <span class="text-muted" style="font-size: 12px;">No zones registered.</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State Locations -->
+      <div class="col-lg-4 mb-3">
+        <div class="en-card p-4 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center">
+              <span class="mr-2" style="font-size: 22px;">📍</span>
+              <h5 class="font-weight-700 mb-0" style="color: var(--brand-dark); font-size: 16px;">State Locations</h5>
+            </div>
+            <span class="pill-badge pill-badge-dark">{{ states.count }} States</span>
+          </div>
+          <p class="text-muted mb-3" style="font-size: 13px;">Explore territorial data and clan settlements by state.</p>
+          
+          <button class="btn btn-en-outline btn-en-sm w-100 font-weight-600 mb-2" type="button" data-toggle="collapse" data-bs-toggle="collapse" data-target="#collapseGeoPhysStates" data-bs-target="#collapseGeoPhysStates" aria-expanded="false">
+            Expand States &darr;
+          </button>
+          
+          <div class="collapse mt-2" id="collapseGeoPhysStates">
+            <div class="p-3 bg-light rounded" style="max-height: 240px; overflow-y: auto;">
+              {% for state in states %}
+                <a href="{{ state.get_geo_physical_state_location_detail_url }}" class="d-block py-2 px-2 text-dark font-weight-500 border-bottom" style="text-decoration: none; font-size: 13px;">
+                  &rsaquo; {{ state.name }}
+                </a>
+              {% empty %}
+                <span class="text-muted" style="font-size: 12px;">No states registered.</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="col-lg-4 mb-3">
+        <div class="en-card p-4 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center">
+              <span class="mr-2" style="font-size: 22px;">🏷️</span>
+              <h5 class="font-weight-700 mb-0" style="color: var(--brand-dark); font-size: 16px;">Geo Categories</h5>
+            </div>
+            <span class="pill-badge pill-badge-cyan">{{ categories.count }} Categories</span>
+          </div>
+          <p class="text-muted mb-3" style="font-size: 13px;">Classification of physical landscapes, terrains, and lands.</p>
+          
+          <button class="btn btn-en-outline btn-en-sm w-100 font-weight-600 mb-2" type="button" data-toggle="collapse" data-bs-toggle="collapse" data-target="#collapseGeoPhysCategories" data-bs-target="#collapseGeoPhysCategories" aria-expanded="false">
+            Expand Categories &darr;
+          </button>
+          
+          <div class="collapse mt-2" id="collapseGeoPhysCategories">
+            <div class="p-3 bg-light rounded" style="max-height: 240px; overflow-y: auto;">
+              {% for category in categories %}
+                <a href="{{ category.get_geo_physical_category_detail_url }}" class="d-block py-2 px-2 text-dark font-weight-500 border-bottom" style="text-decoration: none; font-size: 13px;">
+                  &rsaquo; {{ category.name }}
+                </a>
+              {% empty %}
+                <span class="text-muted" style="font-size: 12px;">No categories found.</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Search & Results Container -->
+    <div class="en-card p-4 mb-4">
+      <div class="row justify-content-center mb-4">
+        <div class="col-lg-8">
+          <div class="text-center mb-3">
+            <h4 class="font-weight-700 mb-1" style="color: var(--brand-dark); font-size: 20px;">Search Geo-Physical Records</h4>
+            <p class="text-muted mb-0" style="font-size: 13px;">Search land demarcations, clan territories, and physical descriptions.</p>
+          </div>
+          <form 
+            class="centred ui form"
+            hx-get="{% url 'platform_admin:list-search-geo-physical-data-view' %}" 
+            hx-target="#search-results"
+            hx-trigger="submit, input delay:0.3s">
+            <div class="input-group">
+              <input type="text" name="search" class="form-control form-control-modern" placeholder="Type to search geo-physical records..." value="{{ search }}">
+              <div class="input-group-append">
+                <button class="btn btn-en-primary" type="submit" style="border-radius: 0 10px 10px 0;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div id="search-results">
+        {% include 'platform_admin/geo_physical/partials/search-all-geo-physical.html' %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock content %}

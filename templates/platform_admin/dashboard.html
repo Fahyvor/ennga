@@ -1,0 +1,264 @@
+{% extends 'base-dashboard-new.html' %}
+{% load static %}
+{% block content %}
+
+<div class="main_content_iner overly_inner p-4">
+  <div class="container-fluid p-0">
+
+    {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+      <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show en-card p-3 d-flex align-items-center justify-content-between" role="alert" style="border-left: 4px solid var(--brand-dark);">
+        <div class="d-flex align-items-center">
+          <span class="mr-2">{% if message.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
+          <strong>{{ message }}</strong>
+        </div>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="background: none; border: none; font-size: 20px;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Welcome Header Banner -->
+    <div class="en-card p-4 p-md-5 mb-4" style="background: linear-gradient(135deg, #20222A 0%, #2b2d38 60%, #1e293b 100%); color: #ffffff; border: none; position: relative; overflow: hidden;">
+      <div style="position: absolute; right: -20px; top: -20px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(196,242,244,0.15) 0%, transparent 70%); border-radius: 50%;"></div>
+      <div class="row align-items-center position-relative">
+        <div class="col-lg-8">
+          <div class="d-flex align-items-center mb-2">
+            <span class="pill-badge mr-2" style="background: rgba(196,242,244,0.2); color: #C4F2F4; border: 1px solid rgba(196,242,244,0.4);">
+              ENNGA PLATFORM
+            </span>
+            {% if request.user.is_admin or request.user.is_superuser %}
+              <span class="pill-badge" style="background: rgba(255,255,255,0.15); color: #ffffff;">ADMINISTRATOR</span>
+            {% elif request.user.is_data_agent %}
+              <span class="pill-badge pill-badge-success">DATA AGENT</span>
+            {% endif %}
+          </div>
+          <h2 class="font-weight-700 text-white mb-2" style="font-size: 28px;">
+            Welcome back, {{ request.user.first_name|default:request.user.username }}!
+          </h2>
+          <p class="text-white-50 mb-3" style="font-size: 15px; max-width: 600px;">
+            Monitor system activities, manage user data-entry permissions across clans, and explore collected historical, market sector, and geo-physical datasets.
+          </p>
+          <div class="d-flex flex-wrap gap-2" style="gap: 10px;">
+            {% if request.user.is_admin or request.user.is_superuser %}
+              <a href="{% url 'platform_admin:clan-access-management' %}" class="btn btn-en-cyan font-weight-600">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <path d="M9 12l2 2 4-4"/>
+                </svg>
+                Manage Clan Permissions
+              </a>
+              <a href="{% url 'platform_admin:all-users' %}" class="btn btn-en-primary font-weight-600">
+                Manage Users
+              </a>
+            {% else %}
+              <a href="{% url 'platform_admin:edit-account' user_id=request.user.id %}" class="btn btn-en-cyan font-weight-600">
+                My Profile & Data
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core KPIs -->
+    <div class="row mb-4">
+      <div class="col-xl-4 col-md-6 mb-3">
+        <a href="{% url 'platform_admin:market-sector-data-list-view' %}" class="stat-card-modern">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Market Sectors</p>
+              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ market_sectors.count }}</h3>
+            </div>
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(196, 242, 244, 0.25); display: flex; align-items: center; justify-content: center;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0e7490" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </div>
+          </div>
+          <small class="text-muted mt-2 d-block">Data records collected</small>
+        </a>
+      </div>
+
+      <div class="col-xl-4 col-md-6 mb-3">
+        <a href="{% url 'platform_admin:historical-data-list-view' %}" class="stat-card-modern">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Historical Records</p>
+              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ historicals.count }}</h3>
+            </div>
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(32, 34, 42, 0.08); display: flex; align-items: center; justify-content: center;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+          </div>
+          <small class="text-muted mt-2 d-block">Archived cultural & historical data</small>
+        </a>
+      </div>
+
+      <div class="col-xl-4 col-md-6 mb-3">
+        <a href="{% url 'platform_admin:geo-physical-data-list-view' %}" class="stat-card-modern">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Geo-Physical Data</p>
+              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ geo_physicals.count }}</h3>
+            </div>
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(112, 125, 183, 0.15); display: flex; align-items: center; justify-content: center;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#707DB7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+          </div>
+          <small class="text-muted mt-2 d-block">Locations & territorial records</small>
+        </a>
+      </div>
+    </div>
+
+    <!-- User Management Quick Nav (for Admins) -->
+    {% if request.user.is_admin or request.user.is_superuser %}
+    <div class="row mb-4">
+      <div class="col-md-4 mb-3">
+        <a href="{% url 'platform_admin:all-users' %}" class="stat-card-modern">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">All Registered Users</p>
+              <h4 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ users.count }} Users</h4>
+            </div>
+            <span class="pill-badge pill-badge-cyan">View All &rarr;</span>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4 mb-3">
+        <a href="{% url 'platform_admin:approved-users' %}" class="stat-card-modern">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Approved Users</p>
+              <h4 class="mb-0 font-weight-700" style="color: #15803d;">Active Members</h4>
+            </div>
+            <span class="pill-badge pill-badge-success">Approved &rarr;</span>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4 mb-3">
+        <a href="{% url 'platform_admin:clan-access-management' %}" class="stat-card-modern">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Clan Permissions</p>
+              <h4 class="mb-0 font-weight-700" style="color: var(--brand-dark);">Delegate Rights</h4>
+            </div>
+            <span class="pill-badge pill-badge-dark">Manage &rarr;</span>
+          </div>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Assigned Clan & Sub-Clan Data Entry Section -->
+    <div class="en-card p-4 mb-4">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+        <div>
+          <h4 class="font-weight-700 mb-1" style="color: var(--brand-dark); font-size: 18px;">
+            My Clan Data Entry Centers
+          </h4>
+          <p class="text-muted mb-0" style="font-size: 13px;">
+            Clans and sub-clans you have been assigned by an administrator to collect and submit data for.
+          </p>
+        </div>
+        {% if request.user.is_admin or request.user.is_superuser %}
+          <a href="{% url 'platform_admin:clan-access-management' %}" class="btn btn-en-outline btn-en-sm mt-2 mt-md-0 font-weight-600">
+            + Grant Clan Access to Users
+          </a>
+        {% endif %}
+      </div>
+
+      {% if assigned_clans or assigned_subclans %}
+        <div class="row mt-3">
+          {% for clan in assigned_clans %}
+          <div class="col-lg-6 col-xl-4 mb-3">
+            <div class="en-card p-3 h-100" style="border-left: 4px solid var(--brand-dark);">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <span class="pill-badge pill-badge-cyan mb-1" style="font-size: 11px;">Clan Node</span>
+                  <h5 class="font-weight-700 mb-0" style="color: var(--brand-dark); font-size: 16px;">{{ clan.name }}</h5>
+                  <p class="text-muted mb-0" style="font-size: 12px;">
+                    {{ clan.city.name }}, {{ clan.state.name }}
+                  </p>
+                </div>
+              </div>
+              <hr class="my-2" style="border-color: var(--border-color);">
+              <p class="text-muted mb-2" style="font-size: 12px; font-weight: 600;">Input Data For This Clan:</p>
+              <div class="d-flex flex-wrap gap-1" style="gap: 6px;">
+                <a href="{% url 'platform_admin:historical-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-primary btn-en-sm py-1 px-2" style="font-size: 12px;">
+                  🏛️ Historical
+                </a>
+                <a href="{% url 'platform_admin:market-sector-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-cyan btn-en-sm py-1 px-2" style="font-size: 12px;">
+                  📊 Market
+                </a>
+                <a href="{% url 'platform_admin:geo-physical-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2" style="font-size: 12px;">
+                  🌍 Geo
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+          {% for subclan in assigned_subclans %}
+          <div class="col-lg-6 col-xl-4 mb-3">
+            <div class="en-card p-3 h-100" style="border-left: 4px solid #7c3aed;">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <span class="pill-badge pill-badge-subclan mb-1" style="font-size: 11px;">Sub-Clan Node</span>
+                  <h5 class="font-weight-700 mb-0" style="color: var(--brand-dark); font-size: 16px;">{{ subclan.name }}</h5>
+                  <p class="text-muted mb-0" style="font-size: 12px;">
+                    Clan: {{ subclan.clan.name|default:"-" }}
+                  </p>
+                </div>
+              </div>
+              <hr class="my-2" style="border-color: var(--border-color);">
+              <p class="text-muted mb-2" style="font-size: 12px; font-weight: 600;">Input Data For This Sub-Clan:</p>
+              <div class="d-flex flex-wrap gap-1" style="gap: 6px;">
+                {% if subclan.clan %}
+                  <a href="{% url 'platform_admin:historical-clan-create-view' clan_location_pk=subclan.clan.id %}" class="btn btn-en-primary btn-en-sm py-1 px-2" style="font-size: 12px;">
+                    🏛️ Historical
+                  </a>
+                  <a href="{% url 'platform_admin:market-sector-clan-create-view' clan_location_pk=subclan.clan.id %}" class="btn btn-en-cyan btn-en-sm py-1 px-2" style="font-size: 12px;">
+                    📊 Market
+                  </a>
+                  <a href="{% url 'platform_admin:geo-physical-clan-create-view' clan_location_pk=subclan.clan.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2" style="font-size: 12px;">
+                    🌍 Geo
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-4">
+          <div style="font-size: 32px; margin-bottom: 8px;">🏛️</div>
+          <p class="text-muted mb-2" style="font-size: 14px;">You currently have no specific clan assigned for data entry.</p>
+          {% if request.user.is_admin or request.user.is_superuser %}
+            <p class="text-muted mb-3" style="font-size: 13px;">As an administrator, you have global access to all clans, or you can delegate specific clans to users.</p>
+            <a href="{% url 'platform_admin:clan-access-management' %}" class="btn btn-en-cyan font-weight-600">
+              Open Clan Access Center
+            </a>
+          {% else %}
+            <p class="text-muted mb-0" style="font-size: 13px;">Contact your platform administrator to grant your account access to specific clans or sub-clans.</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+{% endblock content %}

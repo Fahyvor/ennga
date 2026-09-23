@@ -1,0 +1,123 @@
+{% load static %}
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+
+
+{% if form_bulk %}
+'
+
+<div id="image-upload">
+    <form id='image-upload-form' action='.' method="POST" enctype="multipart/form-data" hx-post="{{ request.path }}"
+          hx-swap="none"
+        hx-encoding="multipart/form-data" data-cities-url="{% url 'utility:ajax-load-cities' %}"
+        data-states-url="{% url 'utility:ajax-load-states' %}" >
+        {% csrf_token %}
+
+        <div class="row">
+            <div class="col-lg-6 mb-3">
+                <label for="exampleInputEmail1" class="form-label">State Location*</label>
+                {{ form_bulk.state|add_required_class:"is-required form-control" }}
+                <div id="emailHelp" class="form-text">{{form_bulk.errors.state}}</div>
+              </div>
+              <div class="col-lg-6 mb-3">
+                  <label for="exampleInputEmail1" class="form-label">City Location*</label>
+                  {{ form_bulk.city|add_required_class:"is-required form-control" }}
+                  <div id="emailHelp" class="form-text">{{form_bulk.errors.city}}</div>
+                </div>
+                <div class="col-lg-6 mb-3">
+                    <label for="exampleInputEmail1" class="form-label">CSV File*</label>
+                    {{ form_bulk.filez|add_required_class:"is-required form-control" }}
+                    <div id="emailHelp" class="form-text">{{form_bulk.errors.filez}}</div>
+                  </div>
+              </div>
+              <div class="centered-btn-wrapper">
+                <button type="submit" class="btn btn-primary">Upload</button>
+              </div>
+              
+              <div class="container-fluid p-0 mt-2 d-none" id="html-file-successs">
+                <ul class="messages">
+                  <div class="alert alert-success text-center" role="alert">
+                    Uploaded successfully
+                  </div>
+                </ul>
+              </div>
+
+
+        <div>
+            <progress class="d-none" id='progress' value='0' max='100'></progress>
+        </div>
+    </form>
+</div>
+
+{% endif %}
+
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"
+  integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+
+<script>
+  $("#id_state").change(function () {
+    var url = $("#image-upload-form").attr("data-cities-url");
+    var stateId = $(this).val();
+
+    $.ajax({
+      url: url,
+      data: {
+        'state': stateId
+      },
+      success: function (data) {
+        $("#id_city").html(data);
+        document.getElementById('new-ajax-city-id').classList.remove('d-none')
+      }
+    });
+
+  });
+</script>
+
+
+
+
+<script>
+  $("#id_city").change(function () {
+    var url = $("#image-upload-form").attr("data-branches-url");
+    var cityId = $(this).val();
+
+    $.ajax({
+      url: url,
+      data: {
+        'city': cityId
+      },
+      success: function (data) {
+        $("#id_branch").html(data);
+      }
+    });
+
+  });
+</script>
+
+
+
+<script>
+    document.body.addEventListener("htmx:configRequest", (event) => {
+        event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}'
+    })
+</script>
+
+<script>
+    htmx.on('#image-upload-form', 'htmx:xhr:progress', function (evt) {
+        htmx.find('#progress').setAttribute('value', evt.detail.loaded / evt.detail.total * 100)
+        document.getElementById("progress").classList.remove("d-none");
+
+    });
+
+    document.body.addEventListener('htmx:afterRequest', (event) => {
+        document.getElementById('html-file-successs').classList.remove('d-none')
+        // document.getElementById('image-upload').classList.add('d-none')
+        document.getElementById('progress').classList.add('d-none')
+
+        document.querySelector("input.state").value = '';
+        document.querySelector("input.city").value = '';
+        document.querySelector("input.filez").value = '';
+    });
+</script>
