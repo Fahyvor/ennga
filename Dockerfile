@@ -11,13 +11,8 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc
 
-# lint
-RUN pip install --upgrade pip
-RUN pip install flake8==6.0.0
-COPY . /usr/src/app/
-# RUN flake8 --ignore=E501,F401 .
-
 # install python dependencies
+RUN pip install --upgrade pip
 COPY ./requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
@@ -32,9 +27,8 @@ RUN addgroup --system app && adduser --system --group app
 
 # create the appropriate directories
 ENV HOME=/home/app
-ENV APP_HOME=/home/app/sleepo
-RUN mkdir $APP_HOME
-RUN mkdir $APP_HOME/staticfiles
+ENV APP_HOME=/home/app/ennga
+RUN mkdir -p $APP_HOME/static $APP_HOME/media $APP_HOME/staticfiles
 WORKDIR $APP_HOME
 
 # install dependencies
@@ -64,6 +58,6 @@ RUN chown -R app:app $APP_HOME
 # change to the app user
 USER app
 
-ENTRYPOINT ["/home/app/sleepo/entrypoint.sh"]
+ENTRYPOINT ["/home/app/ennga/entrypoint.sh"]
 
-CMD ["gunicorn", "ennga.wsgi:application", "--bind", "0.0.0.0:10000"]
+CMD ["sh", "-c", "exec gunicorn ennga.wsgi:application --bind 0.0.0.0:${PORT:-10000}"]
