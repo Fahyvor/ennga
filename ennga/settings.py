@@ -14,9 +14,7 @@ import os
 from datetime import timedelta
 from decouple import config
 from pathlib import Path
-from urllib.parse import urlparse, unquote
-
-import dj_database_url
+from urllib.parse import urlparse, unquote, parse_qs
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -127,27 +125,55 @@ SSH_LOCAL_HOST = config("SSH_LOCAL_HOST", default="127.0.0.1")
 SSH_LOCAL_PORT = str(config("SSH_LOCAL_PORT", default="3306"))
 
 if DATABASE_URL:
-    db_config = dj_database_url.parse(
-        DATABASE_URL,
-        conn_max_age=config("DB_CONN_MAX_AGE", default=0, cast=int),
-        ssl_require=True if "sslmode=require" in DATABASE_URL else False
-    )
+    url = urlparse(DATABASE_URL)
+    query_params = parse_qs(url.query)
+    scheme = url.scheme.lower()
+
+    if "postgres" in scheme:
+        engine = "django.db.backends.postgresql"
+        default_port = 5432
+    elif "mysql" in scheme:
+        engine = "django.db.backends.mysql"
+        default_port = 3306
+    elif "sqlite" in scheme:
+        engine = "django.db.backends.sqlite3"
+        default_port = None
+    else:
+        engine = scheme
+        default_port = 5432
+
+    options = {}
+    if "mysql" in engine:
+        options["charset"] = "utf8mb4"
+
+    # Extract sslmode if present or if Prisma / Supabase / Neon / Render
+    sslmode = query_params.get("sslmode", [None])[0]
+    if sslmode:
+        options["sslmode"] = sslmode
+    elif "postgres" in engine and any(cloud in (url.hostname or "") for cloud in ["prisma.io", "render.com", "supabase", "neon.tech"]):
+        options["sslmode"] = "require"
+
+    db_config = {
+        "ENGINE": engine,
+        "NAME": unquote(url.path.lstrip("/")),
+        "USER": unquote(url.username or ""),
+        "PASSWORD": unquote(url.password or ""),
+        "HOST": url.hostname or "localhost",
+        "PORT": str(url.port or default_port or ""),
+        "CONN_MAX_AGE": config("DB_CONN_MAX_AGE", default=0, cast=int),
+    }
+    if options:
+        db_config["OPTIONS"] = options
 
     # For poolers (Prisma Postgres pooled, Supabase pooler, Neon, pgBouncer):
     # Disable server side cursors to prevent transaction pooler issues
-    if "pooled" in db_config.get("HOST", "") or "pgbouncer=true" in DATABASE_URL.lower():
+    if "pooled" in (url.hostname or "") or "pgbouncer" in query_params or "pgbouncer=true" in DATABASE_URL.lower():
         db_config["DISABLE_SERVER_SIDE_CURSORS"] = True
-
-    # Character set for MySQL connections
-    if "mysql" in db_config.get("ENGINE", ""):
-        options = db_config.get("OPTIONS", {})
-        options["charset"] = "utf8mb4"
-        db_config["OPTIONS"] = options
 
     # If SSH tunnel is enabled, redirect database traffic to the local tunnel endpoint
     if USE_SSH_TUNNEL:
         db_config["HOST"] = SSH_LOCAL_HOST
-        db_config["PORT"] = int(SSH_LOCAL_PORT) if SSH_LOCAL_PORT.isdigit() else SSH_LOCAL_PORT
+        db_config["PORT"] = int(SSH_LOCAL_PORT) if str(SSH_LOCAL_PORT).isdigit() else SSH_LOCAL_PORT
 
     DATABASES = {
         "default": db_config
