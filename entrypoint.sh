@@ -8,7 +8,7 @@ set -e
 USE_SSH_TUNNEL="${USE_SSH_TUNNEL:-false}"
 SSH_TUNNEL="${SSH_TUNNEL:-false}"
 
-if [ "$USE_SSH_TUNNEL" = "true" ] || [ "$SSH_TUNNEL" = "true" ] || [ -n "$SSH_HOST" ]; then
+if [ "$USE_SSH_TUNNEL" = "true" ] || [ "$SSH_TUNNEL" = "true" ]; then
     echo "=========================================="
     echo "Configuring SSH Tunnel for Database..."
     echo "=========================================="

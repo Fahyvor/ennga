@@ -16,8 +16,7 @@ from decouple import config
 from pathlib import Path
 from urllib.parse import urlparse, unquote
 
-# import django_heroku
-# import dj_database_url
+import dj_database_url
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -116,15 +115,6 @@ WSGI_APPLICATION = 'ennga.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-# Production / Development Database
-# Supports Namecheap MySQL connection string (DATABASE_URL or PROD_DATABASE_URL) or individual credentials
 DATABASE_URL = config("DATABASE_URL", default="").strip() or config("PROD_DATABASE_URL", default="").strip()
 DB_NAME = config("DB_NAME", default="").strip()
 
@@ -132,19 +122,44 @@ DB_NAME = config("DB_NAME", default="").strip()
 USE_SSH_TUNNEL = (
     config("USE_SSH_TUNNEL", default=False, cast=bool)
     or config("SSH_TUNNEL", default=False, cast=bool)
-    or bool(config("SSH_HOST", default=""))
 )
 SSH_LOCAL_HOST = config("SSH_LOCAL_HOST", default="127.0.0.1")
 SSH_LOCAL_PORT = str(config("SSH_LOCAL_PORT", default="3306"))
 
-if DB_NAME:
+if DATABASE_URL:
+    db_config = dj_database_url.parse(
+        DATABASE_URL,
+        conn_max_age=config("DB_CONN_MAX_AGE", default=0, cast=int),
+        ssl_require=True if "sslmode=require" in DATABASE_URL else False
+    )
+
+    # For poolers (Prisma Postgres pooled, Supabase pooler, Neon, pgBouncer):
+    # Disable server side cursors to prevent transaction pooler issues
+    if "pooled" in db_config.get("HOST", "") or "pgbouncer=true" in DATABASE_URL.lower():
+        db_config["DISABLE_SERVER_SIDE_CURSORS"] = True
+
+    # Character set for MySQL connections
+    if "mysql" in db_config.get("ENGINE", ""):
+        options = db_config.get("OPTIONS", {})
+        options["charset"] = "utf8mb4"
+        db_config["OPTIONS"] = options
+
+    # If SSH tunnel is enabled, redirect database traffic to the local tunnel endpoint
+    if USE_SSH_TUNNEL:
+        db_config["HOST"] = SSH_LOCAL_HOST
+        db_config["PORT"] = int(SSH_LOCAL_PORT) if SSH_LOCAL_PORT.isdigit() else SSH_LOCAL_PORT
+
+    DATABASES = {
+        "default": db_config
+    }
+elif DB_NAME:
     db_engine_env = config("DB_ENGINE", default="mysql").lower()
     if "mysql" in db_engine_env:
         engine = "django.db.backends.mysql"
         default_port = "3306"
         options = {'charset': 'utf8mb4'}
     elif "postgres" in db_engine_env:
-        engine = "django.db.backends.postgresql_psycopg2"
+        engine = "django.db.backends.postgresql"
         default_port = "5432"
         options = {}
     elif "sqlite" in db_engine_env:
@@ -169,46 +184,6 @@ if DB_NAME:
             'NAME': DB_NAME,
             'USER': config("DB_USER", default="root"),
             'PASSWORD': config("DB_PASSWORD", default=""),
-            'HOST': db_host,
-            'PORT': db_port,
-        }
-    }
-    if options:
-        DATABASES['default']['OPTIONS'] = options
-elif DATABASE_URL:
-    url = urlparse(DATABASE_URL)
-    scheme = url.scheme.lower()
-    if 'mysql' in scheme:
-        db_engine = 'django.db.backends.mysql'
-        default_port = 3306
-        options = {'charset': 'utf8mb4'}
-    elif 'postgres' in scheme:
-        db_engine = 'django.db.backends.postgresql_psycopg2'
-        default_port = 5432
-        options = {}
-    elif 'sqlite' in scheme:
-        db_engine = 'django.db.backends.sqlite3'
-        default_port = None
-        options = {}
-    else:
-        db_engine = 'django.db.backends.mysql'
-        default_port = 3306
-        options = {'charset': 'utf8mb4'}
-
-    db_host = url.hostname or 'localhost'
-    db_port = str(url.port or default_port or '')
-
-    # If SSH tunnel is enabled, redirect database traffic to the local tunnel endpoint
-    if USE_SSH_TUNNEL:
-        db_host = SSH_LOCAL_HOST
-        db_port = SSH_LOCAL_PORT
-
-    DATABASES = {
-        'default': {
-            'ENGINE': db_engine,
-            'NAME': unquote(url.path.lstrip('/')),
-            'USER': unquote(url.username or ''),
-            'PASSWORD': unquote(url.password or ''),
             'HOST': db_host,
             'PORT': db_port,
         }
