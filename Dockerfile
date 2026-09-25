@@ -28,12 +28,13 @@ RUN addgroup --system app && adduser --system --group app
 # create the appropriate directories
 ENV HOME=/home/app
 ENV APP_HOME=/home/app/ennga
-RUN mkdir -p $APP_HOME/static $APP_HOME/media $APP_HOME/staticfiles
+RUN mkdir -p $APP_HOME/static $APP_HOME/media $APP_HOME/staticfiles /home/app/.ssh && \
+    chmod 700 /home/app/.ssh
 WORKDIR $APP_HOME
 
 # install dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends netcat-openbsd && \
+    apt-get install -y --no-install-recommends netcat-openbsd openssh-client autossh sshpass && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
@@ -53,7 +54,7 @@ RUN chmod +x $APP_HOME/wait-for-it.sh
 COPY . $APP_HOME
 
 # chown all the files to the app user
-RUN chown -R app:app $APP_HOME
+RUN chown -R app:app $APP_HOME /home/app/.ssh
 
 # change to the app user
 USER app

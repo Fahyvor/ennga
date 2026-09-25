@@ -124,9 +124,18 @@ WSGI_APPLICATION = 'ennga.wsgi.application'
 # }
 
 # Production / Development Database
-# Supports Namecheap MySQL connection string (DATABASE_URL) or individual credentials
-DATABASE_URL = config("DATABASE_URL", default="").strip()
+# Supports Namecheap MySQL connection string (DATABASE_URL or PROD_DATABASE_URL) or individual credentials
+DATABASE_URL = config("DATABASE_URL", default="").strip() or config("PROD_DATABASE_URL", default="").strip()
 DB_NAME = config("DB_NAME", default="").strip()
+
+# Check if SSH Tunnel is active (for Namecheap cPanel remote MySQL on Render)
+USE_SSH_TUNNEL = (
+    config("USE_SSH_TUNNEL", default=False, cast=bool)
+    or config("SSH_TUNNEL", default=False, cast=bool)
+    or bool(config("SSH_HOST", default=""))
+)
+SSH_LOCAL_HOST = config("SSH_LOCAL_HOST", default="127.0.0.1")
+SSH_LOCAL_PORT = str(config("SSH_LOCAL_PORT", default="3306"))
 
 if DATABASE_URL:
     url = urlparse(DATABASE_URL)
@@ -148,14 +157,22 @@ if DATABASE_URL:
         default_port = 3306
         options = {'charset': 'utf8mb4'}
 
+    db_host = url.hostname or 'localhost'
+    db_port = str(url.port or default_port or '')
+
+    # If SSH tunnel is enabled, redirect database traffic to the local tunnel endpoint
+    if USE_SSH_TUNNEL:
+        db_host = SSH_LOCAL_HOST
+        db_port = SSH_LOCAL_PORT
+
     DATABASES = {
         'default': {
             'ENGINE': db_engine,
             'NAME': unquote(url.path.lstrip('/')),
             'USER': unquote(url.username or ''),
             'PASSWORD': unquote(url.password or ''),
-            'HOST': url.hostname or 'localhost',
-            'PORT': str(url.port or default_port or ''),
+            'HOST': db_host,
+            'PORT': db_port,
         }
     }
     if options:
@@ -175,14 +192,21 @@ elif DB_NAME:
         default_port = "3306"
         options = {}
 
+    db_host = config("DB_HOST", default="localhost")
+    db_port = config("DB_PORT", default=default_port)
+
+    if USE_SSH_TUNNEL:
+        db_host = SSH_LOCAL_HOST
+        db_port = SSH_LOCAL_PORT
+
     DATABASES = {
         'default': {
             'ENGINE': engine,
             'NAME': DB_NAME,
             'USER': config("DB_USER", default="root"),
             'PASSWORD': config("DB_PASSWORD", default=""),
-            'HOST': config("DB_HOST", default="localhost"),
-            'PORT': config("DB_PORT", default=default_port),
+            'HOST': db_host,
+            'PORT': db_port,
             'OPTIONS': options,
         }
     }
@@ -252,30 +276,34 @@ DEFAULT_FROM_EMAIL='Ennga.com <ennga@kulenga.org>'
 
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-MAILJET_API_KEY = config("MAILJET_API_KEY")
-MAILJET_SECRET_KEY = config("MAILJET_SECRET_KEY")
+MAILJET_API_KEY = config("MAILJET_API_KEY", default="")
+MAILJET_SECRET_KEY = config("MAILJET_SECRET_KEY", default="")
 
 # Mailjet settings
-EMAIL_BACKEND = "anymail.backends.mailjet.EmailBackend"  # or sendgrid.EmailBackend, or...
-ANYMAIL = {
-    "MAILJET_API_KEY": MAILJET_API_KEY,
-    "MAILJET_SECRET_KEY": MAILJET_SECRET_KEY,
-}
+if MAILJET_API_KEY and MAILJET_SECRET_KEY:
+    EMAIL_BACKEND = "anymail.backends.mailjet.EmailBackend"
+    ANYMAIL = {
+        "MAILJET_API_KEY": MAILJET_API_KEY,
+        "MAILJET_SECRET_KEY": MAILJET_SECRET_KEY,
+    }
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME")
-AWS_S3_CUSTOM_DOMAIN = config("AWS_S3_CUSTOM_DOMAIN")
-AWS_S3_REGION_NAME = config("AWS_S3_REGION_NAME")
+AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", default="")
+AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", default="")
+AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME", default="")
+AWS_S3_CUSTOM_DOMAIN = config("AWS_S3_CUSTOM_DOMAIN", default="")
+AWS_S3_REGION_NAME = config("AWS_S3_REGION_NAME", default="")
 
-AWS_S3_FILE_OVERWRITE = False
-AWS_DEFAULT_ACL = None
-
-AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
-# AWS_DEFAULT_ACL = 'public-read'
-AWS_QUERYSTRING_AUTH = False
-AWS_QUERYSTRING_EXPIRE = 60*60*24*365*10
+if AWS_STORAGE_BUCKET_NAME and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+    AWS_QUERYSTRING_AUTH = False
+    AWS_QUERYSTRING_EXPIRE = 60*60*24*365*10
+else:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 ############################################### End of Development ########################################
 
