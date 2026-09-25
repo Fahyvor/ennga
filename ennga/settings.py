@@ -113,8 +113,11 @@ WSGI_APPLICATION = 'ennga.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-DATABASE_URL = config("DATABASE_URL", default="").strip() or config("PROD_DATABASE_URL", default="").strip()
-DB_NAME = config("DB_NAME", default="").strip()
+DATABASE_URL = (
+    config("DATABASE_URL", default="").strip().strip("\"'")
+    or config("PROD_DATABASE_URL", default="").strip().strip("\"'")
+)
+DB_NAME = config("DB_NAME", default="").strip().strip("\"'")
 
 # Check if SSH Tunnel is active (for Namecheap cPanel remote MySQL on Render)
 USE_SSH_TUNNEL = (
