@@ -86,13 +86,15 @@ class CustomRegistrationSerializer(serializers.ModelSerializer):
             first_name=first_name,
             last_name=last_name,
             activate_account_code=_activate_account_code,
-            is_active=False,
+            # is_active=False,  # Email verification enforcement commented out
+            is_active=True,
         )
 
         user.set_password(validated_data['password'])
         user.save()
         new_account_id = user.id
-        email = send_password_activate_token_to_user(new_account_id)
+        # Email verification token sending commented out
+        # email = send_password_activate_token_to_user(new_account_id)
         return user
     
 

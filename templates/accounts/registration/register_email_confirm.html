@@ -5,25 +5,328 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'assets/auth_pages_css/login.css' %}">
-    <title>Account Email Sent</title>
+    <title>Verify Your Email | ENNGA Platform</title>
+
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 4 / 5 grid & utilities -->
+    <link rel="stylesheet" href="{% static 'dashboard/css/bootstrap1.min.css' %}" />
+
+    <style>
+      :root {
+        --brand-dark: #20222A;
+        --brand-slate: #2b2d38;
+        --brand-cyan: #C4F2F4;
+        --brand-cyan-hover: #a1ecf0;
+        --brand-muted: #707DB7;
+        --brand-accent: #00d2d3;
+        --bg-canvas: #0f1015;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #14151b 0%, #20222A 60%, #171821 100%);
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      /* Ambient Background Glows */
+      .ambient-glow-1 {
+        position: absolute;
+        top: -100px;
+        left: -60px;
+        width: 360px;
+        height: 360px;
+        background: radial-gradient(circle, rgba(196, 242, 244, 0.12) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .ambient-glow-2 {
+        position: absolute;
+        bottom: -100px;
+        right: -60px;
+        width: 380px;
+        height: 380px;
+        background: radial-gradient(circle, rgba(112, 125, 183, 0.14) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .auth-container {
+        width: 100%;
+        max-width: 520px;
+        padding: 24px;
+        z-index: 2;
+        animation: fadeIn 0.4s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .auth-brand {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .auth-brand .logo-text {
+        font-family: 'Outfit', sans-serif;
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: #ffffff;
+        margin: 0;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .auth-brand .logo-text span {
+        color: var(--brand-cyan);
+      }
+
+      .auth-card {
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 44px 36px;
+        text-align: center;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        position: relative;
+      }
+
+      .icon-container {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .icon-pulse {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: rgba(196, 242, 244, 0.4);
+        animation: pulse 2.4s infinite;
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(0.9); opacity: 0.8; }
+        50% { transform: scale(1.15); opacity: 0.3; }
+        100% { transform: scale(0.9); opacity: 0.8; }
+      }
+
+      .icon-badge {
+        position: relative;
+        width: 68px;
+        height: 68px;
+        background: linear-gradient(135deg, #20222A 0%, #2b2d38 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--brand-cyan);
+        box-shadow: 0 10px 20px -5px rgba(32, 34, 42, 0.4);
+      }
+
+      .icon-badge svg {
+        width: 32px;
+        height: 32px;
+      }
+
+      .auth-card h2 {
+        font-family: 'Outfit', sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--brand-dark);
+        margin: 0 0 12px;
+      }
+
+      .auth-card p.subtitle {
+        color: #64748b;
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+
+      .email-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 30px;
+        color: var(--brand-dark);
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 24px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .info-box {
+        background: #f8fafc;
+        border-radius: 14px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        text-align: left;
+        margin-bottom: 28px;
+      }
+
+      .info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 13px;
+        color: #475569;
+        margin-bottom: 8px;
+      }
+
+      .info-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .info-item svg {
+        width: 18px;
+        height: 18px;
+        color: #0284c7;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .actions-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .btn-primary-action {
+        display: block;
+        width: 100%;
+        padding: 13px 20px;
+        background-color: var(--brand-dark);
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+      }
+
+      .btn-primary-action:hover {
+        background-color: var(--brand-slate);
+        color: var(--brand-cyan);
+        text-decoration: none;
+        box-shadow: 0 8px 20px -6px rgba(32, 34, 42, 0.4);
+      }
+
+      .btn-secondary-action {
+        display: block;
+        width: 100%;
+        padding: 12px 20px;
+        background: transparent;
+        color: #64748b;
+        text-decoration: none;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+      }
+
+      .btn-secondary-action:hover {
+        background: #f8fafc;
+        color: var(--brand-dark);
+        border-color: #cbd5e1;
+        text-decoration: none;
+      }
+    </style>
 </head>
 <body>
-    <div class="signInScreen">
-        <header class="header__img">
-          <a href="{% url 'public:home' %}">
-            <img src="{% static 'assets/assets/logo.png' %}" alt='company-logo'/>
-          </a>
-        </header>
-        <section class="section">
-            <div class="container form activation-email-container">
-                <div class="activation-email-wrapper">
-                    <h2>Account Activation Email sent.</h2>
-                <p>Check your email to activate your account</p>
-                </div>
-            </div>
-        </section>
-      
+
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <div class="auth-container">
+    <div class="auth-brand">
+      <a href="{% url 'public:home' %}" style="text-decoration: none;">
+        <p class="logo-text"><span>E</span>nnga</p>
+      </a>
+    </div>
+
+    <div class="auth-card">
+      <div class="icon-container">
+        <div class="icon-pulse"></div>
+        <div class="icon-badge">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+        </div>
       </div>
+
+      <h2>Verify Your Email Address</h2>
+      
+      <p class="subtitle">
+        We have dispatched an activation link to your email. Please click the link inside to complete your registration.
+      </p>
+
+      {% if form.cleaned_data.email %}
+      <div class="email-pill">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+          <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+        </svg>
+        <span>{{ form.cleaned_data.email }}</span>
+      </div>
+      {% endif %}
+
+      <div class="info-box">
+        <div class="info-item">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>If you don't see the email within a couple minutes, please check your <strong>Spam</strong> or <strong>Junk</strong> folder.</span>
+        </div>
+        <div class="info-item">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>The activation link will remain valid for 24 hours.</span>
+        </div>
+      </div>
+
+      <div class="actions-group">
+        <a href="{% url 'accounts:login' %}" class="btn-primary-action">
+          Proceed to Sign In
+        </a>
+        <a href="{% url 'public:home' %}" class="btn-secondary-action">
+          Return to Home
+        </a>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

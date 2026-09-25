@@ -65,41 +65,47 @@ def register_view(request):
 
             user.username = str(users_alphabets) + str(users_number)
             # user.sex = form.cleaned_data['sex']            
-            user.is_active = False
-            user.save()
-            new_user_id = user.id
-            id = new_user_id
-
-
-            print("THis is just the id, lol: " + str(id))
-            current_site = get_current_site(request)
-            mail_subject = 'Activate your account.'
-            to_email = form.cleaned_data["email"]
             
-            context =  {
-                'user': user,
-                'domain': current_site.domain,
-                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                'token': account_activation_token.make_token(user),
-            }
-            html_tpl_path = 'accounts/registration/account_activation_email.html'
-            email_html_template = get_template(html_tpl_path).render(context)
+            # --- EMAIL VERIFICATION ENFORCEMENT COMMENTED OUT ---
+            # user.is_active = False
+            # user.save()
+            # new_user_id = user.id
+            # id = new_user_id
+            # 
+            # print("THis is just the id, lol: " + str(id))
+            # current_site = get_current_site(request)
+            # mail_subject = 'Activate your account.'
+            # to_email = form.cleaned_data["email"]
+            # 
+            # context =  {
+            #     'user': user,
+            #     'domain': current_site.domain,
+            #     'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+            #     'token': account_activation_token.make_token(user),
+            # }
+            # html_tpl_path = 'accounts/registration/account_activation_email.html'
+            # email_html_template = get_template(html_tpl_path).render(context)
+            # 
+            # email_msg = EmailMessage(
+            #     mail_subject,
+            #     email_html_template, 
+            #     [settings.DEFAULT_FROM_EMAIL,], # From Email
+            #     [to_email], # To Email
+            #     reply_to=[settings.DEFAULT_FROM_EMAIL,]
+            # )
+            # email_msg.content_subtype = 'html'
+            # email_msg.send(fail_silently=False)
+            # return render(request, "accounts/registration/register_email_confirm.html", {"form": form})
+            # ----------------------------------------------------
 
-            email_msg = EmailMessage(
-                mail_subject,
-                email_html_template, 
-                [settings.DEFAULT_FROM_EMAIL,], # From Email
-                [to_email], # To Email
-                reply_to=[settings.DEFAULT_FROM_EMAIL,]
-            )
-            # this is the crucial part that sends email as html content but not as a plain text
-            email_msg.content_subtype = 'html'
-            email_msg.send(fail_silently=False)
-            # return email_msg
+            # Account is activated immediately upon registration
+            user.is_active = True
+            user.save()
 
-
-            print('registration successful')
-            return render(request, "accounts/registration/register_email_confirm.html", {"form": form})
+            # Automatically log the user in
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            messages.success(request, f"Welcome to Ennga, {user.first_name or user.username}! Your account has been registered successfully.")
+            return redirect("public:home")
         else:
             return render(request, 'accounts/register.html', {"form": form, "registration_form": form})
 

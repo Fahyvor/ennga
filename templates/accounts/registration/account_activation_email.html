@@ -1,104 +1,114 @@
-{% load static %}
-<!doctype html>
-<html lang="en">
-
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-
-    <title>Ennga Emails</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activate Your Ennga Account</title>
+    <!--[if mso]>
+    <style type="text/css">
+      body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
+    </style>
+    <![endif]-->
 </head>
-
-<body>
+<body style="margin: 0; padding: 0; background-color: #0f1015; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
   
-  <table class="body-wrap" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; width: 100%; background-color: #f6f6f6; margin: 0;" bgcolor="#f6f6f6">
-  <tbody>
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background: linear-gradient(135deg, #14151b 0%, #20222A 60%, #171821 100%); background-color: #14151b; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <!-- Main Email Container (600px max) -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; width: 100%;">
+          
+          <!-- Logo / Header -->
+          <tr>
+            <td align="center" style="padding-bottom: 28px;">
+              <a href="http://{{ domain }}" target="_blank" style="text-decoration: none; display: inline-block;">
+                <span style="font-size: 32px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
+                  <span style="color: #C4F2F4;">E</span>nnga
+                </span>
+              </a>
+            </td>
+          </tr>
 
-   
+          <!-- Main Content Card -->
+          <tr>
+            <td style="background-color: #ffffff; border-radius: 20px; padding: 40px 36px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: left;">
+              
+              <!-- Icon Badge -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center" style="width: 56px; height: 56px; background-color: #20222A; border-radius: 16px; text-align: center;">
+                    <span style="font-size: 26px; line-height: 56px; color: #C4F2F4;">✉️</span>
+                  </td>
+                </tr>
+              </table>
 
-      <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
+              <!-- Greeting & Headline -->
+              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #1e293b; line-height: 1.3;">
+                Confirm Your Email Address
+              </h1>
 
-        
+              <p style="margin: 0 0 16px; font-size: 15px; color: #475569; line-height: 1.6;">
+                Hello <strong>{{ user.first_name|default:user.username }}</strong>,
+              </p>
 
+              <p style="margin: 0 0 28px; font-size: 15px; color: #475569; line-height: 1.6;">
+                Welcome to <strong>Ennga</strong>! Please confirm your email address to activate your account and access all platform features.
+              </p>
 
-          <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0;" valign="top"></td>
-          <td class="container" width="600" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; display: block !important; max-width: 600px !important; clear: both !important; margin: 0 auto;" valign="top">
-              <div class="content" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; max-width: 600px; display: block; margin: 0 auto; padding: 20px;">
-                  <table class="main" width="100%" cellpadding="0" cellspacing="0" itemprop="action" itemscope="" itemtype="http://schema.org/ConfirmAction" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; border-radius: 3px; margin: 0; border: none;">
-                      <tbody><tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-                          <td class="content-wrap" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0;padding: 30px;border-radius: 7px; background-color: #fff;" valign="top">
-                              <meta itemprop="name" content="Confirm Email" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-                              
+              <!-- CTA Button -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 30px;">
+                <tr>
+                  <td align="center">
+                    <a href="http://{{ domain }}{% url 'accounts:activate' uidb64=uid token=token %}" 
+                       target="_blank" 
+                       style="display: inline-block; background-color: #20222A; color: #C4F2F4; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 12px; box-shadow: 0 8px 20px rgba(32, 34, 42, 0.35); text-align: center;">
+                      Verify & Activate Account &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
 
+              <!-- Divider -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
+                <tr>
+                  <td style="border-top: 1px solid #e2e8f0; height: 1px;"></td>
+                </tr>
+              </table>
 
-                              <table width="100%" cellpadding="0" cellspacing="0" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-                                  <tbody><tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
+              <!-- Fallback Link -->
+              <p style="margin: 0 0 8px; font-size: 13px; color: #64748b; line-height: 1.5;">
+                Button not working? Copy and paste this link into your browser:
+              </p>
+              <p style="margin: 0 0 24px; font-size: 12px; line-height: 1.5; word-break: break-all;">
+                <a href="http://{{ domain }}{% url 'accounts:activate' uidb64=uid token=token %}" target="_blank" style="color: #0284c7; text-decoration: underline;">
+                  http://{{ domain }}{% url 'accounts:activate' uidb64=uid token=token %}
+                </a>
+              </p>
+              
+              <!-- Security Footnote -->
+              <p style="margin: 0; font-size: 13px; color: #94a3b8; line-height: 1.5;">
+                If you did not sign up for an Ennga account, you can safely ignore this email.
+              </p>
 
-                                    
+            </td>
+          </tr>
 
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding-top: 28px; text-align: center;">
+              <p style="margin: 0 0 8px; font-size: 12px; color: #707DB7;">
+                &copy; 2026 Ennga Platform. All rights reserved.
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #475569;">
+                Empowering data, connections, and growth.
+              </p>
+            </td>
+          </tr>
 
-                                      <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;" valign="top">
-                                        Welcome, please copy the link below or click on the button to confirm your email address.
-                                      </td>
-
-                                      <!-- <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;" valign="top">
-                                      
-                                    </td> -->
-                                  </tr>
-                                  <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-                                      <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;" valign="top">
-                                        http://{{ domain }}{% url 'accounts:activate' uidb64=uid token=token %}
-                                      </td>
-                                  </tr><br><br>
-                                  
-                                  <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-                                    <td class="content-block" itemprop="handler" itemscope="" itemtype="http://schema.org/HttpActionHandler" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;" valign="top">
-                                        <a href="http://{{ domain }}{% url 'accounts:activate' uidb64=uid token=token %}" class="btn-primary" itemprop="url" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; color: #FFF; text-decoration: none; line-height: 2em; font-weight: bold; text-align: center; cursor: pointer; display: inline-block; border-radius: 5px; text-transform: capitalize; background-color: #0D6EFD; margin: 0; border-color: #0D6EFD; border-style: solid; border-width: 8px 16px;">
-                                          Confirm Email
-                                        </a>
-                                    </td>
-                                </tr>
-
-
-                                  <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-                                      <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 5px;" valign="top">
-                                          <b>Ennga</b>
-                                          <p>Support Team</p>
-                                      </td>
-                                  </tr>
-
-                                  <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
-                                      <td class="content-block" style="text-align: center;font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0;" valign="top">
-                                         &copy; 2023 Ennga
-                                      </td>
-                                  </tr>
-                              </tbody></table>
-                          </td>
-                      </tr>
-                  </tbody></table>
-              </div>
-          </td>
-      </tr>
-  </tbody>
-</table>
-
+        </table>
+      </td>
+    </tr>
+  </table>
 
 </body>
-
 </html>
-
-
-
-
-
-
-
-
-
-
-
