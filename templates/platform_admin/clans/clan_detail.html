@@ -1,0 +1,784 @@
+{% extends 'base-dashboard-new.html' %}
+{% load static %}
+{% block content %}
+
+<div class="main_content_iner overly_inner p-4">
+  <div class="container-fluid p-0">
+
+    {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+      <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show en-card p-3 d-flex align-items-center justify-content-between" role="alert" style="border-left: 4px solid var(--brand-dark);">
+        <div class="d-flex align-items-center">
+          <span class="mr-2">{% if message.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
+          <strong>{{ message }}</strong>
+        </div>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="background: none; border: none; font-size: 20px;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Breadcrumb & Top Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2">
+      <div>
+        <div class="d-flex align-items-center mb-2" style="gap: 8px;">
+          <a href="{% url 'platform_admin:clan-list' %}" class="text-muted" style="font-size: 13px; text-decoration: none;">
+            &larr; Back to Clans Directory
+          </a>
+          <span class="text-muted" style="font-size: 12px;">/</span>
+          <span class="pill-badge pill-badge-cyan" style="font-size: 11px; font-weight: 700;">{{ clan.display_node_id }}</span>
+          <span class="text-muted ml-1" style="font-size: 12px;">#{{ clan.id }}</span>
+        </div>
+        <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
+          <h2 class="font-weight-700 mb-0" style="color: var(--brand-dark);">
+            {{ clan.name }}
+          </h2>
+          {% if can_manage %}
+            <span class="pill-badge pill-badge-cyan" style="font-size: 12px;">
+              ✓ You Have Edit Access
+            </span>
+          {% else %}
+            <span class="pill-badge pill-badge-subclan" style="font-size: 12px;">
+              Read-Only
+            </span>
+          {% endif %}
+        </div>
+        <p class="text-muted mb-0 mt-1" style="font-size: 14px;">
+          📍 {{ clan.city.name|default:"City Unspecified" }}, {{ clan.state.name|default:"State Unspecified" }} &bull; {{ clan.geo_political_zone.name|default:"Zone Unspecified" }}
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="mt-3 mt-md-0 d-flex flex-wrap gap-2" style="gap: 8px;">
+        {% if can_manage %}
+          <button type="button" class="btn btn-en-cyan js-open-edit-clan-modal" data-toggle="modal" data-target="#editClanModal" data-bs-toggle="modal" data-bs-target="#editClanModal">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Edit Clan
+          </button>
+
+          <button type="button" class="btn btn-en-primary js-open-add-subclan-modal" data-toggle="modal" data-target="#addSubClanModal" data-bs-toggle="modal" data-bs-target="#addSubClanModal">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Sub-Clan
+          </button>
+
+          <button type="button" class="btn btn-en-outline js-open-grant-modal" data-toggle="modal" data-target="#grantAccessModal" data-bs-toggle="modal" data-bs-target="#grantAccessModal">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <line x1="20" y1="8" x2="20" y2="14"></line>
+              <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
+            Grant Access
+          </button>
+        {% endif %}
+
+        {% if is_admin %}
+          <form method="post" action="{% url 'platform_admin:clan-delete' pk=clan.id %}" onsubmit="return confirm('Are you sure you want to archive/delete {{ clan.name }} Clan?');" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-en-sm" style="border-radius: 10px; height: 42px; padding: 0 14px;">
+              Archive Clan
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-3">
+        <div class="stat-card-modern">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Sub-Clans</p>
+              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ subclans_count }}</h3>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(124, 58, 237, 0.12); display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 20px;">📍</span>
+            </div>
+          </div>
+          <small class="text-muted mt-2 d-block">Sub-clan units attached</small>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-3">
+        <div class="stat-card-modern">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Managers</p>
+              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ assigned_managers.count }}</h3>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(196, 242, 244, 0.25); display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 20px;">🛡️</span>
+            </div>
+          </div>
+          <small class="text-muted mt-2 d-block">Users with management access</small>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-3">
+        <div class="stat-card-modern">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Historical Records</p>
+              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ historical_count }}</h3>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(32, 34, 42, 0.08); display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 20px;">🏛️</span>
+            </div>
+          </div>
+          <small class="text-muted mt-2 d-block">Cultural/history datasets</small>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-3">
+        <div class="stat-card-modern">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Sector & Geo Data</p>
+              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ market_count|add:geo_count }}</h3>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(14, 116, 144, 0.15); display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 20px;">📊</span>
+            </div>
+          </div>
+          <small class="text-muted mt-2 d-block">Market ({{ market_count }}) & Geo ({{ geo_count }})</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Entry Quick Bar -->
+    <div class="en-card p-3 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center" style="background: linear-gradient(135deg, rgba(196,242,244,0.12) 0%, rgba(255,255,255,0.8) 100%);">
+      <div class="mb-2 mb-md-0">
+        <strong style="color: var(--brand-dark); font-size: 14px;">Input Data For {{ clan.name }} Clan:</strong>
+        <p class="text-muted mb-0" style="font-size: 12px;">Add cultural, market, or geographic records directly under this clan node.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2" style="gap: 8px;">
+        <a href="{% url 'platform_admin:historical-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-primary btn-en-sm font-weight-600">
+          🏛️ Add Historical Record
+        </a>
+        <a href="{% url 'platform_admin:market-sector-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-cyan btn-en-sm font-weight-600">
+          📊 Add Market Sector Record
+        </a>
+        <a href="{% url 'platform_admin:geo-physical-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-outline btn-en-sm font-weight-600">
+          🌍 Add Geo-Physical Record
+        </a>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Left Column: Sub-Clans & Data Records -->
+      <div class="col-lg-8">
+
+        <!-- Card: Sub-Clans Management -->
+        <div class="en-card mb-4">
+          <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
+            <div>
+              <h4 class="font-weight-700 mb-1" style="color: var(--brand-dark); font-size: 17px;">
+                Sub-Clans ({{ subclans_count }})
+              </h4>
+              <p class="text-muted mb-0" style="font-size: 13px;">
+                Sub-clans belonging to {{ clan.name }} Clan. Authorized managers can create and edit these.
+              </p>
+            </div>
+            {% if can_manage %}
+              <button type="button" class="btn btn-en-primary btn-en-sm font-weight-600 js-open-add-subclan-modal" data-toggle="modal" data-target="#addSubClanModal" data-bs-toggle="modal" data-bs-target="#addSubClanModal" style="cursor: pointer;">
+                + Add Sub-Clan
+              </button>
+            {% endif %}
+          </div>
+
+          <div class="table-responsive">
+            <table class="table-modern">
+              <thead>
+                <tr>
+                  <th>Sub-Clan Name</th>
+                  <th>Location</th>
+                  <th>Managers</th>
+                  {% if can_manage %}
+                    <th class="text-right">Actions</th>
+                  {% endif %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for sc in subclans %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <span class="mr-2">📍</span>
+                      <div>
+                        <strong style="color: var(--brand-dark); font-size: 14px;">{{ sc.name }}</strong>
+                        <div class="mt-1">
+                          <span class="pill-badge pill-badge-subclan" style="font-size: 11px;">{{ sc.display_node_id }}</span>
+                          <span class="pill-badge pill-badge-cyan ml-1" style="font-size: 10px;">{{ sc.get_node_type_display|default:sc.node_type }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="text-muted" style="font-size: 13px;">
+                      {% if sc.city %}{{ sc.city.name }}{% elif clan.city %}{{ clan.city.name }}{% else %}-{% endif %}, 
+                      {% if sc.state %}{{ sc.state.name }}{% elif clan.state %}{{ clan.state.name }}{% else %}-{% endif %}
+                    </span>
+                  </td>
+                  <td>
+                    {% with sc_mgrs=sc.managers.all %}
+                      {% if sc_mgrs %}
+                        <div class="d-flex align-items-center" style="gap: 4px;">
+                          {% for mgr in sc_mgrs %}
+                            <div class="user-avatar-chip" style="width: 24px; height: 24px; font-size: 10px;" title="{{ mgr.user.username }}">
+                              {{ mgr.user.first_name|slice:":1"|default:mgr.user.username|slice:":1"|upper }}
+                            </div>
+                          {% endfor %}
+                        </div>
+                      {% else %}
+                        <span class="text-muted" style="font-size: 12px; font-style: italic;">Inherits Clan Managers</span>
+                      {% endif %}
+                    {% endwith %}
+                  </td>
+                  {% if can_manage %}
+                  <td class="text-right">
+                    <div class="d-inline-flex align-items-center" style="gap: 6px;">
+                      <button type="button" class="btn btn-en-outline btn-en-sm py-1 px-2 js-open-edit-subclan-modal" data-toggle="modal" data-target="#editSubClanModal{{ sc.id }}" data-bs-toggle="modal" data-bs-target="#editSubClanModal{{ sc.id }}" title="Edit Sub-Clan">
+                        ✏️ Edit
+                      </button>
+                      <form method="post" action="{% url 'platform_admin:subclan-delete' pk=sc.id %}" onsubmit="return confirm('Archive sub-clan {{ sc.name }}?');" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="btn btn-outline-danger btn-en-sm py-1 px-2" title="Delete Sub-Clan">
+                          🗑️
+                        </button>
+                      </form>
+                    </div>
+
+                    <!-- Modal: Edit Sub-Clan {{ sc.id }} -->
+                    <div class="modal fade text-left" id="editSubClanModal{{ sc.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered" role="document">
+                        <div class="modal-content en-card p-3" style="border-radius: 20px;">
+                          <div class="modal-header border-0 pb-0">
+                            <h5 class="modal-title font-weight-700" style="color: var(--brand-dark);">
+                              ✏️ Edit Sub-Clan: {{ sc.name }}
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                          </div>
+                          <form method="post" action="{% url 'platform_admin:subclan-edit' pk=sc.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <div class="modal-body pt-3">
+                              <div class="form-group mb-3">
+                                <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Sub-Clan Name</label>
+                                <input type="text" name="name" value="{{ sc.name }}" class="form-control form-control-modern" required>
+                              </div>
+                            </div>
+                            <div class="modal-footer border-0 pt-0">
+                              <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+                              <button type="submit" class="btn btn-en-cyan font-weight-600">Save Changes</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="{% if can_manage %}4{% else %}3{% endif %}" class="text-center py-4 text-muted">
+                    <span style="font-size: 28px; display: block; margin-bottom: 6px;">📍</span>
+                    <p class="mb-2" style="font-size: 13px;">No sub-clans have been registered under this clan yet.</p>
+                    {% if can_manage %}
+                      <button type="button" class="btn btn-en-cyan btn-en-sm font-weight-600 js-open-add-subclan-modal" data-toggle="modal" data-target="#addSubClanModal" data-bs-toggle="modal" data-bs-target="#addSubClanModal" style="cursor: pointer;">
+                        + Add First Sub-Clan
+                      </button>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Card: Clan Data Records -->
+        <div class="en-card mb-4">
+          <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
+            <div>
+              <h4 class="font-weight-700 mb-1" style="color: var(--brand-dark); font-size: 17px;">
+                Collected Data Records
+              </h4>
+              <p class="text-muted mb-0" style="font-size: 13px;">
+                Historical, Market Sector, and Geo-Physical data records stored under {{ clan.name }} Clan.
+              </p>
+            </div>
+          </div>
+
+          <div class="p-4">
+            <!-- Tabs for Data types -->
+            <ul class="nav nav-tabs mb-3" style="border-bottom: 2px solid var(--border-color);">
+              <li class="nav-item">
+                <a class="nav-link active font-weight-600 text-dark" data-toggle="tab" href="#tab-historical">
+                  🏛️ Historical ({{ historical_count }})
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link font-weight-600 text-dark" data-toggle="tab" href="#tab-market">
+                  📊 Market Sector ({{ market_count }})
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link font-weight-600 text-dark" data-toggle="tab" href="#tab-geo">
+                  🌍 Geo-Physical ({{ geo_count }})
+                </a>
+              </li>
+            </ul>
+
+            <div class="tab-content pt-2">
+              <!-- Historical tab -->
+              <div class="tab-pane fade show active" id="tab-historical">
+                {% if historical_records %}
+                  <div class="list-group list-group-flush">
+                    {% for h in historical_records %}
+                      <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
+                        <div>
+                          <a href="{% url 'platform_admin:historical-detail-view' pk=h.id %}" class="font-weight-600" style="color: var(--brand-dark);">
+                            {{ h.category.name|default:"Historical Record" }}
+                          </a>
+                          <div class="text-muted" style="font-size: 12px;">Added on {{ h.date_created|date:"M d, Y" }} &bull; By {{ h.user.user.username|default:"Admin" }}</div>
+                        </div>
+                        <a href="{% url 'platform_admin:historical-detail-view' pk=h.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2">
+                          View / Edit &rarr;
+                        </a>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <p class="text-muted py-3 text-center" style="font-size: 13px;">No Historical records entered yet for this clan.</p>
+                {% endif %}
+              </div>
+
+              <!-- Market tab -->
+              <div class="tab-pane fade" id="tab-market">
+                {% if market_records %}
+                  <div class="list-group list-group-flush">
+                    {% for m in market_records %}
+                      <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
+                        <div>
+                          <a href="{% url 'platform_admin:market-sector-detail-view' pk=m.id %}" class="font-weight-600" style="color: var(--brand-dark);">
+                            {{ m.category.name|default:"Market Record" }} {% if m.sub_category %}({{ m.sub_category.name }}){% endif %}
+                          </a>
+                          <div class="text-muted" style="font-size: 12px;">Added on {{ m.date_created|date:"M d, Y" }}</div>
+                        </div>
+                        <a href="{% url 'platform_admin:market-sector-detail-view' pk=m.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2">
+                          View / Edit &rarr;
+                        </a>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <p class="text-muted py-3 text-center" style="font-size: 13px;">No Market Sector records entered yet for this clan.</p>
+                {% endif %}
+              </div>
+
+              <!-- Geo tab -->
+              <div class="tab-pane fade" id="tab-geo">
+                {% if geo_records %}
+                  <div class="list-group list-group-flush">
+                    {% for g in geo_records %}
+                      <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
+                        <div>
+                          <a href="{% url 'platform_admin:geo-physical-detail-view' pk=g.id %}" class="font-weight-600" style="color: var(--brand-dark);">
+                            {{ g.category.name|default:"Geo Record" }}
+                          </a>
+                          <div class="text-muted" style="font-size: 12px;">Added on {{ g.date_created|date:"M d, Y" }}</div>
+                        </div>
+                        <a href="{% url 'platform_admin:geo-physical-detail-view' pk=g.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2">
+                          View / Edit &rarr;
+                        </a>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <p class="text-muted py-3 text-center" style="font-size: 13px;">No Geo-Physical records entered yet for this clan.</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Managers & Access Delegation -->
+      <div class="col-lg-4">
+
+        <!-- Card: Access Delegation / Managers -->
+        <div class="en-card mb-4">
+          <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
+            <div>
+              <h5 class="font-weight-700 mb-0" style="color: var(--brand-dark); font-size: 16px;">
+                Authorized Managers
+              </h5>
+              <small class="text-muted">Users delegated to edit & submit data</small>
+            </div>
+            {% if can_manage %}
+              <button type="button" class="btn btn-en-cyan btn-en-sm py-1 px-2 font-weight-600 js-open-grant-modal" data-toggle="modal" data-target="#grantAccessModal" data-bs-toggle="modal" data-bs-target="#grantAccessModal" style="cursor: pointer;">
+                + Grant Access
+              </button>
+            {% endif %}
+          </div>
+
+          <div class="p-3">
+            <p class="text-muted mb-3" style="font-size: 12px;">
+              Users granted access have full authority to modify this clan, add sub-clans, and submit Historical, Market, and Geo datasets.
+            </p>
+
+            {% if assigned_managers %}
+              <div class="list-group list-group-flush mb-2">
+                {% for mgr in assigned_managers %}
+                  <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
+                    <div class="d-flex align-items-center">
+                      <div class="user-avatar-chip mr-2" style="width: 32px; height: 32px; font-size: 11px;">
+                        {{ mgr.user.first_name|slice:":1"|default:mgr.user.username|slice:":1"|upper }}
+                      </div>
+                      <div>
+                        <strong class="d-block" style="color: var(--brand-dark); font-size: 13px;">
+                          {{ mgr.user.first_name }} {{ mgr.user.last_name }}
+                        </strong>
+                        <span class="text-muted" style="font-size: 11px;">{{ mgr.user.email }}</span>
+                      </div>
+                    </div>
+                    {% if can_manage %}
+                      <form method="post" action="{% url 'platform_admin:clan-revoke-access' pk=clan.id profile_id=mgr.id %}" onsubmit="return confirm('Revoke management access for {{ mgr.user.username }}?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-link text-danger p-0" style="font-size: 12px;" title="Revoke access">
+                          Revoke
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-center py-3 text-muted">
+                <span style="font-size: 24px; display: block; margin-bottom: 4px;">🛡️</span>
+                <small>No direct managers assigned yet.</small>
+              </div>
+            {% endif %}
+
+            {% if city_managers %}
+              <div class="mt-3 pt-2 border-top">
+                <small class="text-muted text-uppercase font-weight-700" style="font-size: 10px;">Inherited City Managers ({{ clan.city.name }})</small>
+                <div class="mt-1">
+                  {% for cm in city_managers %}
+                    <span class="pill-badge pill-badge-cyan mb-1" style="font-size: 11px;">
+                      {{ cm.user.first_name|default:cm.user.username }}
+                    </span>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Card: Clan Attributes Overview -->
+        <div class="en-card p-3 mb-4">
+          <h5 class="font-weight-700 mb-3" style="color: var(--brand-dark); font-size: 15px;">
+            Clan Attributes
+          </h5>
+          <table class="table table-sm table-borderless mb-0" style="font-size: 13px;">
+            <tbody>
+              <tr>
+                <td class="text-muted pl-0" style="width: 40%;">Clan Name:</td>
+                <td class="font-weight-600 text-right pr-0">{{ clan.name }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted pl-0">City / LGA:</td>
+                <td class="font-weight-600 text-right pr-0">{{ clan.city.name|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted pl-0">State:</td>
+                <td class="font-weight-600 text-right pr-0">{{ clan.state.name|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted pl-0">Geopolitical:</td>
+                <td class="font-weight-600 text-right pr-0">{{ clan.geo_political_zone.name|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted pl-0">Country:</td>
+                <td class="font-weight-600 text-right pr-0">{{ clan.country.name|default:"Nigeria" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted pl-0">Created:</td>
+                <td class="text-muted text-right pr-0">{{ clan.date_created|date:"M d, Y" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted pl-0">Updated:</td>
+                <td class="text-muted text-right pr-0">{{ clan.last_updated|date:"M d, Y" }}</td>
+              </tr>
+            </tbody>
+          </table>
+          {% if can_manage %}
+            <hr class="my-2" style="border-color: var(--border-color);">
+            <button type="button" class="btn btn-en-outline btn-block btn-en-sm font-weight-600 mt-2 js-open-edit-clan-modal" data-toggle="modal" data-target="#editClanModal" data-bs-toggle="modal" data-bs-target="#editClanModal" style="cursor: pointer;">
+              Modify Attributes
+            </button>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: Edit Clan -->
+{% if can_manage %}
+<div class="modal fade" id="editClanModal" tabindex="-1" role="dialog" aria-labelledby="editClanModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge pill-badge-cyan mb-1" style="font-size: 11px;">EDIT TERRITORIAL CLAN</span>
+          <h4 class="modal-title font-weight-700" id="editClanModalLabel" style="color: var(--brand-dark);">
+            ✏️ Edit Clan Details
+          </h4>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'platform_admin:clan-edit' pk=clan.id %}" id="editClanForm" data-cities-url="{% url 'utility:ajax-load-cities' %}">
+        {% csrf_token %}
+        <div class="modal-body pt-3">
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Clan Name *</label>
+            {{ clan_edit_form.name }}
+          </div>
+
+          <div class="row">
+            <div class="col-md-5 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Code</label>
+              {{ clan_edit_form.code }}
+              <small class="text-muted" style="font-size: 11px;">e.g. {{ clan.code|default:"AGB" }}</small>
+            </div>
+            <div class="col-md-7 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Node ID</label>
+              {{ clan_edit_form.node_id }}
+              <small class="text-muted" style="font-size: 11px;">PRD pattern: {{ clan.display_node_id }}</small>
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">State Location (optional)</label>
+            {{ clan_edit_form.state }}
+          </div>
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">City / LGA (optional)</label>
+            {{ clan_edit_form.city }}
+          </div>
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Geo-Political Zone (optional)</label>
+            {{ clan_edit_form.geo_political_zone }}
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-en-cyan font-weight-700">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Sub-Clan -->
+<div class="modal fade" id="addSubClanModal" tabindex="-1" role="dialog" aria-labelledby="addSubClanModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge pill-badge-subclan mb-1" style="font-size: 11px;">PRD [Territory]-[Type]-[001]</span>
+          <h4 class="modal-title font-weight-700" id="addSubClanModalLabel" style="color: var(--brand-dark);">
+            📍 Add Territorial Node / Sub-Clan
+          </h4>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'platform_admin:subclan-create-for-clan' clan_id=clan.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <div class="modal-body pt-3">
+          <p class="text-muted" style="font-size: 13px;">
+            This territorial node will be attached to <strong>{{ clan.name }}</strong> [{{ clan.display_node_id }}].
+          </p>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node Type (PRD) *</label>
+              <select name="node_type" id="detailSubclanTypeSelect" class="form-control form-control-modern" required>
+                <option value="STREET" selected>Street (ST)</option>
+                <option value="CLOSE">Close / Crescent (CL)</option>
+                <option value="LINK_ROAD">Sub / Link Road (RD)</option>
+                <option value="META_ROAD">Meta Road (RD)</option>
+                <option value="COMMUNITY">Community / Village (COM)</option>
+                <option value="BUILDING">Building (BLD)</option>
+                <option value="BUSINESS">Business (BIZ)</option>
+                <option value="FACILITY">Facility (FAC)</option>
+                <option value="LANDMARK">Landmark (LMK)</option>
+                <option value="OTHER">Other Node (NOD)</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">PRD Node ID</label>
+              <input type="text" name="node_id" id="detailSubclanIdInput" class="form-control form-control-modern" placeholder="e.g. {{ clan.code|default:'RUM' }}-ST-001" style="font-family: monospace; font-weight: 600; color: #0e7490;">
+              <small class="text-muted" style="font-size: 11px;">Auto-calculated or enter custom ID</small>
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node Name *</label>
+            <input type="text" name="name" class="form-control form-control-modern" placeholder="e.g. Chikwe Orlu Street, Close 2, East-West Road" required>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-en-primary font-weight-700">Add Territorial Node</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Grant User Access -->
+<div class="modal fade" id="grantAccessModal" tabindex="-1" role="dialog" aria-labelledby="grantAccessModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge pill-badge-cyan mb-1" style="font-size: 11px;">DATA PERMISSIONS</span>
+          <h4 class="modal-title font-weight-700" id="grantAccessModalLabel" style="color: var(--brand-dark);">
+            🛡️ Grant Access to User
+          </h4>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'platform_admin:clan-grant-access' pk=clan.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <div class="modal-body pt-3">
+          <p class="text-muted" style="font-size: 13px;">
+            Authorize another user to modify <strong>{{ clan.name }}</strong> Clan, add sub-clans under it, and submit data.
+          </p>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Select User *</label>
+            <select name="profile_id" class="form-control form-control-modern" required>
+              <option value="">-- Choose a user --</option>
+              {% for u in users %}
+                <option value="{{ u.account_profile.id|default:u.id }}">
+                  {{ u.first_name }} {{ u.last_name }} ({{ u.email }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-en-cyan font-weight-700">
+            Grant Access
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+  $(document).ready(function() {
+    // 1. Guaranteed click handlers for opening all modals
+    $(document).on('click', '.js-open-edit-clan-modal, [data-target="#editClanModal"], [data-bs-target="#editClanModal"]', function(e) {
+      e.preventDefault();
+      $('#editClanModal').modal('show');
+    });
+
+    $(document).on('click', '.js-open-add-subclan-modal, [data-target="#addSubClanModal"], [data-bs-target="#addSubClanModal"]', function(e) {
+      e.preventDefault();
+      $('#addSubClanModal').modal('show');
+      updateDetailNodeId();
+    });
+
+    $(document).on('click', '.js-open-grant-modal, [data-target="#grantAccessModal"], [data-bs-target="#grantAccessModal"]', function(e) {
+      e.preventDefault();
+      $('#grantAccessModal').modal('show');
+    });
+
+    $(document).on('click', '.js-open-edit-subclan-modal, [data-target^="#editSubClanModal"], [data-bs-target^="#editSubClanModal"]', function(e) {
+      e.preventDefault();
+      var target = $(this).attr('data-bs-target') || $(this).attr('data-target') || $(this).data('modal-id');
+      if (target) {
+        $(target).modal('show');
+      }
+    });
+
+    // 2. Dynamic PRD Node ID generation in Add Sub-Clan Modal
+    function updateDetailNodeId() {
+      var nodeType = $('#detailSubclanTypeSelect').val() || 'STREET';
+      $.ajax({
+        url: '{% url "platform_admin:api-generate-node-id" %}',
+        data: { clan_id: '{{ clan.id }}', node_type: nodeType },
+        dataType: 'json',
+        success: function(data) {
+          var nid = (data && (data.node_id || data.generated_node_id)) || '';
+          if (nid) {
+            $('#detailSubclanIdInput').val(nid);
+          }
+        },
+        error: function() {
+          var prefixMap = {
+            'STREET': 'ST', 'CLOSE': 'CL', 'LINK_ROAD': 'RD', 'META_ROAD': 'RD',
+            'COMMUNITY': 'COM', 'BUILDING': 'BLD', 'BUSINESS': 'BIZ',
+            'FACILITY': 'FAC', 'LANDMARK': 'LMK', 'OTHER': 'NOD'
+          };
+          var code = '{{ clan.code|default:"NOD" }}';
+          var pfx = prefixMap[nodeType] || 'ST';
+          $('#detailSubclanIdInput').val(code + '-' + pfx + '-001');
+        }
+      });
+    }
+
+    $('#detailSubclanTypeSelect').on('change', updateDetailNodeId);
+    $('#addSubClanModal').on('shown.bs.modal', updateDetailNodeId);
+
+    // 3. Dynamic City AJAX loading for Edit Clan
+    $("#id_clan_state").change(function () {
+      var url = $("#editClanForm").attr("data-cities-url");
+      var stateId = $(this).val();
+      if (stateId) {
+        $.ajax({
+          url: url,
+          data: { 'state': stateId },
+          success: function (data) {
+            $("#id_clan_city").html(data);
+          }
+        });
+      } else {
+        $("#id_clan_city").html('<option value="">-- Select City / LGA (optional) --</option>');
+      }
+    });
+  });
+</script>
+
+{% endblock content %}

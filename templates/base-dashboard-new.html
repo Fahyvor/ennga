@@ -53,6 +53,9 @@
   <!-- HTMX -->
   <script src="https://unpkg.com/htmx.org@1.5.0"></script>
 
+  <!-- jQuery loaded in head so all child templates and inline scripts can use $ immediately -->
+  <script src="{% static 'dashboard/js/jquery1-3.4.1.min.js' %}"></script>
+
   <style>
     :root {
       --brand-dark: #20222A;
@@ -430,6 +433,21 @@
         </a>
       </li>
 
+      <li class="{% if '/clans/' in request.path %}mm-active{% endif %}">
+        <a href="{% url 'platform_admin:clan-list' %}" aria-expanded="false">
+          <div class="nav_icon_small">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </div>
+          <div class="nav_title">
+            <span>Clans</span>
+          </div>
+        </a>
+      </li>
+
       {% if request.user.is_admin or request.user.is_superuser %}
       <li class="{% if 'clan-access' in request.path %}mm-active{% endif %}">
         <a href="{% url 'platform_admin:clan-access-management' %}" aria-expanded="false">
@@ -771,6 +789,7 @@
     })
   </script>
 
+  {% block extra_js %}{% endblock extra_js %}
 
 </body>
 

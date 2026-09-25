@@ -13,7 +13,8 @@ from django.conf import settings
 from .forms import MarketSectorForm, MarketSectorBulkDataForm
 from .models import MarketSectorBulkData, MarketSector, Historical, GeoPhysicalData
 from .tasks import create_new_customers
-from utility.models import Country, Clan, SubClan
+from utility.models import Country, Clan, SubClan, State, City, GeoPoliticalZone, NODE_TYPE_CHOICES
+from .forms_clan import ClanForm, SubClanForm
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.views.generic import ( ListView, DetailView, CreateView, 
                                     UpdateView, DeleteView, RedirectView, View, TemplateView)
@@ -26,11 +27,24 @@ def dashboard(request):
     historicals = Historical.my_objects.all()
     geo_physicals = GeoPhysicalData.my_objects.all()
 
-    profile = request.user.account_profile
-    assigned_clans = profile.clan_managers.filter(is_deleted=False).select_related('city', 'state')
-    assigned_subclans = profile.subclan_managers.filter(is_deleted=False).select_related('clan', 'city', 'state')
+    profile = getattr(request.user, 'account_profile', None)
+    is_admin = bool(request.user.is_admin or request.user.is_superuser or request.user.is_staff)
+
+    assigned_clans = profile.clan_managers.filter(is_deleted=False).select_related('city', 'state') if profile else Clan.objects.none()
+    assigned_subclans = profile.subclan_managers.filter(is_deleted=False).select_related('clan', 'city', 'state') if profile else SubClan.objects.none()
+    
     total_clans_count = Clan.objects.filter(is_deleted=False).count()
     total_subclans_count = SubClan.objects.filter(is_deleted=False).count()
+
+    # If admin and no explicit assignments, supply recent clans so admin has interactive access immediately
+    admin_recent_clans = Clan.objects.filter(is_deleted=False).select_related('city', 'state').order_by('-id')[:8] if is_admin else Clan.objects.none()
+
+    all_clans_dropdown = Clan.objects.filter(is_deleted=False).select_related('city', 'state').order_by('name')
+    all_users = Account.objects.filter(is_active=True).select_related('account_profile').order_by('first_name', 'username')
+    all_states = State.objects.filter(is_deleted=False).order_by('name')
+
+    clan_create_form = ClanForm()
+    subclan_create_form = SubClanForm()
 
     context = {
         'users': users,
@@ -39,9 +53,16 @@ def dashboard(request):
         'geo_physicals': geo_physicals,
         'assigned_clans': assigned_clans,
         'assigned_subclans': assigned_subclans,
+        'admin_recent_clans': admin_recent_clans,
         'total_clans_count': total_clans_count,
         'total_subclans_count': total_subclans_count,
-        'is_admin': request.user.is_admin or request.user.is_superuser,
+        'is_admin': is_admin,
+        'all_clans_dropdown': all_clans_dropdown,
+        'all_users': all_users,
+        'all_states': all_states,
+        'clan_create_form': clan_create_form,
+        'subclan_create_form': subclan_create_form,
+        'node_type_choices': NODE_TYPE_CHOICES,
     }
     return render(request, 'platform_admin/dashboard.html', context)
 

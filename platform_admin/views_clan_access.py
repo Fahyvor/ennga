@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Q
 from accounts.models import Account, Profile
-from utility.models import Clan, SubClan, State, City, GeoPoliticalZone
+from utility.models import Clan, SubClan, State, City, GeoPoliticalZone, NODE_TYPE_CHOICES
+from platform_admin.forms_clan import ClanForm, SubClanForm
 
 
 def is_platform_admin(user):
@@ -51,9 +53,9 @@ def clan_access_list_view(request):
                 'profile': mgr,
                 'clan_id': clan.id,
                 'subclan_id': None,
-                'historical_url': clan.get_historical_clan_create_view_url() if hasattr(clan, 'get_historical_clan_create_view_url') else f"/platform_admin/historical-clan/{clan.id}/create/",
-                'market_url': clan.get_market_sector_clan_create_view_url() if hasattr(clan, 'get_market_sector_clan_create_view_url') else f"/platform_admin/market-sector-clan/{clan.id}/create/",
-                'geophysical_url': clan.get_geo_physical_clan_create_view_url() if hasattr(clan, 'get_geo_physical_clan_create_view_url') else f"/platform_admin/geo-physical-clan/{clan.id}/create/",
+                'historical_url': reverse('platform_admin:historical-clan-create-view', kwargs={'clan_location_pk': clan.id}),
+                'market_url': reverse('platform_admin:market-sector-clan-create-view', kwargs={'clan_location_pk': clan.id}),
+                'geophysical_url': reverse('platform_admin:geo-physical-clan-create-view', kwargs={'clan_location_pk': clan.id}),
             })
 
     subclan_assignments = []
@@ -66,9 +68,9 @@ def clan_access_list_view(request):
                 'profile': mgr,
                 'clan_id': sc.clan.id if sc.clan else None,
                 'subclan_id': sc.id,
-                'historical_url': f"/platform_admin/historical-clan/{sc.clan.id}/create/" if sc.clan else "#",
-                'market_url': f"/platform_admin/market-sector-clan/{sc.clan.id}/create/" if sc.clan else "#",
-                'geophysical_url': f"/platform_admin/geo-physical-clan/{sc.clan.id}/create/" if sc.clan else "#",
+                'historical_url': reverse('platform_admin:historical-clan-create-view', kwargs={'clan_location_pk': sc.clan.id}) if sc.clan else "#",
+                'market_url': reverse('platform_admin:market-sector-clan-create-view', kwargs={'clan_location_pk': sc.clan.id}) if sc.clan else "#",
+                'geophysical_url': reverse('platform_admin:geo-physical-clan-create-view', kwargs={'clan_location_pk': sc.clan.id}) if sc.clan else "#",
             })
 
     all_assignments = clan_assignments + subclan_assignments
@@ -80,6 +82,7 @@ def clan_access_list_view(request):
 
     all_clans_dropdown = Clan.objects.filter(is_deleted=False).order_by('name')
     all_subclans_dropdown = SubClan.objects.filter(is_deleted=False).select_related('clan').order_by('name')
+    all_states = State.objects.filter(is_deleted=False).order_by('name')
 
     context = {
         'clans': clans,
@@ -91,6 +94,10 @@ def clan_access_list_view(request):
         'assigned_users_count': assigned_users_count,
         'all_clans_dropdown': all_clans_dropdown,
         'all_subclans_dropdown': all_subclans_dropdown,
+        'all_states': all_states,
+        'node_type_choices': NODE_TYPE_CHOICES,
+        'clan_create_form': ClanForm(),
+        'subclan_create_form': SubClanForm(),
         'query': query,
         'filter_type': filter_type,
     }
@@ -217,5 +224,38 @@ def api_load_subclans_for_clan_view(request):
     if not clan_id:
         return JsonResponse({'subclans': []})
 
-    subclans = SubClan.objects.filter(clan_id=clan_id, is_deleted=False).values('id', 'name')
-    return JsonResponse({'subclans': list(subclans)})
+    subclans = SubClan.objects.filter(clan_id=clan_id, is_deleted=False).order_by('name')
+    data = [{
+        'id': sc.id,
+        'name': sc.name,
+        'node_id': sc.display_node_id,
+        'node_type': sc.get_node_type_display() if hasattr(sc, 'get_node_type_display') else sc.node_type,
+    } for sc in subclans]
+    return JsonResponse({'subclans': data})
+
+
+@login_required
+def api_generate_node_id_view(request):
+    """
+    API endpoint that returns the next sequential PRD Node ID for a given clan and node_type.
+    """
+    clan_id = request.GET.get('clan_id')
+    node_type = request.GET.get('node_type', 'STREET')
+
+    if not clan_id:
+        return JsonResponse({'node_id': '', 'status': 'error', 'message': 'Missing clan_id'})
+
+    clan = Clan.objects.filter(id=clan_id, is_deleted=False).first()
+    if not clan:
+        return JsonResponse({'node_id': '', 'status': 'error', 'message': 'Clan not found'})
+
+    mock_subclan = SubClan(clan=clan, node_type=node_type)
+    generated_id = mock_subclan.generate_next_node_id()
+    return JsonResponse({
+        'status': 'success',
+        'node_id': generated_id,
+        'generated_node_id': generated_id,
+        'clan_name': clan.name,
+        'territory_code': clan.code or (clan.display_node_id.split('-')[0] if clan.display_node_id else 'NOD'),
+        'node_type': node_type,
+    })

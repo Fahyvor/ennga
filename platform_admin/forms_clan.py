@@ -1,0 +1,176 @@
+from django import forms
+from utility.models import Country, State, City, Clan, SubClan, GeoPoliticalZone, NODE_TYPE_CHOICES
+
+
+class ClanForm(forms.ModelForm):
+    code = forms.CharField(
+        label='Territory Code (optional)',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_clan_code',
+            'placeholder': 'e.g. RUM (3 letters, auto-derived if blank)',
+            'maxlength': '10'
+        })
+    )
+    node_id = forms.CharField(
+        label='Territorial Node ID (optional)',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_clan_node_id',
+            'placeholder': 'PRD pattern: e.g. RUM-CLN-001 (auto-generated if blank)',
+            'maxlength': '50'
+        })
+    )
+    state = forms.ModelChoiceField(
+        label='State Location (optional)',
+        empty_label='-- Select State (optional) --',
+        widget=forms.Select(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_clan_state'
+        }),
+        queryset=State.objects.filter(is_deleted=False).order_by('name'),
+        required=False
+    )
+    city = forms.ModelChoiceField(
+        label='City / LGA Location (optional)',
+        empty_label='-- Select City / LGA (optional) --',
+        widget=forms.Select(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_clan_city'
+        }),
+        queryset=City.objects.filter(is_deleted=False).order_by('name'),
+        required=False
+    )
+    geo_political_zone = forms.ModelChoiceField(
+        label='Geo-Political Zone (optional)',
+        empty_label='-- Select Zone (optional) --',
+        widget=forms.Select(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_clan_geo_zone'
+        }),
+        queryset=GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name'),
+        required=False
+    )
+
+    class Meta:
+        model = Clan
+        fields = ('name', 'code', 'node_id', 'state', 'city', 'geo_political_zone')
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control form-control-modern',
+                'placeholder': 'Enter Clan Name (e.g. Rumuigbo Clan)',
+                'required': 'required'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'state' in self.data:
+            try:
+                state_id = int(self.data.get('state'))
+                self.fields['city'].queryset = City.objects.filter(state_id=state_id, is_deleted=False).order_by('name')
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk and self.instance.state:
+            self.fields['city'].queryset = City.objects.filter(state=self.instance.state, is_deleted=False).order_by('name')
+        elif self.instance.pk and self.instance.city and self.instance.city.state:
+            self.fields['city'].queryset = City.objects.filter(state=self.instance.city.state, is_deleted=False).order_by('name')
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        nigeria = Country.my_objects.first() or Country.objects.first()
+        if not instance.country:
+            instance.country = nigeria
+        if instance.city and not instance.state and instance.city.state:
+            instance.state = instance.city.state
+        if instance.state and not instance.geo_political_zone and instance.state.geo_political_zone:
+            instance.geo_political_zone = instance.state.geo_political_zone
+        elif instance.city and instance.city.state and not instance.geo_political_zone and instance.city.state.geo_political_zone:
+            instance.geo_political_zone = instance.city.state.geo_political_zone
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
+
+
+class SubClanForm(forms.ModelForm):
+    clan = forms.ModelChoiceField(
+        label='Parent Clan',
+        widget=forms.Select(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_subclan_clan'
+        }),
+        queryset=Clan.objects.filter(is_deleted=False).order_by('name'),
+        required=True
+    )
+    node_type = forms.ChoiceField(
+        label='Territorial Node Type (PRD)',
+        choices=NODE_TYPE_CHOICES,
+        initial='STREET',
+        widget=forms.Select(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_subclan_node_type'
+        })
+    )
+    node_id = forms.CharField(
+        label='PRD Node ID (optional)',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_subclan_node_id',
+            'placeholder': 'e.g. RUM-ST-001 (auto-generated by PRD convention if blank)',
+            'maxlength': '50'
+        })
+    )
+    state = forms.ModelChoiceField(
+        label='State Location (optional)',
+        empty_label='-- Select State (optional) --',
+        widget=forms.Select(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_subclan_state'
+        }),
+        queryset=State.objects.filter(is_deleted=False).order_by('name'),
+        required=False
+    )
+    city = forms.ModelChoiceField(
+        label='City / LGA Location (optional)',
+        empty_label='-- Select City / LGA (optional) --',
+        widget=forms.Select(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_subclan_city'
+        }),
+        queryset=City.objects.filter(is_deleted=False).order_by('name'),
+        required=False
+    )
+
+    class Meta:
+        model = SubClan
+        fields = ('name', 'clan', 'node_type', 'node_id', 'state', 'city')
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control form-control-modern',
+                'placeholder': 'Enter Node Name (e.g. Chikwe Orlu Street, Close 2)',
+                'required': 'required'
+            }),
+        }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        clan = instance.clan
+        nigeria = Country.my_objects.first() or Country.objects.first()
+        if not instance.country:
+            instance.country = clan.country if (clan and clan.country) else nigeria
+        if not instance.state and clan and clan.state:
+            instance.state = clan.state
+        if not instance.city and clan and clan.city:
+            instance.city = clan.city
+        if not instance.geo_political_zone and clan and clan.geo_political_zone:
+            instance.geo_political_zone = clan.geo_political_zone
+        elif not instance.geo_political_zone and instance.state and instance.state.geo_political_zone:
+            instance.geo_political_zone = instance.state.geo_political_zone
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance

@@ -26,26 +26,66 @@
     <!-- Page Header -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2">
       <div>
-        <h2 class="font-weight-700 mb-1" style="color: var(--brand-dark);">Clan Access Delegation</h2>
-        <p class="text-muted mb-0" style="font-size: 14px;">Grant or revoke data-entry authorization for logged-in users across Clans and Sub-Clans.</p>
+        <h2 class="font-weight-700 mb-1" style="color: var(--brand-dark);">Clan Access & Territorial Management</h2>
+        <p class="text-muted mb-0" style="font-size: 14px;">Input new territorial units (Clans, Streets, Closes) and grant or revoke data-entry authorization for users.</p>
       </div>
-      <div class="mt-3 mt-md-0 d-flex gap-2">
-        <button type="button" class="btn btn-en-cyan mr-2" data-toggle="modal" data-target="#grantClanModal">
+      <div class="mt-3 mt-md-0 d-flex flex-wrap gap-2 align-items-center" style="gap: 8px;">
+        <button type="button" class="btn btn-en-cyan font-weight-700 js-open-clan-modal" data-toggle="modal" data-target="#createClanModal" style="cursor: pointer;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          Grant Clan Access
+          + Input New Clan
         </button>
-        <button type="button" class="btn btn-en-primary" data-toggle="modal" data-target="#grantSubClanModal">
+        <button type="button" class="btn btn-en-primary font-weight-700 js-open-subclan-modal" data-toggle="modal" data-target="#createSubClanModal" style="cursor: pointer;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="8.5" cy="7" r="4"></circle>
             <line x1="20" y1="8" x2="20" y2="14"></line>
             <line x1="23" y1="11" x2="17" y2="11"></line>
           </svg>
+          + Input Sub-Clan Node
+        </button>
+        <button type="button" class="btn btn-en-outline font-weight-600 js-open-grant-clan-modal" data-toggle="modal" data-target="#grantClanModal" style="cursor: pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+          Grant Clan Access
+        </button>
+        <button type="button" class="btn btn-en-outline font-weight-600 js-open-grant-subclan-modal" data-toggle="modal" data-target="#grantSubClanModal" style="cursor: pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+          </svg>
           Grant Sub-Clan Access
         </button>
+        <a href="{% url 'platform_admin:clan-list' %}" class="btn btn-en-outline">
+          🏛️ Browse All Clans
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Input Station Banner -->
+    <div class="en-card p-3 mb-4" style="background: linear-gradient(135deg, rgba(32, 34, 42, 0.04) 0%, rgba(196, 242, 244, 0.2) 100%); border-left: 4px solid var(--brand-dark); border-radius: 14px;">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+        <div>
+          <div class="d-flex align-items-center mb-1">
+            <span class="pill-badge pill-badge-cyan mr-2" style="font-weight: 700;">TERRITORIAL DATA INPUT STATION</span>
+            <strong style="color: var(--brand-dark); font-size: 14px;">Register a new Clan territory or Sub-Clan child node before delegating rights</strong>
+          </div>
+          <p class="text-muted mb-0" style="font-size: 13px;">
+            Input primary Clans or create child nodes (Street, Close, Road, Community) following the PRD convention <code>[Territory]-[Type]-[Sequential Number]</code>.
+          </p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex flex-wrap gap-2" style="gap: 8px;">
+          <button type="button" class="btn btn-en-cyan btn-sm font-weight-700 js-open-clan-modal" data-toggle="modal" data-target="#createClanModal">
+            + Input Clan
+          </button>
+          <button type="button" class="btn btn-en-primary btn-sm font-weight-700 js-open-subclan-modal" data-toggle="modal" data-target="#createSubClanModal">
+            + Input Sub-Clan Node
+          </button>
+        </div>
       </div>
     </div>
 
@@ -121,7 +161,7 @@
             <input type="text" name="q" value="{{ query }}" class="form-control form-control-modern" placeholder="Search user or clan..." style="padding-right: 36px;">
             <div class="input-group-append">
               <button class="btn btn-en-primary btn-en-sm" type="submit" style="border-radius: 0 10px 10px 0;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="14" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
@@ -260,12 +300,17 @@
           </div>
 
           <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Select Clan</label>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="font-weight-600 mb-0" style="font-size: 13px; color: var(--brand-dark);">Select Clan *</label>
+              <a href="#" class="js-switch-to-create-clan text-primary font-weight-600" style="font-size: 12px;">
+                + Clan not listed? Input New Clan
+              </a>
+            </div>
             <select name="clan_id" class="form-control form-control-modern" required>
               <option value="">-- Choose a clan --</option>
               {% for clan in all_clans_dropdown %}
                 <option value="{{ clan.id }}">
-                  {{ clan.name }} {% if clan.city %}({{ clan.city.name }}, {{ clan.state.name }}){% endif %}
+                  {{ clan.name }} [{{ clan.display_node_id }}]{% if clan.city %} — ({{ clan.city.name }}, {{ clan.state.name }}){% endif %}
                 </option>
               {% endfor %}
             </select>
@@ -298,7 +343,7 @@
         {% csrf_token %}
         <div class="modal-body pt-3">
           <p class="text-muted" style="font-size: 13px;">
-            Authorize a user specifically for a Sub-Clan node.
+            Authorize a user specifically for a Sub-Clan node following PRD territorial structure.
           </p>
 
           <div class="form-group mb-3">
@@ -314,12 +359,17 @@
           </div>
 
           <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Select Sub-Clan</label>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="font-weight-600 mb-0" style="font-size: 13px; color: var(--brand-dark);">Select Sub-Clan Node *</label>
+              <a href="#" class="js-switch-to-create-subclan text-primary font-weight-600" style="font-size: 12px;">
+                + Node not listed? Input Sub-Clan Node
+              </a>
+            </div>
             <select name="subclan_id" class="form-control form-control-modern" required>
               <option value="">-- Choose a sub-clan --</option>
               {% for sc in all_subclans_dropdown %}
                 <option value="{{ sc.id }}">
-                  {{ sc.name }} {% if sc.clan %}(Clan: {{ sc.clan.name }}){% endif %}
+                  [{{ sc.display_node_id }}] {{ sc.name }} {% if sc.clan %}(Clan: {{ sc.clan.name }}){% endif %}
                 </option>
               {% endfor %}
             </select>
@@ -335,5 +385,253 @@
     </div>
   </div>
 </div>
+
+<!-- ============================================== -->
+<!-- MODAL: Input New Clan (Direct Territorial Node) -->
+<!-- ============================================== -->
+<div class="modal fade" id="createClanModal" tabindex="-1" role="dialog" aria-labelledby="createClanModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge pill-badge-cyan mb-1" style="font-size: 11px;">PRD TERRITORIAL NODE</span>
+          <h4 class="modal-title font-weight-700" id="createClanModalLabel" style="color: var(--brand-dark);">
+            🏛️ Input New Clan
+          </h4>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'platform_admin:clan-create' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'platform_admin:clan-access-management' %}">
+
+        <div class="modal-body pt-3">
+          <p class="text-muted" style="font-size: 13px;">
+            Register a new primary territorial Clan node in accordance with the PRD territorial hierarchy.
+          </p>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Clan Name *</label>
+            <input type="text" name="name" id="accessClanNameInput" class="form-control form-control-modern" placeholder="e.g. Rumuigbo Clan, Umueze Clan" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-5 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Code</label>
+              <input type="text" name="code" id="accessClanCodeInput" class="form-control form-control-modern" placeholder="e.g. RUM" maxlength="10">
+              <small class="text-muted" style="font-size: 11px;">3-letter code (auto-derived if blank)</small>
+            </div>
+            <div class="col-md-7 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Node ID</label>
+              <input type="text" name="node_id" id="accessClanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. RUM-CLN-001" maxlength="50">
+              <small class="text-muted" style="font-size: 11px;">PRD pattern (auto-generated if blank)</small>
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">State Location (optional)</label>
+            <select name="state" class="form-control form-control-modern">
+              <option value="">-- Select State (optional) --</option>
+              {% for s in all_states %}
+                <option value="{{ s.id }}">{{ s.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-en-cyan font-weight-700">
+            Confirm & Create Clan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL: Input Sub-Clan Node                     -->
+<!-- ============================================== -->
+<div class="modal fade" id="createSubClanModal" tabindex="-1" role="dialog" aria-labelledby="createSubClanModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge pill-badge-subclan mb-1" style="font-size: 11px;">PRD [Territory]-[Type]-[001]</span>
+          <h4 class="modal-title font-weight-700" id="createSubClanModalLabel" style="color: var(--brand-dark);">
+            📍 Input New Sub-Clan / Territorial Node
+          </h4>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'platform_admin:subclan-create' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'platform_admin:clan-access-management' %}">
+
+        <div class="modal-body pt-3">
+          <p class="text-muted" style="font-size: 13px;">
+            Create a territorial node (Street, Close, Road, Community) attached to a parent Clan. The permanent <strong>Node ID</strong> pattern is automatically calculated according to the PRD.
+          </p>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Clan *</label>
+            <select name="clan" id="accessSubclanClanSelect" class="form-control form-control-modern" required>
+              <option value="">-- Choose Parent Clan --</option>
+              {% for c in all_clans_dropdown %}
+                <option value="{{ c.id }}" data-code="{{ c.code }}" data-node-id="{{ c.display_node_id }}">
+                  {{ c.name }} [{{ c.display_node_id }}]
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territorial Node Type *</label>
+              <select name="node_type" id="accessSubclanNodeTypeSelect" class="form-control form-control-modern" required>
+                {% for val, label in node_type_choices %}
+                  <option value="{{ val }}" {% if val == 'STREET' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+                PRD Node ID Preview
+              </label>
+              <input type="text" name="node_id" id="accessSubclanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. RUM-ST-001" style="font-family: monospace; font-weight: 600; color: #0e7490;">
+              <small class="text-muted" style="font-size: 11px;">Auto-calculated or enter custom ID</small>
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node Name *</label>
+            <input type="text" name="name" class="form-control form-control-modern" placeholder="e.g. Chikwe Orlu Street, Close 2, East-West Road" required>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-en-primary font-weight-700">
+            Confirm & Save Territorial Node
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function() {
+    // Guaranteed click listeners for all modals
+    $('.js-open-clan-modal').on('click', function(e) {
+      e.preventDefault();
+      $('#createClanModal').modal('show');
+    });
+
+    $('.js-open-subclan-modal').on('click', function(e) {
+      e.preventDefault();
+      $('#createSubClanModal').modal('show');
+    });
+
+    $('.js-open-grant-clan-modal, [data-target="#grantClanModal"]').on('click', function(e) {
+      e.preventDefault();
+      $('#grantClanModal').modal('show');
+    });
+
+    $('.js-open-grant-subclan-modal, [data-target="#grantSubClanModal"]').on('click', function(e) {
+      e.preventDefault();
+      $('#grantSubClanModal').modal('show');
+    });
+
+    // Quick switch between Grant Access and Create modals
+    $('.js-switch-to-create-clan').on('click', function(e) {
+      e.preventDefault();
+      $('#grantClanModal').modal('hide');
+      setTimeout(function() {
+        $('#createClanModal').modal('show');
+      }, 350);
+    });
+
+    $('.js-switch-to-create-subclan').on('click', function(e) {
+      e.preventDefault();
+      $('#grantSubClanModal').modal('hide');
+      setTimeout(function() {
+        $('#createSubClanModal').modal('show');
+      }, 350);
+    });
+
+    // Live PRD preview in SubClan creation modal
+    function refreshAccessSubclanPreview() {
+      var clanId = $('#accessSubclanClanSelect').val();
+      var nodeType = $('#accessSubclanNodeTypeSelect').val() || 'STREET';
+
+      if (!clanId) {
+        $('#accessSubclanNodeIdInput').attr('placeholder', 'e.g. RUM-ST-001');
+        return;
+      }
+
+      $.ajax({
+        url: "{% url 'platform_admin:api-generate-node-id' %}",
+        data: {
+          'clan_id': clanId,
+          'node_type': nodeType
+        },
+        success: function(data) {
+          if (data && data.generated_node_id) {
+            $('#accessSubclanNodeIdInput').val(data.generated_node_id);
+          }
+        },
+        error: function() {
+          var prefixMap = {
+            'STREET': 'ST',
+            'CLOSE': 'CL',
+            'LINK_ROAD': 'RD',
+            'META_ROAD': 'RD',
+            'COMMUNITY': 'COM',
+            'BUILDING': 'BLD',
+            'BUSINESS': 'BIZ',
+            'FACILITY': 'FAC',
+            'LANDMARK': 'LMK',
+            'OTHER': 'NOD'
+          };
+          var selectedOption = $('#accessSubclanClanSelect option:selected');
+          var clanCode = selectedOption.data('code') || 'NOD';
+          var typePrefix = prefixMap[nodeType] || 'ST';
+          $('#accessSubclanNodeIdInput').val(clanCode + '-' + typePrefix + '-001');
+        }
+      });
+    }
+
+    $('#accessSubclanClanSelect, #accessSubclanNodeTypeSelect').on('change', refreshAccessSubclanPreview);
+
+    // Auto-derive clan code in Clan modal
+    $('#accessClanNameInput').on('input', function() {
+      var val = $(this).val().trim();
+      if (!val) return;
+      var words = val.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(Boolean);
+      var code = 'NOD';
+      if (words.length >= 3) {
+        code = (words[0][0] + words[1][0] + words[2][0]).toUpperCase();
+      } else if (words.length === 2) {
+        code = (words[0].substring(0, 2) + words[1][0]).toUpperCase();
+      } else if (words.length === 1 && words[0].length >= 3) {
+        code = words[0].substring(0, 3).toUpperCase();
+      }
+      if (!$('#accessClanCodeInput').val()) {
+        $('#accessClanCodeInput').attr('placeholder', code);
+      }
+      if (!$('#accessClanNodeIdInput').val()) {
+        $('#accessClanNodeIdInput').attr('placeholder', code + '-CLN-001');
+      }
+    });
+  });
+</script>
 
 {% endblock content %}
