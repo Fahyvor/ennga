@@ -28,8 +28,9 @@ RUN addgroup --system app && adduser --system --group app
 # create the appropriate directories
 ENV HOME=/home/app
 ENV APP_HOME=/home/app/ennga
-RUN mkdir -p $APP_HOME/static $APP_HOME/media $APP_HOME/staticfiles /home/app/.ssh && \
-    chmod 700 /home/app/.ssh
+ENV GUNICORN_CMD_ARGS="--no-control-socket"
+RUN mkdir -p $APP_HOME/static $APP_HOME/media $APP_HOME/staticfiles /home/app/.ssh /home/app/.gunicorn && \
+    chmod 700 /home/app/.ssh /home/app/.gunicorn
 WORKDIR $APP_HOME
 
 # install dependencies
@@ -54,11 +55,11 @@ RUN chmod +x $APP_HOME/wait-for-it.sh
 COPY . $APP_HOME
 
 # chown all the files to the app user
-RUN chown -R app:app $APP_HOME /home/app/.ssh
+RUN chown -R app:app /home/app
 
 # change to the app user
 USER app
 
 ENTRYPOINT ["/home/app/ennga/entrypoint.sh"]
 
-CMD ["sh", "-c", "exec gunicorn ennga.wsgi:application --bind 0.0.0.0:${PORT:-10000}"]
+CMD ["sh", "-c", "exec gunicorn ennga.wsgi:application --bind 0.0.0.0:${PORT:-10000} --no-control-socket"]

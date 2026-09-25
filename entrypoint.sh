@@ -111,4 +111,5 @@ echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
 echo "Starting application process..."
+export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:---no-control-socket}"
 exec "$@"
