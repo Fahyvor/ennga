@@ -13,7 +13,7 @@ if [ "$USE_SSH_TUNNEL" = "true" ] || [ "$SSH_TUNNEL" = "true" ] || [ -n "$SSH_HO
     echo "Configuring SSH Tunnel for Database..."
     echo "=========================================="
 
-    SSH_HOST="${SSH_HOST:-198.54.115.10}"
+    SSH_HOST="${SSH_HOST:-premium214.web-hosting.com}"
     SSH_PORT="${SSH_PORT:-21098}"
     SSH_USER="${SSH_USER:-kuledwzl}"
     SSH_LOCAL_PORT="${SSH_LOCAL_PORT:-3306}"

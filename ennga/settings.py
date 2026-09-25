@@ -137,7 +137,45 @@ USE_SSH_TUNNEL = (
 SSH_LOCAL_HOST = config("SSH_LOCAL_HOST", default="127.0.0.1")
 SSH_LOCAL_PORT = str(config("SSH_LOCAL_PORT", default="3306"))
 
-if DATABASE_URL:
+if DB_NAME:
+    db_engine_env = config("DB_ENGINE", default="mysql").lower()
+    if "mysql" in db_engine_env:
+        engine = "django.db.backends.mysql"
+        default_port = "3306"
+        options = {'charset': 'utf8mb4'}
+    elif "postgres" in db_engine_env:
+        engine = "django.db.backends.postgresql_psycopg2"
+        default_port = "5432"
+        options = {}
+    elif "sqlite" in db_engine_env:
+        engine = "django.db.backends.sqlite3"
+        default_port = None
+        options = {}
+    else:
+        engine = db_engine_env
+        default_port = "3306"
+        options = {}
+
+    db_host = config("DB_HOST", default="localhost")
+    db_port = str(config("DB_PORT", default=default_port or '3306'))
+
+    if USE_SSH_TUNNEL:
+        db_host = SSH_LOCAL_HOST
+        db_port = SSH_LOCAL_PORT
+
+    DATABASES = {
+        'default': {
+            'ENGINE': engine,
+            'NAME': DB_NAME,
+            'USER': config("DB_USER", default="root"),
+            'PASSWORD': config("DB_PASSWORD", default=""),
+            'HOST': db_host,
+            'PORT': db_port,
+        }
+    }
+    if options:
+        DATABASES['default']['OPTIONS'] = options
+elif DATABASE_URL:
     url = urlparse(DATABASE_URL)
     scheme = url.scheme.lower()
     if 'mysql' in scheme:
@@ -177,39 +215,6 @@ if DATABASE_URL:
     }
     if options:
         DATABASES['default']['OPTIONS'] = options
-elif DB_NAME:
-    db_engine_env = config("DB_ENGINE", default="mysql").lower()
-    if "mysql" in db_engine_env:
-        engine = "django.db.backends.mysql"
-        default_port = "3306"
-        options = {'charset': 'utf8mb4'}
-    elif "postgres" in db_engine_env:
-        engine = "django.db.backends.postgresql_psycopg2"
-        default_port = "5432"
-        options = {}
-    else:
-        engine = db_engine_env
-        default_port = "3306"
-        options = {}
-
-    db_host = config("DB_HOST", default="localhost")
-    db_port = config("DB_PORT", default=default_port)
-
-    if USE_SSH_TUNNEL:
-        db_host = SSH_LOCAL_HOST
-        db_port = SSH_LOCAL_PORT
-
-    DATABASES = {
-        'default': {
-            'ENGINE': engine,
-            'NAME': DB_NAME,
-            'USER': config("DB_USER", default="root"),
-            'PASSWORD': config("DB_PASSWORD", default=""),
-            'HOST': db_host,
-            'PORT': db_port,
-            'OPTIONS': options,
-        }
-    }
 else:
     DATABASES = {
         'default': {

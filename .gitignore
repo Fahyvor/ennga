@@ -10,6 +10,11 @@ __pycache__/
 # C extensions
 *.so
 
+# SSH and Secret Keys
+id_rsa*
+*.pem
+*.key
+
 # Distribution / packaging
 .Python
 build/
