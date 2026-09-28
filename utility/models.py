@@ -229,6 +229,56 @@ NODE_TYPE_PREFIXES = {
     'OTHER': 'NOD',
 }
 
+ROAD_SURFACE_CHOICES = (
+    ('ASPHALT', 'Paved / Asphalt'),
+    ('INTERLOCKED', 'Interlocked Paving Stones'),
+    ('CONCRETE', 'Rigid Concrete Pavement'),
+    ('EARTH_ROAD', 'Unpaved / Earth / Laterite'),
+    ('GRAVEL', 'Gravel / Crushed Stone'),
+    ('DILAPIDATED', 'Dilapidated / Failed Road'),
+    ('OTHER', 'Other Surface'),
+)
+
+ROAD_CONDITION_CHOICES = (
+    ('EXCELLENT', 'Excellent (Newly Paved / No Potholes)'),
+    ('GOOD', 'Good (Minor Wear / Fully Motorrable)'),
+    ('FAIR', 'Fair (Moderate Potholes / Motorrable with Caution)'),
+    ('POOR', 'Poor (Severe Potholes / Eroded)'),
+    ('CRITICAL', 'Critical / Impassable / Flooded'),
+)
+
+INFRASTRUCTURE_TYPE_CHOICES = (
+    ('DRAINAGE', 'Drainage / Storm Water Channel'),
+    ('STREET_LIGHT', 'Street Lighting (Solar / Grid)'),
+    ('POWER_TRANSFORMER', 'Power Transformer / Distribution Grid'),
+    ('WATER_SUPPLY', 'Public Water Supply / Borehole Tap'),
+    ('SECURITY_POST', 'Security Gate / Checkpoint / Barrier'),
+    ('WASTE_DISPOSAL', 'Waste Disposal / Dump Point'),
+    ('SIDEWALK', 'Sidewalk / Pedestrian Walkway'),
+    ('SPEED_BUMP', 'Speed Bumps / Traffic Calming'),
+    ('TELECOM_INFRASTRUCTURE', 'Telecom Mast / Fiber Distribution Box'),
+    ('BRIDGE_CULVERT', 'Bridge / Culvert / Canal Crossing'),
+    ('TRAFFIC_LIGHT', 'Traffic Light / Signal'),
+    ('OTHER', 'Other Territorial Infrastructure'),
+)
+
+INFRASTRUCTURE_STATUS_CHOICES = (
+    ('OPERATIONAL', 'Operational / Good Condition'),
+    ('NEEDS_MAINTENANCE', 'Needs Maintenance / Minor Repairs'),
+    ('CRITICAL', 'Damaged / Dysfunctional / Flooded'),
+    ('UNDER_CONSTRUCTION', 'Under Construction / In Progress'),
+    ('ABANDONED', 'Abandoned / Defunct'),
+)
+
+SIDE_OF_ROAD_CHOICES = (
+    ('BOTH', 'Both Sides of Road'),
+    ('LEFT', 'Left Side'),
+    ('RIGHT', 'Right Side'),
+    ('MEDIAN', 'Median / Center Island'),
+    ('INTERSECTION', 'Intersection / Crossing'),
+    ('NOT_APPLICABLE', 'Not Applicable'),
+)
+
 
 def generate_territory_code(name):
     """
@@ -341,6 +391,30 @@ class SubClan(models.Model):
     name = models.CharField(max_length=255)
     node_type = models.CharField(max_length=50, default='STREET', choices=NODE_TYPE_CHOICES, help_text="Territorial node classification")
     node_id = models.CharField(max_length=50, blank=True, null=True, db_index=True, help_text="PRD pattern: [Territory]-[Node Type]-[Sequential Number], e.g. RUM-ST-001")
+    parent_road = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='connected_streets',
+        help_text="Major road, meta road, or link road this street/close connects to"
+    )
+    road_surface = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        choices=ROAD_SURFACE_CHOICES,
+        default='ASPHALT',
+        help_text="Surface type of the road (e.g. Asphalt, Interlocked, Earth)"
+    )
+    road_condition = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        choices=ROAD_CONDITION_CHOICES,
+        default='GOOD',
+        help_text="Overall condition of the road"
+    )
     managers = models.ManyToManyField("accounts.Profile", blank=True, related_name='subclan_managers')
     restricted_users = models.ManyToManyField("accounts.Profile", blank=True, related_name='subclan_restricted_users')
     is_deleted = models.BooleanField(default=False)
@@ -365,6 +439,18 @@ class SubClan(models.Model):
         territory = (clan.code or generate_territory_code(clan.name)) if clan else "NOD"
         type_code = NODE_TYPE_PREFIXES.get(self.node_type or 'STREET', 'ST')
         return f"{territory}-{type_code}-{self.id:03d}"
+
+    @property
+    def total_infrastructures(self):
+        return self.infrastructures.filter(is_deleted=False).count()
+
+    @property
+    def drainages(self):
+        return self.infrastructures.filter(infrastructure_type='DRAINAGE', is_deleted=False)
+
+    @property
+    def street_lights(self):
+        return self.infrastructures.filter(infrastructure_type='STREET_LIGHT', is_deleted=False)
 
     def generate_next_node_id(self):
         clan = self.clan
@@ -394,3 +480,40 @@ class SubClan(models.Model):
         if not self.node_id:
             self.node_id = self.generate_next_node_id()
         super().save(*args, **kwargs)
+
+
+class TerritorialInfrastructure(models.Model):
+    clan = models.ForeignKey(Clan, on_delete=models.CASCADE, related_name='clan_infrastructures')
+    subclan = models.ForeignKey(
+        SubClan,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='infrastructures',
+        help_text="Specific road/street or territorial node where this infrastructure is located"
+    )
+    name = models.CharField(max_length=255, help_text="e.g. Concrete Covered Drainage - East Side, 50W Solar Streetlights Section A")
+    infrastructure_type = models.CharField(max_length=50, choices=INFRASTRUCTURE_TYPE_CHOICES)
+    status = models.CharField(max_length=50, default='OPERATIONAL', choices=INFRASTRUCTURE_STATUS_CHOICES)
+    side_of_road = models.CharField(max_length=50, default='BOTH', choices=SIDE_OF_ROAD_CHOICES, blank=True, null=True)
+    quantity = models.PositiveIntegerField(default=1, help_text="Number of units, e.g. 15 street light poles")
+    coverage_length_meters = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Coverage or length in meters (e.g. for drainage, sidewalk)")
+    description = models.TextField(blank=True, null=True)
+    installed_by = models.CharField(max_length=255, blank=True, null=True, help_text="e.g. State Government, Community Self-Help, Federal Ministry, Private Developer")
+    year_installed = models.PositiveIntegerField(blank=True, null=True)
+    gps_coordinates = models.CharField(max_length=100, blank=True, null=True, help_text="Latitude, Longitude (e.g. 4.8156, 7.0498)")
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    objects = models.Manager()
+    my_objects = CountryManager()
+
+    def __str__(self):
+        target = self.subclan.name if self.subclan else (self.clan.name if self.clan else 'Unassigned')
+        return f"{self.name} ({self.get_infrastructure_type_display()}) - {target}"
+
+    class Meta:
+        verbose_name = "Territorial Infrastructure"
+        verbose_name_plural = "Territorial Infrastructures"
+        ordering = ['-date_created']
