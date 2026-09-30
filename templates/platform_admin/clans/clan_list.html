@@ -127,7 +127,7 @@
             <a class="nav-link {% if view_mode == 'all' %}active bg-dark text-white{% else %}text-muted{% endif %}" 
                href="{% url 'platform_admin:clan-list' %}?view_mode=all{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}"
                style="border-radius: 8px; font-weight: 600; font-size: 13px; padding: 8px 16px;">
-              All Clans ({{ total_clans_count }})
+              All Clans ({% if state_id or query %}{{ filtered_clans_count }}{% else %}{{ total_clans_count }}{% endif %})
             </a>
           </li>
           <li class="nav-item">
@@ -141,19 +141,21 @@
             <a class="nav-link {% if view_mode == 'subclans' %}active bg-dark text-white{% else %}text-muted{% endif %}" 
                href="{% url 'platform_admin:clan-list' %}?view_mode=subclans{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}"
                style="border-radius: 8px; font-weight: 600; font-size: 13px; padding: 8px 16px;">
-              Sub-Clans Directory ({{ total_subclans_count }})
+              Sub-Clans Directory ({% if state_id or query %}{{ filtered_subclans_count }}{% else %}{{ total_subclans_count }}{% endif %})
             </a>
           </li>
         </ul>
 
         <!-- Filter & Search Form -->
-        <form method="get" class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+        <form method="get" action="{% url 'platform_admin:clan-list' %}" id="clanListFilterForm" class="d-flex flex-wrap align-items-center" style="gap: 8px;">
           <input type="hidden" name="view_mode" value="{{ view_mode }}">
           
-          <select name="state" class="form-control form-control-modern" style="width: auto; min-width: 160px; height: 38px; padding: 6px 12px; font-size: 13px;" onchange="this.form.submit()">
-            <option value="">-- All States --</option>
+          <select name="state" id="clanStateFilterSelect" class="form-control form-control-modern" style="width: auto; min-width: 175px; height: 38px; padding: 6px 12px; font-size: 13px;" onchange="this.form.submit()">
+            <option value="">-- All States (All Clans) --</option>
             {% for s in all_states %}
-              <option value="{{ s.id }}" {% if state_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+              <option value="{{ s.id }}" {% if state_id == s.id|stringformat:"s" or state_id == s.name %}selected{% endif %}>
+                {{ s.name }}{% if s.clans_count %} ({{ s.clans_count }}){% endif %}
+              </option>
             {% endfor %}
           </select>
 
@@ -219,7 +221,7 @@
                 </span>
               </td>
               <td>
-                <span class="pill-badge pill-badge-subclan">
+                <span class="pill-badge pill-badge-subclan text-nowrap" style="white-space: nowrap;">
                   {{ clan.subclans_count }} Sub-Clans
                 </span>
               </td>
@@ -243,11 +245,11 @@
               </td>
               <td class="text-right">
                 <div class="d-inline-flex align-items-center" style="gap: 6px;">
-                  <a href="{% url 'platform_admin:clan-detail' pk=clan.id %}" class="btn btn-en-cyan btn-en-sm py-1 px-2 font-weight-600" title="View, Modify, or Add Sub-Clans">
+                  <a href="{% url 'platform_admin:clan-detail' pk=clan.id %}" class="btn btn-en-cyan btn-en-sm py-1 px-2 font-weight-600 text-nowrap" style="white-space: nowrap;" title="View, Modify, or Add Sub-Clans">
                     Manage Clan &rarr;
                   </a>
                   <div class="dropdown d-inline-block">
-                    <button class="btn btn-en-outline btn-en-sm py-1 px-2" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Data Entry Shortcuts">
+                    <button class="btn btn-en-outline btn-en-sm py-1 px-2 text-nowrap" style="white-space: nowrap;" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Data Entry Shortcuts">
                       + Data
                     </button>
                     <div class="dropdown-menu dropdown-menu-right shadow-sm p-2" style="border-radius: 12px; min-width: 190px;">
@@ -345,7 +347,7 @@
               </td>
               <td class="text-right">
                 {% if sc.clan %}
-                  <a href="{% url 'platform_admin:clan-detail' pk=sc.clan.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2 font-weight-600">
+                  <a href="{% url 'platform_admin:clan-detail' pk=sc.clan.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2 font-weight-600 text-nowrap" style="white-space: nowrap;">
                     View Parent Clan &rarr;
                   </a>
                 {% endif %}
@@ -543,6 +545,11 @@
 
 <script>
   $(document).ready(function() {
+    // Instant submit on state filter change
+    $('#clanStateFilterSelect').on('change', function() {
+      $('#clanListFilterForm').submit();
+    });
+
     // Guaranteed click listeners for modals
     $('.js-open-clan-modal').on('click', function(e) {
       e.preventDefault();

@@ -99,9 +99,21 @@ def clan_list_view(request):
         ).exclude(restricted_users=user_profile).distinct()
 
     # Filter by State
+    selected_state = None
     if state_id:
-        clans_qs = clans_qs.filter(state_id=state_id)
-        subclans_qs = subclans_qs.filter(state_id=state_id)
+        try:
+            state_id_int = int(state_id)
+            selected_state = State.objects.filter(id=state_id_int, is_deleted=False).first()
+            clans_qs = clans_qs.filter(Q(state_id=state_id_int) | Q(city__state_id=state_id_int)).distinct()
+            subclans_qs = subclans_qs.filter(
+                Q(state_id=state_id_int) | Q(city__state_id=state_id_int) | Q(clan__state_id=state_id_int)
+            ).distinct()
+        except (ValueError, TypeError):
+            selected_state = State.objects.filter(name__iexact=state_id, is_deleted=False).first()
+            clans_qs = clans_qs.filter(Q(state__name__iexact=state_id) | Q(city__state__name__iexact=state_id)).distinct()
+            subclans_qs = subclans_qs.filter(
+                Q(state__name__iexact=state_id) | Q(city__state__name__iexact=state_id) | Q(clan__state__name__iexact=state_id)
+            ).distinct()
 
     # Search Filter
     if query:
@@ -124,6 +136,10 @@ def clan_list_view(request):
             Q(managers__user__username__icontains=query) |
             Q(managers__user__email__icontains=query)
         ).distinct()
+
+    # Filtered counts
+    filtered_clans_count = clans_qs.count()
+    filtered_subclans_count = subclans_qs.count()
 
     # Annotate sub-clans count
     clans_qs = clans_qs.annotate(
@@ -153,7 +169,9 @@ def clan_list_view(request):
         clans_page = page_obj
         subclans_page = None
 
-    all_states = State.objects.filter(is_deleted=False).order_by('name')
+    all_states = State.objects.filter(is_deleted=False).annotate(
+        clans_count=Count('clan_states', filter=Q(clan_states__is_deleted=False))
+    ).order_by('name')
     all_clans_dropdown = Clan.objects.filter(is_deleted=False).order_by('name')
     clan_create_form = ClanForm()
 
@@ -163,6 +181,9 @@ def clan_list_view(request):
         'page_obj': page_obj,
         'total_clans_count': total_clans_count,
         'total_subclans_count': total_subclans_count,
+        'filtered_clans_count': filtered_clans_count,
+        'filtered_subclans_count': filtered_subclans_count,
+        'selected_state': selected_state,
         'my_clans_count': my_clans_count,
         'query': query,
         'state_id': state_id,
