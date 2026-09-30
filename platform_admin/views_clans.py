@@ -7,9 +7,13 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.urls import reverse
 
 from accounts.models import Account, Profile
-from utility.models import Clan, SubClan, State, City, GeoPoliticalZone, Country
+from utility.models import (
+    Clan, SubClan, State, City, GeoPoliticalZone, Country,
+    NODE_TYPE_CHOICES, ROAD_SURFACE_CHOICES, ROAD_CONDITION_CHOICES,
+    INFRASTRUCTURE_TYPE_CHOICES, TerritorialInfrastructure
+)
 from platform_admin.models import Historical, MarketSector, GeoPhysicalData
-from .forms_clan import ClanForm, SubClanForm
+from .forms_clan import ClanForm, SubClanForm, TerritorialInfrastructureForm
 
 
 def is_platform_admin(user):
