@@ -10,7 +10,8 @@ from accounts.models import Account, Profile
 from utility.models import (
     Clan, SubClan, State, City, GeoPoliticalZone, Country,
     NODE_TYPE_CHOICES, ROAD_SURFACE_CHOICES, ROAD_CONDITION_CHOICES,
-    INFRASTRUCTURE_TYPE_CHOICES, TerritorialInfrastructure
+    INFRASTRUCTURE_TYPE_CHOICES, INFRASTRUCTURE_STATUS_CHOICES, SIDE_OF_ROAD_CHOICES,
+    TerritorialInfrastructure
 )
 from platform_admin.models import Historical, MarketSector, GeoPhysicalData
 from .forms_clan import ClanForm, SubClanForm, TerritorialInfrastructureForm
@@ -218,8 +219,17 @@ def clan_detail_view(request, pk):
 
     # Sub-clans under this clan
     subclans = clan.subclan_set.filter(is_deleted=False).select_related(
-        'city', 'state'
-    ).prefetch_related('managers__user').order_by('name')
+        'city', 'state', 'parent_road'
+    ).prefetch_related('managers__user', 'infrastructures').order_by('name')
+
+    # Territorial infrastructure records under this clan
+    infrastructures = clan.clan_infrastructures.filter(is_deleted=False).select_related(
+        'subclan'
+    ).order_by('-date_created')
+    infrastructure_count = infrastructures.count()
+    drainage_count = infrastructures.filter(infrastructure_type='DRAINAGE').count()
+    street_light_count = infrastructures.filter(infrastructure_type='STREET_LIGHT').count()
+    other_infra_count = max(0, infrastructure_count - (drainage_count + street_light_count))
 
     # Data records under this clan
     historical_records = Historical.objects.filter(clan=clan, is_deleted=False).select_related('category').order_by('-date_created')[:15]
@@ -245,6 +255,9 @@ def clan_detail_view(request, pk):
         'state': clan.state,
         'city': clan.city
     })
+    infrastructure_create_form = TerritorialInfrastructureForm(initial={
+        'clan': clan
+    })
 
     context = {
         'clan': clan,
@@ -252,6 +265,11 @@ def clan_detail_view(request, pk):
         'is_admin': is_admin,
         'subclans': subclans,
         'subclans_count': subclans.count(),
+        'infrastructures': infrastructures,
+        'infrastructure_count': infrastructure_count,
+        'drainage_count': drainage_count,
+        'street_light_count': street_light_count,
+        'other_infra_count': other_infra_count,
         'historical_records': historical_records,
         'historical_count': historical_count,
         'market_records': market_records,
@@ -263,6 +281,13 @@ def clan_detail_view(request, pk):
         'users': users,
         'clan_edit_form': clan_edit_form,
         'subclan_create_form': subclan_create_form,
+        'infrastructure_create_form': infrastructure_create_form,
+        'node_type_choices': NODE_TYPE_CHOICES,
+        'road_surface_choices': ROAD_SURFACE_CHOICES,
+        'road_condition_choices': ROAD_CONDITION_CHOICES,
+        'infrastructure_type_choices': INFRASTRUCTURE_TYPE_CHOICES,
+        'infrastructure_status_choices': INFRASTRUCTURE_STATUS_CHOICES,
+        'side_of_road_choices': SIDE_OF_ROAD_CHOICES,
     }
     return render(request, 'platform_admin/clans/clan_detail.html', context)
 
@@ -346,8 +371,9 @@ def clan_delete_view(request, pk):
 @login_required
 def subclan_create_for_clan_view(request, clan_id):
     """
-    Add a new Sub-Clan directly under a parent Clan.
+    Add a new Sub-Clan / Territorial Node directly under a parent Clan.
     Follows PRD Node ID convention: [Territory]-[Node Type]-[Sequential Number]
+    Supports parent road connectivity, road surface, and road condition.
     """
     clan = get_object_or_404(Clan, id=clan_id, is_deleted=False)
     next_url = request.POST.get('next', '').strip()
@@ -360,6 +386,9 @@ def subclan_create_for_clan_view(request, clan_id):
         name = request.POST.get('name', '').strip()
         node_type = request.POST.get('node_type', 'STREET').strip() or 'STREET'
         node_id = request.POST.get('node_id', '').strip()
+        parent_road_id = request.POST.get('parent_road')
+        road_surface = request.POST.get('road_surface', 'ASPHALT').strip() or 'ASPHALT'
+        road_condition = request.POST.get('road_condition', 'GOOD').strip() or 'GOOD'
 
         if not name:
             messages.error(request, "Sub-clan / Node name is required.")
@@ -372,10 +401,15 @@ def subclan_create_for_clan_view(request, clan_id):
         state = State.objects.filter(id=state_id).first() if state_id else (city.state if city else clan.state)
         geo_zone = (state.geo_political_zone if state else clan.geo_political_zone)
 
+        parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
+
         subclan = SubClan(
             name=name,
             clan=clan,
             node_type=node_type,
+            parent_road=parent_road,
+            road_surface=road_surface,
+            road_condition=road_condition,
             city=city,
             state=state,
             geo_political_zone=geo_zone,
@@ -391,7 +425,7 @@ def subclan_create_for_clan_view(request, clan_id):
         if hasattr(request.user, 'account_profile'):
             subclan.managers.add(request.user.account_profile)
 
-        messages.success(request, f"Node '{subclan.name}' [{subclan.display_node_id}] created successfully under '{clan.name}'.")
+        messages.success(request, f"Territorial Node '{subclan.name}' [{subclan.display_node_id}] created successfully under '{clan.name}'.")
         return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
 
     return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
@@ -418,6 +452,9 @@ def subclan_create_general_view(request):
         name = request.POST.get('name', '').strip()
         node_type = request.POST.get('node_type', 'STREET').strip() or 'STREET'
         node_id = request.POST.get('node_id', '').strip()
+        parent_road_id = request.POST.get('parent_road')
+        road_surface = request.POST.get('road_surface', 'ASPHALT').strip() or 'ASPHALT'
+        road_condition = request.POST.get('road_condition', 'GOOD').strip() or 'GOOD'
 
         if not name:
             messages.error(request, "Node name is required.")
@@ -429,10 +466,15 @@ def subclan_create_general_view(request):
         state = State.objects.filter(id=state_id).first() if state_id else (city.state if city else clan.state)
         geo_zone = (state.geo_political_zone if state else clan.geo_political_zone)
 
+        parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
+
         subclan = SubClan(
             name=name,
             clan=clan,
             node_type=node_type,
+            parent_road=parent_road,
+            road_surface=road_surface,
+            road_condition=road_condition,
             city=city,
             state=state,
             geo_political_zone=geo_zone,
@@ -456,7 +498,7 @@ def subclan_create_general_view(request):
 @login_required
 def subclan_edit_view(request, pk):
     """
-    Edit a Sub-Clan.
+    Edit a Sub-Clan / Territorial Node.
     """
     subclan = get_object_or_404(SubClan, id=pk, is_deleted=False)
 
@@ -471,6 +513,26 @@ def subclan_edit_view(request, pk):
             messages.error(request, "Sub-clan name cannot be empty.")
         else:
             subclan.name = name
+
+            node_type = request.POST.get('node_type')
+            if node_type:
+                subclan.node_type = node_type
+
+            parent_road_id = request.POST.get('parent_road')
+            if parent_road_id is not None:
+                if parent_road_id == '' or parent_road_id == '0':
+                    subclan.parent_road = None
+                else:
+                    subclan.parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first()
+
+            road_surface = request.POST.get('road_surface')
+            if road_surface:
+                subclan.road_surface = road_surface
+
+            road_condition = request.POST.get('road_condition')
+            if road_condition:
+                subclan.road_condition = road_condition
+
             city_id = request.POST.get('city')
             state_id = request.POST.get('state')
 
@@ -480,12 +542,201 @@ def subclan_edit_view(request, pk):
                 subclan.state = State.objects.filter(id=state_id).first()
 
             subclan.save()
-            messages.success(request, f"Sub-Clan '{subclan.name}' updated successfully.")
+            messages.success(request, f"Territorial Node '{subclan.name}' updated successfully.")
 
     next_url = request.POST.get('next') or (
         reverse('platform_admin:clan-detail', kwargs={'pk': subclan.clan.pk}) if subclan.clan else None
     )
     return redirect(next_url or 'platform_admin:clan-list')
+
+
+@login_required
+def subclan_delete_view(request, pk):
+    """
+    Soft delete a Sub-Clan.
+    """
+    subclan = get_object_or_404(SubClan, id=pk, is_deleted=False)
+
+    if not can_user_manage_subclan(request.user, subclan):
+        messages.error(request, f"You do not have permission to delete '{subclan.name}' Sub-Clan.")
+        next_url = request.POST.get('next') or request.META.get('HTTP_REFERER')
+        return redirect(next_url or 'platform_admin:clan-list')
+
+    if request.method == "POST":
+        subclan.is_deleted = True
+        subclan.save(update_fields=['is_deleted'])
+        messages.info(request, f"Sub-Clan '{subclan.name}' has been archived.")
+
+    next_url = request.POST.get('next') or (
+        reverse('platform_admin:clan-detail', kwargs={'pk': subclan.clan.pk}) if subclan.clan else None
+    )
+    return redirect(next_url or 'platform_admin:clan-list')
+
+
+@login_required
+def infrastructure_create_for_clan_view(request, clan_id):
+    """
+    Create a new TerritorialInfrastructure (Drainage, Street Light, etc.) for a Clan/SubClan.
+    """
+    clan = get_object_or_404(Clan, id=clan_id, is_deleted=False)
+    next_url = request.POST.get('next', '').strip()
+
+    if not can_user_manage_clan(request.user, clan):
+        messages.error(request, f"You do not have permission to add infrastructure to '{clan.name}' Clan.")
+        return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+
+    if request.method == "POST":
+        name = request.POST.get('name', '').strip()
+        infrastructure_type = request.POST.get('infrastructure_type', 'DRAINAGE').strip()
+        subclan_id = request.POST.get('subclan')
+        status = request.POST.get('status', 'OPERATIONAL').strip()
+        side_of_road = request.POST.get('side_of_road', 'BOTH').strip()
+        quantity_str = request.POST.get('quantity', '1')
+        coverage_str = request.POST.get('coverage_length_meters', '').strip()
+        installed_by = request.POST.get('installed_by', '').strip()
+        year_str = request.POST.get('year_installed', '').strip()
+        gps_coordinates = request.POST.get('gps_coordinates', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if not name:
+            messages.error(request, "Infrastructure asset name is required.")
+            return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+
+        try:
+            quantity = int(quantity_str) if quantity_str else 1
+        except ValueError:
+            quantity = 1
+
+        coverage_length = None
+        if coverage_str:
+            try:
+                coverage_length = float(coverage_str)
+            except ValueError:
+                coverage_length = None
+
+        year_installed = None
+        if year_str:
+            try:
+                year_installed = int(year_str)
+            except ValueError:
+                year_installed = None
+
+        subclan = SubClan.objects.filter(id=subclan_id, clan=clan, is_deleted=False).first() if subclan_id else None
+
+        infra = TerritorialInfrastructure.objects.create(
+            clan=clan,
+            subclan=subclan,
+            name=name,
+            infrastructure_type=infrastructure_type,
+            status=status,
+            side_of_road=side_of_road,
+            quantity=quantity,
+            coverage_length_meters=coverage_length,
+            installed_by=installed_by,
+            year_installed=year_installed,
+            gps_coordinates=gps_coordinates,
+            description=description,
+        )
+
+        messages.success(request, f"Territorial infrastructure '{infra.name}' [{infra.get_infrastructure_type_display()}] created successfully.")
+        return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+
+    return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+
+
+@login_required
+def infrastructure_edit_view(request, pk):
+    """
+    Edit a TerritorialInfrastructure record.
+    """
+    infra = get_object_or_404(TerritorialInfrastructure, id=pk, is_deleted=False)
+    clan = infra.clan
+    next_url = request.POST.get('next', '').strip()
+
+    if not can_user_manage_clan(request.user, clan):
+        messages.error(request, "You do not have permission to modify this infrastructure record.")
+        return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+
+    if request.method == "POST":
+        name = request.POST.get('name', '').strip()
+        if not name:
+            messages.error(request, "Infrastructure name cannot be empty.")
+            return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+
+        infra.name = name
+        infra_type = request.POST.get('infrastructure_type')
+        if infra_type:
+            infra.infrastructure_type = infra_type
+
+        subclan_id = request.POST.get('subclan')
+        if subclan_id is not None:
+            if subclan_id == '' or subclan_id == '0':
+                infra.subclan = None
+            else:
+                infra.subclan = SubClan.objects.filter(id=subclan_id, clan=clan, is_deleted=False).first()
+
+        status = request.POST.get('status')
+        if status:
+            infra.status = status
+
+        side_of_road = request.POST.get('side_of_road')
+        if side_of_road:
+            infra.side_of_road = side_of_road
+
+        quantity_str = request.POST.get('quantity')
+        if quantity_str:
+            try:
+                infra.quantity = int(quantity_str)
+            except ValueError:
+                pass
+
+        coverage_str = request.POST.get('coverage_length_meters', '').strip()
+        if coverage_str:
+            try:
+                infra.coverage_length_meters = float(coverage_str)
+            except ValueError:
+                infra.coverage_length_meters = None
+        elif coverage_str == '':
+            infra.coverage_length_meters = None
+
+        infra.installed_by = request.POST.get('installed_by', '').strip()
+        year_str = request.POST.get('year_installed', '').strip()
+        if year_str:
+            try:
+                infra.year_installed = int(year_str)
+            except ValueError:
+                infra.year_installed = None
+        elif year_str == '':
+            infra.year_installed = None
+
+        infra.gps_coordinates = request.POST.get('gps_coordinates', '').strip()
+        infra.description = request.POST.get('description', '').strip()
+        infra.save()
+
+        messages.success(request, f"Territorial infrastructure '{infra.name}' updated successfully.")
+
+    return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+
+
+@login_required
+def infrastructure_delete_view(request, pk):
+    """
+    Soft delete a TerritorialInfrastructure record.
+    """
+    infra = get_object_or_404(TerritorialInfrastructure, id=pk, is_deleted=False)
+    clan = infra.clan
+    next_url = request.POST.get('next', '').strip()
+
+    if not can_user_manage_clan(request.user, clan):
+        messages.error(request, "You do not have permission to delete this infrastructure record.")
+        return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+
+    if request.method == "POST":
+        infra.is_deleted = True
+        infra.save(update_fields=['is_deleted'])
+        messages.info(request, f"Infrastructure asset '{infra.name}' has been archived.")
+
+    return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
 
 
 @login_required

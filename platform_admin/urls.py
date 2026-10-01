@@ -24,6 +24,9 @@ from .views_clans import (
     subclan_delete_view,
     clan_grant_access_view,
     clan_revoke_access_view,
+    infrastructure_create_for_clan_view,
+    infrastructure_edit_view,
+    infrastructure_delete_view,
 )
 from .views_market_sector import (
     market_sector_data_list_view, list_search_market_sector_data_view, market_sector_geo_zone_detail_view, list_load_market_sector_geo_zone_details_view, 
@@ -93,6 +96,9 @@ urlpatterns = [
     path('subclans/create/', subclan_create_general_view, name='subclan-create'),
     path('subclans/<int:pk>/edit/', subclan_edit_view, name='subclan-edit'),
     path('subclans/<int:pk>/delete/', subclan_delete_view, name='subclan-delete'),
+    path('clans/<int:clan_id>/infrastructure/create/', infrastructure_create_for_clan_view, name='infrastructure-create-for-clan'),
+    path('infrastructure/<int:pk>/edit/', infrastructure_edit_view, name='infrastructure-edit'),
+    path('infrastructure/<int:pk>/delete/', infrastructure_delete_view, name='infrastructure-delete'),
 
     path('<user_id>/edit/', edit_account_view, name='edit-account'),
     path('change-password/', UpdatePassword.as_view(), name="update_password"),

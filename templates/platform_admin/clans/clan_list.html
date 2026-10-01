@@ -119,10 +119,10 @@
 
     <!-- Navigation Tabs & Search Controls Card -->
     <div class="en-card mb-4">
-      <div class="p-3 border-bottom d-flex flex-column flex-lg-row justify-content-between align-items-lg-center" style="border-color: var(--border-color) !important; gap: 12px;">
+      <div class="p-3 border-bottom d-flex flex-column justify-content-between gap-3" style="border-color: var(--border-color) !important; gap: 12px;">
         
         <!-- View Mode Navigation Tabs -->
-        <ul class="nav nav-pills" style="gap: 6px;">
+        <ul class="nav" style="gap: 6px;">
           <li class="nav-item">
             <a class="nav-link {% if view_mode == 'all' %}active bg-dark text-white{% else %}text-muted{% endif %}" 
                href="{% url 'platform_admin:clan-list' %}?view_mode=all{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}"

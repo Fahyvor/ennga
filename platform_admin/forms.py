@@ -243,12 +243,14 @@ class MarketSectorClanForm(forms.ModelForm):
             label='Market Sector Category',
             widget=forms.Select(attrs={'class': 'form-control'}),
             queryset=MarketSectorCategory.objects.all(),
+            empty_label='-- Select Category --',
         )
 
     sub_category = forms.ModelChoiceField(
             label='Market Sector Sub Category',
             widget=forms.Select(attrs={'class': 'form-control'}),
             queryset=MarketSectorSubCategory.objects.all(),
+            empty_label='-- Select Sub Category --',
         )
     
     description = RichTextUploadingFormField(required=True,)
@@ -261,16 +263,18 @@ class MarketSectorClanForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['sub_category'].queryset = MarketSectorSubCategory.objects.none()
+        self.fields['sub_category'].empty_label = '-- Select Category First --'
 
         if 'category' in self.data:
             try:
                 category_id = int(self.data.get('category'))
                 self.fields['sub_category'].queryset = MarketSectorSubCategory.objects.filter(category_id=category_id).order_by('name')
+                self.fields['sub_category'].empty_label = '-- Select Sub Category --'
             except (ValueError, TypeError):
                 pass  # invalid input from the client; ignore and fallback to empty City queryset
-        elif self.instance.pk:
-            # self.fields['sub_category'].queryset = self.instance.category.sub_category.order_by('name')
+        elif self.instance.pk and self.instance.category:
             self.fields['sub_category'].queryset = self.instance.category.marketsectorsubcategory_set.order_by('name')
+            self.fields['sub_category'].empty_label = '-- Select Sub Category --'
 
 
 

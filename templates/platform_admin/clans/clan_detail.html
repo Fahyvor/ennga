@@ -10,7 +10,6 @@
       {% for message in messages %}
       <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show en-card p-3 d-flex align-items-center justify-content-between" role="alert" style="border-left: 4px solid var(--brand-dark);">
         <div class="d-flex align-items-center">
-          <span class="mr-2">{% if message.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
           <strong>{{ message }}</strong>
         </div>
         <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="background: none; border: none; font-size: 20px;">
@@ -21,20 +20,22 @@
     </div>
     {% endif %}
 
-    <!-- Breadcrumb & Top Bar -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2">
+    <!-- Breadcrumb Navigation -->
+    <div class="d-flex align-items-center mb-3" style="gap: 8px;">
+      <a href="{% url 'platform_admin:clan-list' %}" class="text-muted" style="font-size: 13px; text-decoration: none;">
+        &larr; Back to Clans Directory
+      </a>
+      <span class="text-muted" style="font-size: 12px;">/</span>
+      <span class="pill-badge pill-badge-cyan" style="font-size: 11px; font-weight: 700;">{{ clan.display_node_id }}</span>
+      <span class="text-muted ml-1" style="font-size: 12px;">#{{ clan.id }}</span>
+    </div>
+
+    <!-- Page Header & Action Controls -->
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4 pb-2" style="gap: 16px;">
       <div>
-        <div class="d-flex align-items-center mb-2" style="gap: 8px;">
-          <a href="{% url 'platform_admin:clan-list' %}" class="text-muted" style="font-size: 13px; text-decoration: none;">
-            &larr; Back to Clans Directory
-          </a>
-          <span class="text-muted" style="font-size: 12px;">/</span>
-          <span class="pill-badge pill-badge-cyan" style="font-size: 11px; font-weight: 700;">{{ clan.display_node_id }}</span>
-          <span class="text-muted ml-1" style="font-size: 12px;">#{{ clan.id }}</span>
-        </div>
         <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
-          <h2 class="font-weight-700 mb-0" style="color: var(--brand-dark);">
-            {{ clan.name }}
+          <h2 class="font-weight-700 mb-0" style="color: var(--brand-dark); font-size: 28px;">
+            {{ clan.name }} Clan
           </h2>
           {% if can_manage %}
             <span class="pill-badge pill-badge-cyan" style="font-size: 12px;">
@@ -52,26 +53,33 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="mt-3 mt-md-0 d-flex flex-wrap gap-2" style="gap: 8px;">
+      <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
         {% if can_manage %}
-          <button type="button" class="btn btn-en-cyan js-open-edit-clan-modal" data-toggle="modal" data-target="#editClanModal" data-bs-toggle="modal" data-bs-target="#editClanModal">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
+          <button type="button" class="btn btn-en-outline btn-en-sm font-weight-600 js-open-edit-clan-modal" data-toggle="modal" data-target="#editClanModal" data-bs-toggle="modal" data-bs-target="#editClanModal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
             </svg>
             Edit Clan
           </button>
 
-          <button type="button" class="btn btn-en-primary js-open-add-subclan-modal" data-toggle="modal" data-target="#addSubClanModal" data-bs-toggle="modal" data-bs-target="#addSubClanModal">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
+          <button type="button" class="btn btn-en-primary btn-en-sm font-weight-600 js-open-add-subclan-modal" data-toggle="modal" data-target="#addSubClanModal" data-bs-toggle="modal" data-bs-target="#addSubClanModal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            Add Sub-Clan
+            Add Sub-Clan / Road
           </button>
 
-          <button type="button" class="btn btn-en-outline js-open-grant-modal" data-toggle="modal" data-target="#grantAccessModal" data-bs-toggle="modal" data-bs-target="#grantAccessModal">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
+          <button type="button" class="btn btn-en-cyan btn-en-sm font-weight-600 js-open-add-infra-modal" data-toggle="modal" data-target="#addInfrastructureModal" data-bs-toggle="modal" data-bs-target="#addInfrastructureModal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            Add Infrastructure
+          </button>
+
+          <button type="button" class="btn btn-en-outline btn-en-sm font-weight-600 js-open-grant-modal" data-toggle="modal" data-target="#grantAccessModal" data-bs-toggle="modal" data-bs-target="#grantAccessModal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;">
               <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="8.5" cy="7" r="4"></circle>
               <line x1="20" y1="8" x2="20" y2="14"></line>
@@ -82,9 +90,9 @@
         {% endif %}
 
         {% if is_admin %}
-          <form method="post" action="{% url 'platform_admin:clan-delete' pk=clan.id %}" onsubmit="return confirm('Are you sure you want to archive/delete {{ clan.name }} Clan?');" style="display: inline;">
+          <form method="post" action="{% url 'platform_admin:clan-delete' pk=clan.id %}" onsubmit="return confirm('Are you sure you want to archive/delete {{ clan.name }} Clan?');" style="display: inline; margin: 0;">
             {% csrf_token %}
-            <button type="submit" class="btn btn-outline-danger btn-en-sm" style="border-radius: 10px; height: 42px; padding: 0 14px;">
+            <button type="submit" class="btn btn-outline-danger btn-en-sm font-weight-600" style="border-radius: 10px;" title="Archive Clan">
               Archive Clan
             </button>
           </form>
@@ -92,28 +100,58 @@
       </div>
     </div>
 
-    <!-- Quick Stats Cards -->
+    <!-- Quick Stats Cards (4 Balanced Columns) -->
     <div class="row mb-4">
-      <div class="col-xl-3 col-sm-6 mb-3">
-        <div class="stat-card-modern">
+      <div class="col-lg-3 col-sm-6 mb-3">
+        <div class="stat-card-modern h-100">
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Sub-Clans</p>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Sub-Clans & Roads</p>
               <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ subclans_count }}</h3>
             </div>
             <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(124, 58, 237, 0.12); display: flex; align-items: center; justify-content: center;">
               <span style="font-size: 20px;">📍</span>
             </div>
           </div>
-          <small class="text-muted mt-2 d-block">Sub-clan units attached</small>
+          <small class="text-muted mt-2 d-block">Sub-clan road & area nodes</small>
         </div>
       </div>
 
-      <div class="col-xl-3 col-sm-6 mb-3">
-        <div class="stat-card-modern">
+      <div class="col-lg-3 col-sm-6 mb-3">
+        <div class="stat-card-modern h-100">
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Managers</p>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Infrastructure</p>
+              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ infrastructure_count }}</h3>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(14, 116, 144, 0.12); display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 20px;">⚡</span>
+            </div>
+          </div>
+          <small class="text-muted mt-2 d-block">🌊 {{ drainage_count }} Drains &bull; 💡 {{ street_light_count }} Lights</small>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-sm-6 mb-3">
+        <div class="stat-card-modern h-100">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Data Records</p>
+              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ historical_count|add:market_count|add:geo_count }}</h3>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(16, 185, 129, 0.12); display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 20px;">📊</span>
+            </div>
+          </div>
+          <small class="text-muted mt-2 d-block">🏛️ {{ historical_count }} Hist &bull; 📊 {{ market_count }} Mkt &bull; 🌍 {{ geo_count }} Geo</small>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-sm-6 mb-3">
+        <div class="stat-card-modern h-100">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Authorized Managers</p>
               <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ assigned_managers.count }}</h3>
             </div>
             <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(196, 242, 244, 0.25); display: flex; align-items: center; justify-content: center;">
@@ -123,54 +161,31 @@
           <small class="text-muted mt-2 d-block">Users with management access</small>
         </div>
       </div>
-
-      <div class="col-xl-3 col-sm-6 mb-3">
-        <div class="stat-card-modern">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Historical Records</p>
-              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ historical_count }}</h3>
-            </div>
-            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(32, 34, 42, 0.08); display: flex; align-items: center; justify-content: center;">
-              <span style="font-size: 20px;">🏛️</span>
-            </div>
-          </div>
-          <small class="text-muted mt-2 d-block">Cultural/history datasets</small>
-        </div>
-      </div>
-
-      <div class="col-xl-3 col-sm-6 mb-3">
-        <div class="stat-card-modern">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Sector & Geo Data</p>
-              <h3 class="mb-0 font-weight-700" style="color: var(--brand-dark);">{{ market_count|add:geo_count }}</h3>
-            </div>
-            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(14, 116, 144, 0.15); display: flex; align-items: center; justify-content: center;">
-              <span style="font-size: 20px;">📊</span>
-            </div>
-          </div>
-          <small class="text-muted mt-2 d-block">Market ({{ market_count }}) & Geo ({{ geo_count }})</small>
-        </div>
-      </div>
     </div>
 
     <!-- Data Entry Quick Bar -->
-    <div class="en-card p-3 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center" style="background: linear-gradient(135deg, rgba(196,242,244,0.12) 0%, rgba(255,255,255,0.8) 100%);">
-      <div class="mb-2 mb-md-0">
-        <strong style="color: var(--brand-dark); font-size: 14px;">Input Data For {{ clan.name }} Clan:</strong>
-        <p class="text-muted mb-0" style="font-size: 12px;">Add cultural, market, or geographic records directly under this clan node.</p>
-      </div>
-      <div class="d-flex flex-wrap gap-2" style="gap: 8px;">
-        <a href="{% url 'platform_admin:historical-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-primary btn-en-sm font-weight-600">
-          🏛️ Add Historical Record
-        </a>
-        <a href="{% url 'platform_admin:market-sector-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-cyan btn-en-sm font-weight-600">
-          📊 Add Market Sector Record
-        </a>
-        <a href="{% url 'platform_admin:geo-physical-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-outline btn-en-sm font-weight-600">
-          🌍 Add Geo-Physical Record
-        </a>
+    <div class="en-card p-3 mb-4" style="background: linear-gradient(135deg, rgba(196,242,244,0.12) 0%, rgba(255,255,255,0.95) 100%); border-left: 4px solid var(--brand-dark);">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center" style="gap: 12px;">
+        <div>
+          <strong style="color: var(--brand-dark); font-size: 14px;">Input Data For {{ clan.name }} Clan:</strong>
+          <p class="text-muted mb-0" style="font-size: 12px;">Add infrastructure, cultural, market, or geographic records directly under this clan node.</p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+          {% if can_manage %}
+          <button type="button" class="btn btn-en-cyan btn-en-sm font-weight-600 js-open-add-infra-modal" data-toggle="modal" data-target="#addInfrastructureModal" data-bs-toggle="modal" data-bs-target="#addInfrastructureModal">
+            ⚡ Add Infrastructure
+          </button>
+          {% endif %}
+          <a href="{% url 'platform_admin:historical-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-primary btn-en-sm font-weight-600">
+            🏛️ Add Historical
+          </a>
+          <a href="{% url 'platform_admin:market-sector-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-outline btn-en-sm font-weight-600">
+            📊 Add Market
+          </a>
+          <a href="{% url 'platform_admin:geo-physical-clan-create-view' clan_location_pk=clan.id %}" class="btn btn-en-outline btn-en-sm font-weight-600">
+            🌍 Add Geo-Physical
+          </a>
+        </div>
       </div>
     </div>
 
@@ -178,20 +193,23 @@
       <!-- Left Column: Sub-Clans & Data Records -->
       <div class="col-lg-8">
 
-        <!-- Card: Sub-Clans Management -->
+        <!-- Card: Sub-Clans & Road Networks Management -->
         <div class="en-card mb-4">
           <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
             <div>
-              <h4 class="font-weight-700 mb-1" style="color: var(--brand-dark); font-size: 17px;">
-                Sub-Clans ({{ subclans_count }})
-              </h4>
-              <p class="text-muted mb-0" style="font-size: 13px;">
-                Sub-clans belonging to {{ clan.name }} Clan. Authorized managers can create and edit these.
+              <div class="d-flex align-items-center" style="gap: 8px;">
+                <h4 class="font-weight-700 mb-0" style="color: var(--brand-dark); font-size: 17px;">
+                  Sub-Clans & Road Networks ({{ subclans_count }})
+                </h4>
+                <span class="pill-badge pill-badge-cyan" style="font-size: 11px;">TERRITORIAL NODES</span>
+              </div>
+              <p class="text-muted mb-0 mt-1" style="font-size: 13px;">
+                Streets, closes, link roads, and community nodes mapped under {{ clan.name }} Clan with road condition and network hierarchy.
               </p>
             </div>
             {% if can_manage %}
               <button type="button" class="btn btn-en-primary btn-en-sm font-weight-600 js-open-add-subclan-modal" data-toggle="modal" data-target="#addSubClanModal" data-bs-toggle="modal" data-bs-target="#addSubClanModal" style="cursor: pointer;">
-                + Add Sub-Clan
+                + Add Sub-Clan / Road
               </button>
             {% endif %}
           </div>
@@ -200,7 +218,9 @@
             <table class="table-modern">
               <thead>
                 <tr>
-                  <th>Sub-Clan Name</th>
+                  <th>Sub-Clan / Road Node</th>
+                  <th>Road Surface & Condition</th>
+                  <th>Utilities & Assets</th>
                   <th>Location</th>
                   <th>Managers</th>
                   {% if can_manage %}
@@ -213,15 +233,61 @@
                 <tr>
                   <td>
                     <div class="d-flex align-items-center">
-                      <span class="mr-2">📍</span>
+                      <span class="mr-2" style="font-size: 18px;">
+                        {% if sc.node_type == 'STREET' or sc.node_type == 'LINK_ROAD' or sc.node_type == 'META_ROAD' or sc.node_type == 'CLOSE' %}🛣️{% else %}📍{% endif %}
+                      </span>
                       <div>
                         <strong style="color: var(--brand-dark); font-size: 14px;">{{ sc.name }}</strong>
-                        <div class="mt-1">
+                        <div class="mt-1 d-flex flex-wrap align-items-center" style="gap: 4px;">
                           <span class="pill-badge pill-badge-subclan" style="font-size: 11px;">{{ sc.display_node_id }}</span>
-                          <span class="pill-badge pill-badge-cyan ml-1" style="font-size: 10px;">{{ sc.get_node_type_display|default:sc.node_type }}</span>
+                          <span class="pill-badge pill-badge-cyan" style="font-size: 10px;">{{ sc.get_node_type_display|default:sc.node_type }}</span>
                         </div>
+                        {% if sc.parent_road %}
+                          <div class="text-muted mt-1" style="font-size: 11px;">
+                            ↳ Branches from: <strong>{{ sc.parent_road.name }}</strong>
+                            <span class="pill-badge pill-badge-subclan" style="font-size: 9px; padding: 1px 6px;">{{ sc.parent_road.display_node_id }}</span>
+                          </div>
+                        {% else %}
+                          <div class="text-muted mt-1" style="font-size: 11px;">
+                            🛣️ Primary Route / Main Arterial
+                          </div>
+                        {% endif %}
                       </div>
                     </div>
+                  </td>
+                  <td>
+                    <div>
+                      <span class="font-weight-600" style="color: var(--brand-dark); font-size: 12px;">
+                        {{ sc.get_road_surface_display|default:sc.road_surface|default:"-" }}
+                      </span>
+                    </div>
+                    <div class="mt-1">
+                      {% if sc.road_condition == 'EXCELLENT' %}
+                        <span class="pill-badge pill-badge-success" style="font-size: 10px;">{{ sc.get_road_condition_display }}</span>
+                      {% elif sc.road_condition == 'GOOD' %}
+                        <span class="pill-badge pill-badge-cyan" style="font-size: 10px;">{{ sc.get_road_condition_display }}</span>
+                      {% elif sc.road_condition == 'FAIR' %}
+                        <span class="pill-badge" style="font-size: 10px; background: rgba(245, 158, 11, 0.15); color: #b45309;">{{ sc.get_road_condition_display }}</span>
+                      {% elif sc.road_condition == 'POOR' %}
+                        <span class="pill-badge" style="font-size: 10px; background: rgba(239, 68, 68, 0.15); color: #dc2626;">{{ sc.get_road_condition_display }}</span>
+                      {% elif sc.road_condition == 'CRITICAL' %}
+                        <span class="pill-badge" style="font-size: 10px; background: #dc2626; color: #fff;">{{ sc.get_road_condition_display }}</span>
+                      {% else %}
+                        <span class="text-muted" style="font-size: 11px;">-</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td>
+                    {% with sc_infras=sc.infrastructures.all %}
+                      {% if sc_infras %}
+                        <span class="pill-badge pill-badge-cyan font-weight-700" style="font-size: 11px;">{{ sc_infras.count }} Asset{{ sc_infras.count|pluralize }}</span>
+                        <div class="text-muted mt-1" style="font-size: 11px;">
+                          🌊 {{ sc.drainages.count }} &bull; 💡 {{ sc.street_lights.count }}
+                        </div>
+                      {% else %}
+                        <span class="text-muted" style="font-size: 12px; font-style: italic;">None logged</span>
+                      {% endif %}
+                    {% endwith %}
                   </td>
                   <td>
                     <span class="text-muted" style="font-size: 13px;">
@@ -247,6 +313,9 @@
                   {% if can_manage %}
                   <td class="text-right">
                     <div class="d-inline-flex align-items-center" style="gap: 6px;">
+                      <button type="button" class="btn btn-en-outline btn-en-sm py-1 px-2 js-add-infra-for-subclan" data-subclan-id="{{ sc.id }}" data-subclan-name="{{ sc.name }}" title="Add Infrastructure on this Road">
+                        + Infra
+                      </button>
                       <button type="button" class="btn btn-en-outline btn-en-sm py-1 px-2 js-open-edit-subclan-modal" data-toggle="modal" data-target="#editSubClanModal{{ sc.id }}" data-bs-toggle="modal" data-bs-target="#editSubClanModal{{ sc.id }}" title="Edit Sub-Clan">
                         ✏️ Edit
                       </button>
@@ -264,9 +333,12 @@
                       <div class="modal-dialog modal-dialog-centered" role="document">
                         <div class="modal-content en-card p-3" style="border-radius: 20px;">
                           <div class="modal-header border-0 pb-0">
-                            <h5 class="modal-title font-weight-700" style="color: var(--brand-dark);">
-                              ✏️ Edit Sub-Clan: {{ sc.name }}
-                            </h5>
+                            <div>
+                              <span class="pill-badge pill-badge-subclan mb-1" style="font-size: 11px;">EDIT TERRITORIAL NODE</span>
+                              <h5 class="modal-title font-weight-700" style="color: var(--brand-dark);">
+                                ✏️ Edit: {{ sc.name }} [{{ sc.display_node_id }}]
+                              </h5>
+                            </div>
                             <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
                               <span aria-hidden="true">&times;</span>
                             </button>
@@ -276,8 +348,49 @@
                             <input type="hidden" name="next" value="{{ request.path }}">
                             <div class="modal-body pt-3">
                               <div class="form-group mb-3">
-                                <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Sub-Clan Name</label>
+                                <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node / Street Name *</label>
                                 <input type="text" name="name" value="{{ sc.name }}" class="form-control form-control-modern" required>
+                              </div>
+
+                              <div class="row">
+                                <div class="col-md-6 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node Type (PRD)</label>
+                                  <select name="node_type" class="form-control form-control-modern">
+                                    {% for val, label in node_type_choices %}
+                                      <option value="{{ val }}" {% if sc.node_type == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                  </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Road / Arterial</label>
+                                  <select name="parent_road" class="form-control form-control-modern">
+                                    <option value="">-- Primary Node / No Parent --</option>
+                                    {% for sc_opt in subclans %}
+                                      {% if sc_opt.id != sc.id %}
+                                        <option value="{{ sc_opt.id }}" {% if sc.parent_road_id == sc_opt.id %}selected{% endif %}>{{ sc_opt.name }} [{{ sc_opt.display_node_id }}]</option>
+                                      {% endif %}
+                                    {% endfor %}
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div class="row">
+                                <div class="col-md-6 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Surface</label>
+                                  <select name="road_surface" class="form-control form-control-modern">
+                                    {% for val, label in road_surface_choices %}
+                                      <option value="{{ val }}" {% if sc.road_surface == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                  </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Condition</label>
+                                  <select name="road_condition" class="form-control form-control-modern">
+                                    {% for val, label in road_condition_choices %}
+                                      <option value="{{ val }}" {% if sc.road_condition == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                  </select>
+                                </div>
                               </div>
                             </div>
                             <div class="modal-footer border-0 pt-0">
@@ -293,12 +406,284 @@
                 </tr>
                 {% empty %}
                 <tr>
-                  <td colspan="{% if can_manage %}4{% else %}3{% endif %}" class="text-center py-4 text-muted">
+                  <td colspan="{% if can_manage %}6{% else %}5{% endif %}" class="text-center py-4 text-muted">
                     <span style="font-size: 28px; display: block; margin-bottom: 6px;">📍</span>
-                    <p class="mb-2" style="font-size: 13px;">No sub-clans have been registered under this clan yet.</p>
+                    <p class="mb-2" style="font-size: 13px;">No sub-clans or roads have been registered under this clan yet.</p>
                     {% if can_manage %}
                       <button type="button" class="btn btn-en-cyan btn-en-sm font-weight-600 js-open-add-subclan-modal" data-toggle="modal" data-target="#addSubClanModal" data-bs-toggle="modal" data-bs-target="#addSubClanModal" style="cursor: pointer;">
                         + Add First Sub-Clan
+                      </button>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Card: Territorial Infrastructure & Utilities Management -->
+        <div class="en-card mb-4" id="infrastructure-section">
+          <div class="p-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center" style="border-color: var(--border-color) !important; gap: 12px;">
+            <div>
+              <div class="d-flex align-items-center" style="gap: 8px;">
+                <h4 class="font-weight-700 mb-0" style="color: var(--brand-dark); font-size: 17px;">
+                  Territorial Infrastructure & Utilities ({{ infrastructure_count }})
+                </h4>
+                <span class="pill-badge pill-badge-cyan" style="font-size: 11px;">CIVIC ASSETS</span>
+              </div>
+              <p class="text-muted mb-0 mt-1" style="font-size: 13px;">
+                Drainage channels, solar & grid street lighting, water supply taps, transformers, and public infrastructure across {{ clan.name }} Clan.
+              </p>
+            </div>
+            {% if can_manage %}
+              <button type="button" class="btn btn-en-primary btn-en-sm font-weight-600 js-open-add-infra-modal" data-toggle="modal" data-target="#addInfrastructureModal" data-bs-toggle="modal" data-bs-target="#addInfrastructureModal" style="cursor: pointer;">
+                + Add Infrastructure
+              </button>
+            {% endif %}
+          </div>
+
+          <!-- Filter tabs -->
+          <div class="px-4 pt-3 pb-2 border-bottom d-flex flex-wrap align-items-center" style="border-color: var(--border-color) !important; gap: 8px;">
+            <button type="button" class="btn btn-sm btn-dark text-white js-infra-filter" data-type="ALL" style="font-size: 12px; padding: 4px 12px; border-radius: 8px;">
+              All Assets ({{ infrastructure_count }})
+            </button>
+            <button type="button" class="btn btn-sm btn-en-outline js-infra-filter" data-type="DRAINAGE" style="font-size: 12px; padding: 4px 12px; border-radius: 8px;">
+              🌊 Drainages ({{ drainage_count }})
+            </button>
+            <button type="button" class="btn btn-sm btn-en-outline js-infra-filter" data-type="STREET_LIGHT" style="font-size: 12px; padding: 4px 12px; border-radius: 8px;">
+              💡 Street Lighting ({{ street_light_count }})
+            </button>
+            <button type="button" class="btn btn-sm btn-en-outline js-infra-filter" data-type="OTHER" style="font-size: 12px; padding: 4px 12px; border-radius: 8px;">
+              ⚡ Other Utilities ({{ other_infra_count }})
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table-modern" id="infraTable">
+              <thead>
+                <tr>
+                  <th>Asset Name & Type</th>
+                  <th>Location / Road</th>
+                  <th>Status</th>
+                  <th>Specifications</th>
+                  {% if can_manage %}
+                    <th class="text-right">Actions</th>
+                  {% endif %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for infra in infrastructures %}
+                <tr class="infra-row" data-type="{{ infra.infrastructure_type }}">
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <span class="mr-2" style="font-size: 18px;">
+                        {% if infra.infrastructure_type == 'DRAINAGE' %}🌊
+                        {% elif infra.infrastructure_type == 'STREET_LIGHT' %}💡
+                        {% elif infra.infrastructure_type == 'POWER_TRANSFORMER' %}⚡
+                        {% elif infra.infrastructure_type == 'WATER_SUPPLY' %}🚰
+                        {% elif infra.infrastructure_type == 'SECURITY_POST' %}🛡️
+                        {% elif infra.infrastructure_type == 'WASTE_DISPOSAL' %}🗑️
+                        {% elif infra.infrastructure_type == 'SIDEWALK' %}🚶
+                        {% elif infra.infrastructure_type == 'SPEED_BUMP' %}⚠️
+                        {% elif infra.infrastructure_type == 'TELECOM_INFRASTRUCTURE' %}📡
+                        {% elif infra.infrastructure_type == 'BRIDGE_CULVERT' %}🌉
+                        {% elif infra.infrastructure_type == 'TRAFFIC_LIGHT' %}🚦
+                        {% else %}🏗️{% endif %}
+                      </span>
+                      <div>
+                        <strong style="color: var(--brand-dark); font-size: 14px;">{{ infra.name }}</strong>
+                        <div class="mt-1 d-flex flex-wrap align-items-center" style="gap: 4px;">
+                          <span class="pill-badge pill-badge-cyan" style="font-size: 10px;">{{ infra.get_infrastructure_type_display }}</span>
+                          {% if infra.side_of_road %}
+                            <span class="pill-badge pill-badge-subclan" style="font-size: 10px;">{{ infra.get_side_of_road_display }}</span>
+                          {% endif %}
+                        </div>
+                        {% if infra.description %}
+                          <p class="text-muted mb-0 mt-1" style="font-size: 11px; max-width: 320px; line-height: 1.3;">
+                            {{ infra.description|truncatechars:120 }}
+                          </p>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    {% if infra.subclan %}
+                      <div class="d-flex align-items-center">
+                        <span class="mr-1">🛣️</span>
+                        <div>
+                          <strong style="color: var(--brand-dark); font-size: 13px;">{{ infra.subclan.name }}</strong>
+                          <div class="text-muted" style="font-size: 11px;">
+                            <span class="pill-badge pill-badge-subclan" style="font-size: 9px; padding: 1px 6px;">{{ infra.subclan.display_node_id }}</span>
+                            {{ infra.subclan.get_node_type_display }}
+                          </div>
+                        </div>
+                      </div>
+                    {% else %}
+                      <span class="pill-badge pill-badge-cyan" style="font-size: 11px;">Clan-Wide Placement</span>
+                    {% endif %}
+                    {% if infra.gps_coordinates %}
+                      <div class="text-muted mt-1" style="font-size: 10px; font-family: monospace;">
+                        📍 {{ infra.gps_coordinates }}
+                      </div>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if infra.status == 'OPERATIONAL' %}
+                      <span class="pill-badge pill-badge-success" style="font-size: 11px;">{{ infra.get_status_display }}</span>
+                    {% elif infra.status == 'NEEDS_MAINTENANCE' %}
+                      <span class="pill-badge" style="font-size: 11px; background: rgba(245, 158, 11, 0.15); color: #b45309;">{{ infra.get_status_display }}</span>
+                    {% elif infra.status == 'CRITICAL' %}
+                      <span class="pill-badge" style="font-size: 11px; background: rgba(239, 68, 68, 0.15); color: #dc2626;">{{ infra.get_status_display }}</span>
+                    {% elif infra.status == 'UNDER_CONSTRUCTION' %}
+                      <span class="pill-badge pill-badge-cyan" style="font-size: 11px;">{{ infra.get_status_display }}</span>
+                    {% elif infra.status == 'ABANDONED' %}
+                      <span class="pill-badge pill-badge-dark" style="font-size: 11px;">{{ infra.get_status_display }}</span>
+                    {% else %}
+                      <span class="pill-badge" style="font-size: 11px;">{{ infra.get_status_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div>
+                      <strong style="color: var(--brand-dark); font-size: 13px;">{{ infra.quantity }} unit{{ infra.quantity|pluralize }}</strong>
+                      {% if infra.coverage_length_meters %}
+                        <span class="text-muted" style="font-size: 12px;">&bull; {{ infra.coverage_length_meters }}m length</span>
+                      {% endif %}
+                    </div>
+                    {% if infra.installed_by or infra.year_installed %}
+                      <div class="text-muted mt-1" style="font-size: 11px;">
+                        {% if infra.installed_by %}By: {{ infra.installed_by }}{% endif %}
+                        {% if infra.year_installed %}({{ infra.year_installed }}){% endif %}
+                      </div>
+                    {% endif %}
+                  </td>
+                  {% if can_manage %}
+                  <td class="text-right">
+                    <div class="d-inline-flex align-items-center" style="gap: 6px;">
+                      <button type="button" class="btn btn-en-outline btn-en-sm py-1 px-2 js-open-edit-infra-modal" data-toggle="modal" data-target="#editInfraModal{{ infra.id }}" data-bs-toggle="modal" data-bs-target="#editInfraModal{{ infra.id }}" title="Edit Infrastructure">
+                        ✏️ Edit
+                      </button>
+                      <form method="post" action="{% url 'platform_admin:infrastructure-delete' pk=infra.id %}" onsubmit="return confirm('Archive infrastructure asset \'{{ infra.name }}\'?');" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="btn btn-outline-danger btn-en-sm py-1 px-2" title="Archive Asset">
+                          🗑️
+                        </button>
+                      </form>
+                    </div>
+
+                    <!-- Modal: Edit Infrastructure {{ infra.id }} -->
+                    <div class="modal fade text-left" id="editInfraModal{{ infra.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                        <div class="modal-content en-card p-3" style="border-radius: 20px;">
+                          <div class="modal-header border-0 pb-0">
+                            <div>
+                              <span class="pill-badge pill-badge-cyan mb-1" style="font-size: 11px;">EDIT INFRASTRUCTURE</span>
+                              <h5 class="modal-title font-weight-700" style="color: var(--brand-dark);">
+                                ✏️ Edit: {{ infra.name }}
+                              </h5>
+                            </div>
+                            <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                          </div>
+                          <form method="post" action="{% url 'platform_admin:infrastructure-edit' pk=infra.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <div class="modal-body pt-3">
+                              <div class="row">
+                                <div class="col-md-7 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Infrastructure Name / Description *</label>
+                                  <input type="text" name="name" value="{{ infra.name }}" class="form-control form-control-modern" required>
+                                </div>
+                                <div class="col-md-5 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Infrastructure Classification</label>
+                                  <select name="infrastructure_type" class="form-control form-control-modern">
+                                    {% for val, label in infrastructure_type_choices %}
+                                      <option value="{{ val }}" {% if infra.infrastructure_type == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div class="row">
+                                <div class="col-md-6 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Specific Road / Street Location</label>
+                                  <select name="subclan" class="form-control form-control-modern">
+                                    <option value="">-- Clan-wide / General Placement --</option>
+                                    {% for sc_opt in subclans %}
+                                      <option value="{{ sc_opt.id }}" {% if infra.subclan_id == sc_opt.id %}selected{% endif %}>{{ sc_opt.name }} [{{ sc_opt.display_node_id }}]</option>
+                                    {% endfor %}
+                                  </select>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Operational Status</label>
+                                  <select name="status" class="form-control form-control-modern">
+                                    {% for val, label in infrastructure_status_choices %}
+                                      <option value="{{ val }}" {% if infra.status == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                  </select>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Side of Road</label>
+                                  <select name="side_of_road" class="form-control form-control-modern">
+                                    {% for val, label in side_of_road_choices %}
+                                      <option value="{{ val }}" {% if infra.side_of_road == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div class="row">
+                                <div class="col-md-4 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Quantity / Units</label>
+                                  <input type="number" name="quantity" class="form-control form-control-modern" value="{{ infra.quantity }}" min="1">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Coverage / Length (Meters)</label>
+                                  <input type="number" step="0.01" name="coverage_length_meters" class="form-control form-control-modern" value="{{ infra.coverage_length_meters|default_if_none:'' }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Year Commissioned</label>
+                                  <input type="number" name="year_installed" class="form-control form-control-modern" value="{{ infra.year_installed|default_if_none:'' }}">
+                                </div>
+                              </div>
+
+                              <div class="row">
+                                <div class="col-md-6 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Installed / Maintained By</label>
+                                  <input type="text" name="installed_by" class="form-control form-control-modern" value="{{ infra.installed_by|default_if_none:'' }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                  <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">GPS Coordinates</label>
+                                  <input type="text" name="gps_coordinates" class="form-control form-control-modern" value="{{ infra.gps_coordinates|default_if_none:'' }}">
+                                </div>
+                              </div>
+
+                              <div class="form-group mb-2">
+                                <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Condition Notes & Field Observations</label>
+                                <textarea name="description" class="form-control form-control-modern" rows="3">{{ infra.description|default_if_none:'' }}</textarea>
+                              </div>
+                            </div>
+                            <div class="modal-footer border-0 pt-0">
+                              <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+                              <button type="submit" class="btn btn-en-cyan font-weight-700">Save Changes</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="{% if can_manage %}5{% else %}4{% endif %}" class="text-center py-4 text-muted">
+                    <span style="font-size: 28px; display: block; margin-bottom: 6px;">⚡</span>
+                    <p class="mb-2" style="font-size: 13px;">No territorial infrastructure records (drainage, streetlights, utilities) recorded for {{ clan.name }} yet.</p>
+                    {% if can_manage %}
+                      <button type="button" class="btn btn-en-cyan btn-en-sm font-weight-600 js-open-add-infra-modal" data-toggle="modal" data-target="#addInfrastructureModal" data-bs-toggle="modal" data-bs-target="#addInfrastructureModal" style="cursor: pointer;">
+                        + Add First Infrastructure Asset
                       </button>
                     {% endif %}
                   </td>
@@ -626,16 +1011,9 @@
             <div class="col-md-6 mb-3">
               <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node Type (PRD) *</label>
               <select name="node_type" id="detailSubclanTypeSelect" class="form-control form-control-modern" required>
-                <option value="STREET" selected>Street (ST)</option>
-                <option value="CLOSE">Close / Crescent (CL)</option>
-                <option value="LINK_ROAD">Sub / Link Road (RD)</option>
-                <option value="META_ROAD">Meta Road (RD)</option>
-                <option value="COMMUNITY">Community / Village (COM)</option>
-                <option value="BUILDING">Building (BLD)</option>
-                <option value="BUSINESS">Business (BIZ)</option>
-                <option value="FACILITY">Facility (FAC)</option>
-                <option value="LANDMARK">Landmark (LMK)</option>
-                <option value="OTHER">Other Node (NOD)</option>
+                {% for val, label in node_type_choices %}
+                  <option value="{{ val }}" {% if val == 'STREET' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
               </select>
             </div>
             <div class="col-md-6 mb-3">
@@ -646,8 +1024,38 @@
           </div>
 
           <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node Name *</label>
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node / Street Name *</label>
             <input type="text" name="name" class="form-control form-control-modern" placeholder="e.g. Chikwe Orlu Street, Close 2, East-West Road" required>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Road / Primary Connection (optional)</label>
+            <select name="parent_road" class="form-control form-control-modern">
+              <option value="">-- Primary Node / Arterial Road (No Parent) --</option>
+              {% for sc_opt in subclans %}
+                <option value="{{ sc_opt.id }}">{{ sc_opt.name }} [{{ sc_opt.display_node_id }}]</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted" style="font-size: 11px;">If this street branches off a major or meta road, select it here.</small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Surface</label>
+              <select name="road_surface" class="form-control form-control-modern">
+                {% for val, label in road_surface_choices %}
+                  <option value="{{ val }}" {% if val == 'ASPHALT' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Condition</label>
+              <select name="road_condition" class="form-control form-control-modern">
+                {% for val, label in road_condition_choices %}
+                  <option value="{{ val }}" {% if val == 'GOOD' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
           </div>
         </div>
         <div class="modal-footer border-0 pt-0">
@@ -704,6 +1112,113 @@
     </div>
   </div>
 </div>
+
+<!-- Modal: Add Territorial Infrastructure -->
+<div class="modal fade" id="addInfrastructureModal" tabindex="-1" role="dialog" aria-labelledby="addInfrastructureModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge pill-badge-cyan mb-1" style="font-size: 11px;">TERRITORIAL INFRASTRUCTURE & UTILITIES</span>
+          <h4 class="modal-title font-weight-700" id="addInfrastructureModalLabel" style="color: var(--brand-dark);">
+            ⚡ Register Infrastructure Asset
+          </h4>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'platform_admin:infrastructure-create-for-clan' clan_id=clan.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <div class="modal-body pt-3">
+          <p class="text-muted" style="font-size: 13px;">
+            Log drainage systems, solar/grid streetlights, water boreholes, power transformers, or civic assets under <strong>{{ clan.name }}</strong> Clan.
+          </p>
+
+          <div class="row">
+            <div class="col-md-7 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Infrastructure Name / Description *</label>
+              <input type="text" name="name" class="form-control form-control-modern" placeholder="e.g. Dual Covered Concrete Drainage - East Side, 15x Solar Streetlight Poles" required>
+            </div>
+            <div class="col-md-5 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Infrastructure Classification *</label>
+              <select name="infrastructure_type" class="form-control form-control-modern" required>
+                {% for val, label in infrastructure_type_choices %}
+                  <option value="{{ val }}" {% if val == 'DRAINAGE' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Specific Road / Street Location (optional)</label>
+              <select name="subclan" id="id_infra_create_subclan" class="form-control form-control-modern">
+                <option value="">-- Clan-wide / General Placement --</option>
+                {% for sc in subclans %}
+                  <option value="{{ sc.id }}">{{ sc.name }} [{{ sc.display_node_id }}]</option>
+                {% endfor %}
+              </select>
+              <small class="text-muted" style="font-size: 11px;">Link directly to a street or road within this clan.</small>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Operational Status</label>
+              <select name="status" class="form-control form-control-modern">
+                {% for val, label in infrastructure_status_choices %}
+                  <option value="{{ val }}" {% if val == 'OPERATIONAL' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Side of Road</label>
+              <select name="side_of_road" class="form-control form-control-modern">
+                {% for val, label in side_of_road_choices %}
+                  <option value="{{ val }}" {% if val == 'BOTH' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Quantity / Units</label>
+              <input type="number" name="quantity" class="form-control form-control-modern" value="1" min="1">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Coverage / Length (Meters)</label>
+              <input type="number" step="0.01" name="coverage_length_meters" class="form-control form-control-modern" placeholder="e.g. 450.50">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Year Commissioned</label>
+              <input type="number" name="year_installed" class="form-control form-control-modern" placeholder="e.g. 2024">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Installed / Maintained By</label>
+              <input type="text" name="installed_by" class="form-control form-control-modern" placeholder="e.g. State Ministry of Works, NDDC, Landlords Assn">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">GPS Coordinates (Lat, Long)</label>
+              <input type="text" name="gps_coordinates" class="form-control form-control-modern" placeholder="e.g. 4.8156, 7.0498">
+            </div>
+          </div>
+
+          <div class="form-group mb-2">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Condition Notes & Field Observations (optional)</label>
+            <textarea name="description" class="form-control form-control-modern" rows="3" placeholder="Condition details, blockage points, solar panel specs, contractor observations..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-en-primary font-weight-700">Save Infrastructure Asset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endif %}
 
 <script>
@@ -720,6 +1235,11 @@
       updateDetailNodeId();
     });
 
+    $(document).on('click', '.js-open-add-infra-modal, [data-target="#addInfrastructureModal"], [data-bs-target="#addInfrastructureModal"]', function(e) {
+      e.preventDefault();
+      $('#addInfrastructureModal').modal('show');
+    });
+
     $(document).on('click', '.js-open-grant-modal, [data-target="#grantAccessModal"], [data-bs-target="#grantAccessModal"]', function(e) {
       e.preventDefault();
       $('#grantAccessModal').modal('show');
@@ -733,7 +1253,53 @@
       }
     });
 
-    // 2. Dynamic PRD Node ID generation in Add Sub-Clan Modal
+    $(document).on('click', '.js-open-edit-infra-modal, [data-target^="#editInfraModal"], [data-bs-target^="#editInfraModal"]', function(e) {
+      e.preventDefault();
+      var target = $(this).attr('data-bs-target') || $(this).attr('data-target');
+      if (target) {
+        $(target).modal('show');
+      }
+    });
+
+    // 2. Pre-select subclan when clicking "+ Infra" on a specific road row
+    $(document).on('click', '.js-add-infra-for-subclan', function(e) {
+      e.preventDefault();
+      var subclanId = $(this).data('subclan-id');
+      if (subclanId) {
+        $('#id_infra_create_subclan').val(subclanId);
+      }
+      $('#addInfrastructureModal').modal('show');
+    });
+
+    // 3. Client-side instantaneous filtering of infrastructure table
+    $(document).on('click', '.js-infra-filter', function(e) {
+      e.preventDefault();
+      $('.js-infra-filter').removeClass('btn-dark text-white').addClass('btn-en-outline');
+      $(this).removeClass('btn-en-outline').addClass('btn-dark text-white');
+      var filterType = $(this).data('type');
+      if (filterType === 'ALL') {
+        $('.infra-row').show();
+      } else if (filterType === 'OTHER') {
+        $('.infra-row').each(function() {
+          var t = $(this).data('type');
+          if (t !== 'DRAINAGE' && t !== 'STREET_LIGHT') {
+            $(this).show();
+          } else {
+            $(this).hide();
+          }
+        });
+      } else {
+        $('.infra-row').each(function() {
+          if ($(this).data('type') === filterType) {
+            $(this).show();
+          } else {
+            $(this).hide();
+          }
+        });
+      }
+    });
+
+    // 4. Dynamic PRD Node ID generation in Add Sub-Clan Modal
     function updateDetailNodeId() {
       var nodeType = $('#detailSubclanTypeSelect').val() || 'STREET';
       $.ajax({
@@ -762,7 +1328,7 @@
     $('#detailSubclanTypeSelect').on('change', updateDetailNodeId);
     $('#addSubClanModal').on('shown.bs.modal', updateDetailNodeId);
 
-    // 3. Dynamic City AJAX loading for Edit Clan
+    // 5. Dynamic City AJAX loading for Edit Clan
     $("#id_clan_state").change(function () {
       var url = $("#editClanForm").attr("data-cities-url");
       var stateId = $(this).val();

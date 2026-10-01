@@ -1,0 +1,1092 @@
+[
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 1,
+    "fields": {
+      "name": "ENERGY1",
+      "is_deleted": false,
+      "date_created": "2023-02-17T15:17:31.926Z",
+      "last_updated": "2023-03-11T14:20:11.621Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 2,
+    "fields": {
+      "name": "RELIGION",
+      "is_deleted": false,
+      "date_created": "2023-02-27T09:08:29.489Z",
+      "last_updated": "2023-03-02T00:07:55.534Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 3,
+    "fields": {
+      "name": "SECURITY",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:07:26.547Z",
+      "last_updated": "2023-03-02T00:07:26.547Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 4,
+    "fields": {
+      "name": "ENVIRONMENT",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:07:40.078Z",
+      "last_updated": "2023-03-02T00:07:40.078Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 5,
+    "fields": {
+      "name": "EDUCATION",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:08:29.170Z",
+      "last_updated": "2023-03-02T00:08:29.170Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 6,
+    "fields": {
+      "name": "HEALTH",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:08:34.602Z",
+      "last_updated": "2023-03-02T00:08:34.602Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 7,
+    "fields": {
+      "name": "BUSINESSES/JOBS",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:08:59.342Z",
+      "last_updated": "2023-03-11T14:10:43.317Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 8,
+    "fields": {
+      "name": "POVERTY/BASIC SURVIVAL",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:09:19.074Z",
+      "last_updated": "2023-03-02T00:09:19.074Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 9,
+    "fields": {
+      "name": "HOUSING/SHELTER",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:09:48.227Z",
+      "last_updated": "2023-03-02T00:09:48.227Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 10,
+    "fields": {
+      "name": "TRANSPORT",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:09:55.450Z",
+      "last_updated": "2023-03-02T00:09:55.450Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 11,
+    "fields": {
+      "name": "PHYSICAL INFRASTRUCTURES",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:10:10.918Z",
+      "last_updated": "2023-03-02T00:10:10.918Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 12,
+    "fields": {
+      "name": "SOCIAL INFRASTRUCTURES",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:10:23.453Z",
+      "last_updated": "2023-03-02T00:10:23.453Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 13,
+    "fields": {
+      "name": "CORRUPTION INDEX",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:10:44.194Z",
+      "last_updated": "2023-03-02T00:10:44.194Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 14,
+    "fields": {
+      "name": "SOCIAL RESPONSIBILITY INDEX",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:10:56.301Z",
+      "last_updated": "2023-03-02T00:10:56.301Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorcategory",
+    "pk": 15,
+    "fields": {
+      "name": "ENERGY2",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:20:27.087Z",
+      "last_updated": "2023-03-11T14:20:27.087Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 1,
+    "fields": {
+      "category": 1,
+      "name": "RELIGOUS ASSETS",
+      "is_deleted": false,
+      "date_created": "2023-02-27T09:08:07.286Z",
+      "last_updated": "2023-03-03T00:09:11.999Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 2,
+    "fields": {
+      "category": 2,
+      "name": "RELIGION DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-02-27T09:08:19.959Z",
+      "last_updated": "2023-03-03T00:08:47.288Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 3,
+    "fields": {
+      "category": 3,
+      "name": "INSECURITY CASES",
+      "is_deleted": false,
+      "date_created": "2023-02-27T09:08:38.444Z",
+      "last_updated": "2023-03-03T00:07:44.101Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 4,
+    "fields": {
+      "category": 2,
+      "name": "SECURITY ASSETS",
+      "is_deleted": false,
+      "date_created": "2023-02-27T09:08:48.692Z",
+      "last_updated": "2023-03-03T00:06:34.258Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 5,
+    "fields": {
+      "category": 3,
+      "name": "SECURITY DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-02-28T20:08:13.912Z",
+      "last_updated": "2023-03-03T00:08:11.459Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 6,
+    "fields": {
+      "category": 3,
+      "name": "SECURITY POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:07:06.220Z",
+      "last_updated": "2023-03-03T00:07:06.220Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 7,
+    "fields": {
+      "category": 2,
+      "name": "RELIGOUS LEADERS SEGMENTATION",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:10:12.877Z",
+      "last_updated": "2023-03-11T14:23:19.696Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 8,
+    "fields": {
+      "category": 2,
+      "name": "RELIGION POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:10:40.718Z",
+      "last_updated": "2023-03-03T00:10:40.718Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 9,
+    "fields": {
+      "category": 4,
+      "name": "ENVIRONMENT DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:11:08.289Z",
+      "last_updated": "2023-03-03T00:11:08.289Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 10,
+    "fields": {
+      "category": 4,
+      "name": "ENVIRONMENTAL SOLUTION ASSETS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:11:34.557Z",
+      "last_updated": "2023-03-03T00:11:34.557Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 11,
+    "fields": {
+      "category": 4,
+      "name": "ENVIRONMENTAL DEGRADATION SEGMENTS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:12:38.057Z",
+      "last_updated": "2023-03-03T00:12:38.057Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 12,
+    "fields": {
+      "category": 4,
+      "name": "ENVIRONMENTAL POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:13:03.492Z",
+      "last_updated": "2023-03-03T00:13:03.492Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 13,
+    "fields": {
+      "category": 5,
+      "name": "EDUCATION DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:13:22.502Z",
+      "last_updated": "2023-03-03T00:13:22.502Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 14,
+    "fields": {
+      "category": 5,
+      "name": "EDUCATION ASSETS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:13:46.472Z",
+      "last_updated": "2023-03-03T00:13:46.472Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 15,
+    "fields": {
+      "category": 5,
+      "name": "EDUCATIONAL IMPACTS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:14:06.653Z",
+      "last_updated": "2023-03-03T00:14:06.653Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 16,
+    "fields": {
+      "category": 5,
+      "name": "EDUCATIONAL POLICY FRAMEWORK",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:14:25.858Z",
+      "last_updated": "2023-03-03T00:14:25.858Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 17,
+    "fields": {
+      "category": 9,
+      "name": "HOUSING DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:14:47.664Z",
+      "last_updated": "2023-03-03T00:14:47.664Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 18,
+    "fields": {
+      "category": 9,
+      "name": "HOUSING ASSETS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:15:13.039Z",
+      "last_updated": "2023-03-03T00:15:13.039Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 19,
+    "fields": {
+      "category": 9,
+      "name": "HOUSING MARKET FEEDBACKS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:15:51.107Z",
+      "last_updated": "2023-03-03T00:15:51.107Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 20,
+    "fields": {
+      "category": 9,
+      "name": "HOUSING POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:16:12.768Z",
+      "last_updated": "2023-03-03T00:16:12.768Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 21,
+    "fields": {
+      "category": 6,
+      "name": "HEALTH DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:16:28.682Z",
+      "last_updated": "2023-03-03T00:16:28.682Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 22,
+    "fields": {
+      "category": 6,
+      "name": "HEALTH ASSETS",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:16:45.660Z",
+      "last_updated": "2023-03-03T00:16:45.660Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 23,
+    "fields": {
+      "category": 6,
+      "name": "HEALTH PREDISPOSITION DATA",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:17:15.303Z",
+      "last_updated": "2023-03-03T00:17:15.303Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 24,
+    "fields": {
+      "category": 6,
+      "name": "HEALTH POLICY FRAMEWORK",
+      "is_deleted": false,
+      "date_created": "2023-03-03T00:18:05.345Z",
+      "last_updated": "2023-03-03T00:18:05.345Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 25,
+    "fields": {
+      "category": 10,
+      "name": "TRANSPORT DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:05:41.764Z",
+      "last_updated": "2023-03-11T14:05:41.764Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 26,
+    "fields": {
+      "category": 10,
+      "name": "TRANSPORT ASSETS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:06:02.778Z",
+      "last_updated": "2023-03-11T14:06:02.778Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 27,
+    "fields": {
+      "category": 10,
+      "name": "TRANSPORT IMPACTS & FEEDBACKS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:07:32.672Z",
+      "last_updated": "2023-03-11T14:07:32.672Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 28,
+    "fields": {
+      "category": 10,
+      "name": "TRANSPORT POLICY FRAMEWORK",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:07:59.026Z",
+      "last_updated": "2023-03-11T14:07:59.026Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 29,
+    "fields": {
+      "category": 7,
+      "name": "BUSINESSES/JOBS DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:09:09.397Z",
+      "last_updated": "2023-03-11T14:11:32.030Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 30,
+    "fields": {
+      "category": 7,
+      "name": "BUSINESSES/JOBS POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:09:43.223Z",
+      "last_updated": "2023-03-11T14:22:11.842Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 31,
+    "fields": {
+      "category": 7,
+      "name": "BUSINESSES/JOBS IMPACTS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:15:00.777Z",
+      "last_updated": "2023-03-11T14:15:00.777Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 32,
+    "fields": {
+      "category": 11,
+      "name": "PHYSICAL INFRASTRUCTURES DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:17:27.108Z",
+      "last_updated": "2023-03-11T14:17:27.108Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 33,
+    "fields": {
+      "category": 11,
+      "name": "PHYSICAL INFRASTRUCTURES ASSETS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:18:39.749Z",
+      "last_updated": "2023-03-11T14:18:39.749Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 34,
+    "fields": {
+      "category": 11,
+      "name": "PHYSICAL INFRASTRUCTURES IMPACTS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:19:01.483Z",
+      "last_updated": "2023-03-11T14:19:01.483Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 35,
+    "fields": {
+      "category": 11,
+      "name": "PHYSICAL INFRASTRUCTURES POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:19:36.696Z",
+      "last_updated": "2023-03-11T14:19:36.696Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 36,
+    "fields": {
+      "category": 7,
+      "name": "BUSINESSES/JOB MARKET IMPACTS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:25:46.602Z",
+      "last_updated": "2023-03-11T14:25:46.602Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 37,
+    "fields": {
+      "category": 1,
+      "name": "ENERGY1 DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:26:17.156Z",
+      "last_updated": "2023-03-11T14:26:17.156Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 38,
+    "fields": {
+      "category": 1,
+      "name": "ENERGY1 ASSETS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:26:38.702Z",
+      "last_updated": "2023-03-11T14:26:38.702Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 39,
+    "fields": {
+      "category": 1,
+      "name": "ENERGY1 SUPPLY CHAIN",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:26:59.097Z",
+      "last_updated": "2023-03-11T14:26:59.097Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 40,
+    "fields": {
+      "category": 1,
+      "name": "ENERGY1 FEEDBACK",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:27:21.475Z",
+      "last_updated": "2023-03-11T14:27:21.475Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 41,
+    "fields": {
+      "category": 15,
+      "name": "ENERGY2 DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:27:46.325Z",
+      "last_updated": "2023-03-11T14:27:46.325Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 42,
+    "fields": {
+      "category": 15,
+      "name": "ENERGY2 EXTERNAL DISTRIBUTION METRICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:29:16.551Z",
+      "last_updated": "2023-03-11T14:29:16.551Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 43,
+    "fields": {
+      "category": 15,
+      "name": "ENERGY2 INTERNAL DISTRIBUTION METRICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:29:41.721Z",
+      "last_updated": "2023-03-11T14:29:41.721Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 44,
+    "fields": {
+      "category": 15,
+      "name": "ENERGY2 POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:30:13.059Z",
+      "last_updated": "2023-03-11T14:30:13.059Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 45,
+    "fields": {
+      "category": 13,
+      "name": "CORRUPTION DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:30:53.537Z",
+      "last_updated": "2023-03-11T14:30:53.537Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 46,
+    "fields": {
+      "category": 13,
+      "name": "CORRUPTION INDEX IMPACTS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:33:21.069Z",
+      "last_updated": "2023-03-11T14:35:12.240Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 47,
+    "fields": {
+      "category": 13,
+      "name": "CORRUPTION INDEX FEEDBACK METRICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:34:19.047Z",
+      "last_updated": "2023-03-11T14:34:19.047Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 48,
+    "fields": {
+      "category": 13,
+      "name": "ANTI-CORRUPTION & POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:34:52.245Z",
+      "last_updated": "2023-03-11T14:34:52.245Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 49,
+    "fields": {
+      "category": 14,
+      "name": "SOCIAL RESPONSIBILITY DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:36:54.113Z",
+      "last_updated": "2023-03-11T14:36:54.113Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 50,
+    "fields": {
+      "category": 14,
+      "name": "SOCIAL RESPONSIBILITY IMPACTS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:37:24.584Z",
+      "last_updated": "2023-03-11T14:37:24.584Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 51,
+    "fields": {
+      "category": 14,
+      "name": "SOCIAL RESPONSIBILITY FEEDBACK METRICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:38:09.980Z",
+      "last_updated": "2023-03-11T14:38:09.980Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 52,
+    "fields": {
+      "category": 14,
+      "name": "PRO-SOCIAL RESPONSIBILITY & POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:38:57.049Z",
+      "last_updated": "2023-03-11T14:38:57.049Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 53,
+    "fields": {
+      "category": 12,
+      "name": "MINORITY DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:41:07.485Z",
+      "last_updated": "2023-03-11T14:41:07.485Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 54,
+    "fields": {
+      "category": 12,
+      "name": "MINORITY RELIEF ORGANISATIONS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:42:18.281Z",
+      "last_updated": "2023-03-11T14:42:18.281Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 55,
+    "fields": {
+      "category": 12,
+      "name": "MINORITY POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:42:43.579Z",
+      "last_updated": "2023-03-11T14:42:43.579Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 56,
+    "fields": {
+      "category": 12,
+      "name": "MINORITY ISSUES SEGMENTATION & FEEDBACK",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:44:09.308Z",
+      "last_updated": "2023-03-11T14:44:09.308Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 57,
+    "fields": {
+      "category": 8,
+      "name": "POVERTY DEMOGRAPHICS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:45:04.880Z",
+      "last_updated": "2023-03-11T14:45:04.880Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 58,
+    "fields": {
+      "category": 8,
+      "name": "POVERTY RELIEF ORGANISATIONS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:45:33.768Z",
+      "last_updated": "2023-03-11T14:45:33.768Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 59,
+    "fields": {
+      "category": 8,
+      "name": "POVERTY REDUCTION POLICY FRAMEWORKS",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:46:14.762Z",
+      "last_updated": "2023-03-11T14:46:14.762Z"
+    }
+  },
+  {
+    "model": "platform_admin.marketsectorsubcategory",
+    "pk": 60,
+    "fields": {
+      "category": 8,
+      "name": "POVERTY ISSUES SEGMENTATION & FEEDBACK",
+      "is_deleted": false,
+      "date_created": "2023-03-11T14:46:54.471Z",
+      "last_updated": "2023-03-11T14:46:54.471Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 1,
+    "fields": {
+      "name": "History",
+      "is_deleted": false,
+      "date_created": "2023-02-20T14:42:38.634Z",
+      "last_updated": "2023-03-02T00:27:53.751Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 2,
+    "fields": {
+      "name": "Migration",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:27:59.808Z",
+      "last_updated": "2023-03-02T00:27:59.808Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 3,
+    "fields": {
+      "name": "Religion",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:28:16.087Z",
+      "last_updated": "2023-03-02T00:28:16.087Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 4,
+    "fields": {
+      "name": "Philosophies",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:28:26.957Z",
+      "last_updated": "2023-03-02T00:28:26.957Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 5,
+    "fields": {
+      "name": "Rites of passage",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:28:52.201Z",
+      "last_updated": "2023-03-02T00:28:52.201Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 6,
+    "fields": {
+      "name": "Fashion",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:28:59.099Z",
+      "last_updated": "2023-03-02T00:28:59.099Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 7,
+    "fields": {
+      "name": "Cuisine",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:29:06.043Z",
+      "last_updated": "2023-03-02T00:29:06.043Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 8,
+    "fields": {
+      "name": "Special Skills",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:29:21.069Z",
+      "last_updated": "2023-03-02T00:29:21.069Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 9,
+    "fields": {
+      "name": "Ancient economy/science/Arts",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:29:40.991Z",
+      "last_updated": "2023-03-02T00:29:40.991Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 10,
+    "fields": {
+      "name": "Calendar",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:29:50.079Z",
+      "last_updated": "2023-03-02T00:29:50.079Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 11,
+    "fields": {
+      "name": "Language/Dialects",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:30:02.063Z",
+      "last_updated": "2023-03-02T00:30:02.063Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 12,
+    "fields": {
+      "name": "Names/Nomenclature",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:30:27.197Z",
+      "last_updated": "2023-03-02T00:30:27.197Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 13,
+    "fields": {
+      "name": "Political figures",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:30:45.005Z",
+      "last_updated": "2023-03-02T00:30:45.005Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 14,
+    "fields": {
+      "name": "Traditional Rulers",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:31:59.329Z",
+      "last_updated": "2023-03-02T00:31:59.329Z"
+    }
+  },
+  {
+    "model": "platform_admin.historicalcategory",
+    "pk": 16,
+    "fields": {
+      "name": "Global figures",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:32:21.556Z",
+      "last_updated": "2023-03-02T00:32:21.556Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 1,
+    "fields": {
+      "name": "Pressure Ranges",
+      "is_deleted": false,
+      "date_created": "2023-02-24T21:15:29.217Z",
+      "last_updated": "2023-03-02T00:22:31.848Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 2,
+    "fields": {
+      "name": "Temperature Ranges",
+      "is_deleted": false,
+      "date_created": "2023-02-24T21:15:35.743Z",
+      "last_updated": "2023-03-02T00:22:07.430Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 3,
+    "fields": {
+      "name": "Rainfall Distribution",
+      "is_deleted": false,
+      "date_created": "2023-02-24T21:33:37.816Z",
+      "last_updated": "2023-02-24T21:33:37.816Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 4,
+    "fields": {
+      "name": "Windspeed Ranges",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:23:36.295Z",
+      "last_updated": "2023-03-02T00:23:36.295Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 5,
+    "fields": {
+      "name": "Underground water reservoir ranges",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:24:04.934Z",
+      "last_updated": "2023-03-02T00:24:04.934Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 6,
+    "fields": {
+      "name": "Land size ranges",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:24:19.237Z",
+      "last_updated": "2023-03-02T00:24:19.237Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 7,
+    "fields": {
+      "name": "Soil features/Properties",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:24:42.885Z",
+      "last_updated": "2023-03-02T00:24:42.885Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 8,
+    "fields": {
+      "name": "Mineral Resources",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:25:02.541Z",
+      "last_updated": "2023-03-02T00:25:02.541Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 9,
+    "fields": {
+      "name": "Land onwership/segmentation",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:25:29.407Z",
+      "last_updated": "2023-03-02T00:25:29.407Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 10,
+    "fields": {
+      "name": "Soil types & Usages",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:25:52.450Z",
+      "last_updated": "2023-03-02T00:25:52.450Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 11,
+    "fields": {
+      "name": "Climatic gradients",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:26:17.339Z",
+      "last_updated": "2023-03-02T00:26:17.339Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 12,
+    "fields": {
+      "name": "Ecological flora",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:26:28.986Z",
+      "last_updated": "2023-03-02T00:26:28.986Z"
+    }
+  },
+  {
+    "model": "platform_admin.geophysicalcategory",
+    "pk": 13,
+    "fields": {
+      "name": "Ecological fauna",
+      "is_deleted": false,
+      "date_created": "2023-03-02T00:26:40.276Z",
+      "last_updated": "2023-03-02T00:26:40.276Z"
+    }
+  }
+]
