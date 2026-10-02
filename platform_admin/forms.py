@@ -104,6 +104,24 @@ class MarketSectorForm(forms.ModelForm):
         elif self.instance.pk:
             self.fields['state'].queryset = self.instance.geo_political_zone.state_set.order_by('name')
 
+        # if 'state' in self.data:
+        #     try:
+        #         state_id = int(self.data.get('state'))
+        #         self.fields['city'].queryset = City.objects.filter(state_id=state_id).order_by('name')
+        #     except (ValueError, TypeError):
+        #         pass  # invalid input from the client; ignore and fallback to empty City queryset
+        # elif self.instance.pk:
+        #     self.fields['city'].queryset = self.instance.state.city_set.order_by('name')
+
+        # if 'city' in self.data:
+        #     try:
+        #         city_id = int(self.data.get('city'))
+        #         self.fields['clan'].queryset = Clan.objects.filter(city_id=city_id).order_by('name')
+        #     except (ValueError, TypeError):
+        #         pass  # invalid input from the client; ignore and fallback to empty City queryset
+        # # elif self.instance.pk:
+        # #     self.fields['clan'].queryset = self.instance.city.clan_set.order_by('name')
+
         if 'category' in self.data:
             try:
                 category_id = int(self.data.get('category'))
