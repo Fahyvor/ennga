@@ -42,6 +42,7 @@ def dashboard(request):
     all_clans_dropdown = Clan.objects.filter(is_deleted=False).select_related('city', 'state').order_by('name')
     all_users = Account.objects.filter(is_active=True).select_related('account_profile').order_by('first_name', 'username')
     all_states = State.objects.filter(is_deleted=False).order_by('name')
+    all_geo_zones = GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')
 
     clan_create_form = ClanForm()
     subclan_create_form = SubClanForm()
@@ -60,6 +61,7 @@ def dashboard(request):
         'all_clans_dropdown': all_clans_dropdown,
         'all_users': all_users,
         'all_states': all_states,
+        'all_geo_zones': all_geo_zones,
         'clan_create_form': clan_create_form,
         'subclan_create_form': subclan_create_form,
         'node_type_choices': NODE_TYPE_CHOICES,

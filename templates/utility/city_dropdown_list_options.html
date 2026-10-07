@@ -1,4 +1,4 @@
-<option>---- Select -----</option>
+<option value="" data-geo-zone-id="{{ state.geo_political_zone.id|default:'' }}" data-geo-zone-name="{{ state.geo_political_zone.name|default:'' }}">-- Select City / LGA (optional) --</option>
 {% for city in cities %}
-<option value="{{ city.pk }}">{{ city.name }}</option>
+<option value="{{ city.pk }}" data-name="{{ city.name }}" data-geo-zone-id="{{ state.geo_political_zone.id|default:'' }}">{{ city.name }}</option>
 {% endfor %}

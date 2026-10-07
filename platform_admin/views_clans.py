@@ -384,7 +384,7 @@ def subclan_create_for_clan_view(request, clan_id):
 
     if request.method == "POST":
         name = request.POST.get('name', '').strip()
-        node_type = request.POST.get('node_type', 'STREET').strip() or 'STREET'
+        node_type = request.POST.get('node_type', 'MAJOR_ROAD').strip() or 'MAJOR_ROAD'
         node_id = request.POST.get('node_id', '').strip()
         parent_road_id = request.POST.get('parent_road')
         road_surface = request.POST.get('road_surface', 'ASPHALT').strip() or 'ASPHALT'
@@ -450,7 +450,7 @@ def subclan_create_general_view(request):
             return redirect(next_url or 'platform_admin:dashboard')
 
         name = request.POST.get('name', '').strip()
-        node_type = request.POST.get('node_type', 'STREET').strip() or 'STREET'
+        node_type = request.POST.get('node_type', 'MAJOR_ROAD').strip() or 'MAJOR_ROAD'
         node_id = request.POST.get('node_id', '').strip()
         parent_road_id = request.POST.get('parent_road')
         road_surface = request.POST.get('road_surface', 'ASPHALT').strip() or 'ASPHALT'

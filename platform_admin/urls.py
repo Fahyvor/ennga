@@ -11,6 +11,8 @@ from .views_clan_access import (
     revoke_subclan_access_view,
     api_load_subclans_for_clan_view,
     api_generate_node_id_view,
+    api_generate_clan_node_id_view,
+    api_state_details_view,
 )
 from .views_clans import (
     clan_list_view,
@@ -83,6 +85,8 @@ urlpatterns = [
     path('subclan-access/revoke/<int:subclan_id>/<int:profile_id>/', revoke_subclan_access_view, name='revoke-subclan-access'),
     path('api/load-subclans/', api_load_subclans_for_clan_view, name='api-load-subclans'),
     path('api/generate-node-id/', api_generate_node_id_view, name='api-generate-node-id'),
+    path('api/generate-clan-node-id/', api_generate_clan_node_id_view, name='api-generate-clan-node-id'),
+    path('api/state-details/', api_state_details_view, name='api-state-details'),
 
     # Clans Directory & Management
     path('clans/', clan_list_view, name='clan-list'),

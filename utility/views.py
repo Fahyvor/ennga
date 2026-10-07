@@ -12,8 +12,9 @@ def load_states(request):
 
 def load_cities(request):
     state_id = request.GET.get('state')
-    cities = City.my_objects.filter(state_id=state_id).order_by('name')
-    return render(request, 'utility/city_dropdown_list_options.html', {'cities': cities})
+    state = State.objects.filter(id=state_id).first() if state_id else None
+    cities = City.my_objects.filter(state_id=state_id).order_by('name') if state_id else City.objects.none()
+    return render(request, 'utility/city_dropdown_list_options.html', {'cities': cities, 'state': state})
 
 
 def load_clans(request):

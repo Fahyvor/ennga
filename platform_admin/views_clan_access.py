@@ -83,6 +83,7 @@ def clan_access_list_view(request):
     all_clans_dropdown = Clan.objects.filter(is_deleted=False).order_by('name')
     all_subclans_dropdown = SubClan.objects.filter(is_deleted=False).select_related('clan').order_by('name')
     all_states = State.objects.filter(is_deleted=False).order_by('name')
+    all_geo_zones = GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')
 
     context = {
         'clans': clans,
@@ -95,6 +96,7 @@ def clan_access_list_view(request):
         'all_clans_dropdown': all_clans_dropdown,
         'all_subclans_dropdown': all_subclans_dropdown,
         'all_states': all_states,
+        'all_geo_zones': all_geo_zones,
         'node_type_choices': NODE_TYPE_CHOICES,
         'clan_create_form': ClanForm(),
         'subclan_create_form': SubClanForm(),
@@ -229,7 +231,10 @@ def api_load_subclans_for_clan_view(request):
         'id': sc.id,
         'name': sc.name,
         'node_id': sc.display_node_id,
-        'node_type': sc.get_node_type_display() if hasattr(sc, 'get_node_type_display') else sc.node_type,
+        'node_type': sc.node_type,
+        'node_type_display': sc.get_node_type_display() if hasattr(sc, 'get_node_type_display') else sc.node_type,
+        'parent_road_id': sc.parent_road_id,
+        'parent_road_name': sc.parent_road.name if sc.parent_road else '',
     } for sc in subclans]
     return JsonResponse({'subclans': data})
 
@@ -237,25 +242,94 @@ def api_load_subclans_for_clan_view(request):
 @login_required
 def api_generate_node_id_view(request):
     """
-    API endpoint that returns the next sequential PRD Node ID for a given clan and node_type.
+    API endpoint that returns the next sequential Territorial PRD Node ID
+    under parent Clan or parent road:
+      Major Road under Clan: NG/SS/RIV/OBIO-AKPOR/CLN/001/MR/001
+      Major Road under SubClan: NG/SS/RIV/OBIO-AKPOR/CLN/001/SB/001/MR/001
+      Sub Road under Major Road: NG/SS/RIV/OBIO-AKPOR/CLN/001/MR/001/SR/001
+      Street under Sub Road: .../SR/001/STR/001
+      Close under Street: .../STR/001/CLS/001
     """
     clan_id = request.GET.get('clan_id')
-    node_type = request.GET.get('node_type', 'STREET')
+    node_type = request.GET.get('node_type', 'MAJOR_ROAD').strip() or 'MAJOR_ROAD'
+    parent_road_id = request.GET.get('parent_road_id') or request.GET.get('parent_road')
 
-    if not clan_id:
-        return JsonResponse({'node_id': '', 'status': 'error', 'message': 'Missing clan_id'})
+    parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
+    clan = Clan.objects.filter(id=clan_id, is_deleted=False).first() if clan_id else (parent_road.clan if parent_road else None)
 
-    clan = Clan.objects.filter(id=clan_id, is_deleted=False).first()
-    if not clan:
-        return JsonResponse({'node_id': '', 'status': 'error', 'message': 'Clan not found'})
+    if not clan and not parent_road:
+        return JsonResponse({'node_id': '', 'status': 'error', 'message': 'Missing clan_id or parent_road_id'})
 
-    mock_subclan = SubClan(clan=clan, node_type=node_type)
+    mock_subclan = SubClan(clan=clan, node_type=node_type, parent_road=parent_road)
     generated_id = mock_subclan.generate_next_node_id()
     return JsonResponse({
         'status': 'success',
         'node_id': generated_id,
         'generated_node_id': generated_id,
-        'clan_name': clan.name,
-        'territory_code': clan.code or (clan.display_node_id.split('-')[0] if clan.display_node_id else 'NOD'),
+        'clan_name': clan.name if clan else '',
+        'clan_node_id': clan.display_node_id if clan else '',
+        'parent_road_id': parent_road.id if parent_road else None,
+        'parent_road_node_id': parent_road.display_node_id if parent_road else '',
         'node_type': node_type,
+    })
+
+
+@login_required
+def api_generate_clan_node_id_view(request):
+    """
+    API endpoint that returns the next sequential Clan Node ID
+    given state and city/LGA: e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001
+    Also returns the state's geo-political zone ID and name.
+    """
+    state_id = request.GET.get('state_id') or request.GET.get('state')
+    city_id = request.GET.get('city_id') or request.GET.get('city')
+    clan_name = request.GET.get('name', 'Clan')
+
+    state = State.objects.filter(id=state_id, is_deleted=False).first() if state_id else None
+    city = City.objects.filter(id=city_id, is_deleted=False).first() if city_id else None
+
+    if city and not state and city.state:
+        state = city.state
+
+    geo_zone = state.geo_political_zone if state else (city.state.geo_political_zone if city and city.state else None)
+
+    mock_clan = Clan(state=state, city=city, geo_political_zone=geo_zone, name=clan_name)
+    generated_id = mock_clan.generate_next_node_id()
+
+    return JsonResponse({
+        'status': 'success',
+        'node_id': generated_id,
+        'generated_node_id': generated_id,
+        'geo_zone_id': geo_zone.id if geo_zone else None,
+        'geo_zone_name': geo_zone.name if geo_zone else "",
+        'state_id': state.id if state else None,
+        'state_name': state.name if state else "",
+        'city_id': city.id if city else None,
+        'city_name': city.name if city else "",
+    })
+
+
+@login_required
+def api_state_details_view(request):
+    """
+    API endpoint returning a State's associated Geo-Political Zone and its Cities/LGAs.
+    """
+    state_id = request.GET.get('state_id') or request.GET.get('state')
+    if not state_id:
+        return JsonResponse({'status': 'error', 'message': 'Missing state_id'}, status=400)
+
+    state = State.objects.filter(id=state_id, is_deleted=False).select_related('geo_political_zone').first()
+    if not state:
+        return JsonResponse({'status': 'error', 'message': 'State not found'}, status=404)
+
+    cities = City.my_objects.filter(state=state).order_by('name')
+    cities_data = [{'id': c.id, 'name': c.name} for c in cities]
+
+    return JsonResponse({
+        'status': 'success',
+        'state_id': state.id,
+        'state_name': state.name,
+        'geo_zone_id': state.geo_political_zone.id if state.geo_political_zone else None,
+        'geo_zone_name': state.geo_political_zone.name if state.geo_political_zone else "",
+        'cities': cities_data,
     })

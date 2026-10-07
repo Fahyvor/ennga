@@ -234,7 +234,7 @@
                   <td>
                     <div class="d-flex align-items-center">
                       <span class="mr-2" style="font-size: 18px;">
-                        {% if sc.node_type == 'STREET' or sc.node_type == 'LINK_ROAD' or sc.node_type == 'META_ROAD' or sc.node_type == 'CLOSE' %}🛣️{% else %}📍{% endif %}
+                        {% if sc.node_type == 'MAJOR_ROAD' or sc.node_type == 'SUB_ROAD' or sc.node_type == 'STREET' or sc.node_type == 'CLOSE' or sc.node_type == 'LINK_ROAD' or sc.node_type == 'META_ROAD' %}🛣️{% elif sc.node_type == 'SUB_CLAN' or sc.node_type == 'COMMUNITY' %}🏘️{% else %}📍{% endif %}
                       </span>
                       <div>
                         <strong style="color: var(--brand-dark); font-size: 14px;">{{ sc.name }}</strong>
@@ -244,12 +244,18 @@
                         </div>
                         {% if sc.parent_road %}
                           <div class="text-muted mt-1" style="font-size: 11px;">
-                            ↳ Branches from: <strong>{{ sc.parent_road.name }}</strong>
+                            ↳ Connected to: <strong>{{ sc.parent_road.name }}</strong>
                             <span class="pill-badge pill-badge-subclan" style="font-size: 9px; padding: 1px 6px;">{{ sc.parent_road.display_node_id }}</span>
                           </div>
                         {% else %}
                           <div class="text-muted mt-1" style="font-size: 11px;">
-                            🛣️ Primary Route / Main Arterial
+                            {% if sc.node_type == 'MAJOR_ROAD' %}
+                              🛣️ Major Road (Connected to {{ clan.name }})
+                            {% elif sc.node_type == 'SUB_CLAN' %}
+                              🏘️ Sub-Clan / Community under {{ clan.name }}
+                            {% else %}
+                              🛣️ Primary Route / Main Arterial
+                            {% endif %}
                           </div>
                         {% endif %}
                       </div>
@@ -949,30 +955,33 @@
             {{ clan_edit_form.name }}
           </div>
 
-          <div class="row">
-            <div class="col-md-5 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Code</label>
-              {{ clan_edit_form.code }}
-              <small class="text-muted" style="font-size: 11px;">e.g. {{ clan.code|default:"AGB" }}</small>
-            </div>
-            <div class="col-md-7 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Node ID</label>
-              {{ clan_edit_form.node_id }}
-              <small class="text-muted" style="font-size: 11px;">PRD pattern: {{ clan.display_node_id }}</small>
-            </div>
-          </div>
-
           <div class="form-group mb-3">
             <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">State Location (optional)</label>
             {{ clan_edit_form.state }}
           </div>
+
           <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">City / LGA (optional)</label>
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Local Government Area (LGA) / City (optional)</label>
             {{ clan_edit_form.city }}
           </div>
+
           <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Geo-Political Zone (optional)</label>
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Geo-Political Zone (Auto-assigned)</label>
             {{ clan_edit_form.geo_political_zone }}
+            <small class="text-muted" style="font-size: 11px;">Automatically determined by the selected State.</small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Code</label>
+              {{ clan_edit_form.code }}
+              <small class="text-muted" style="font-size: 11px;">e.g. {{ clan.code|default:"RUM" }}</small>
+            </div>
+            <div class="col-md-8 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Node ID</label>
+              {{ clan_edit_form.node_id }}
+              <small class="text-muted" style="font-size: 11px;">Format: NG/SS/RIV/OBIO-AKPOR/CLN/001</small>
+            </div>
           </div>
         </div>
         <div class="modal-footer border-0 pt-0">
@@ -990,7 +999,7 @@
     <div class="modal-content en-card p-3" style="border-radius: 20px;">
       <div class="modal-header border-0 pb-0">
         <div>
-          <span class="pill-badge pill-badge-subclan mb-1" style="font-size: 11px;">PRD [Territory]-[Type]-[001]</span>
+          <span class="pill-badge pill-badge-subclan mb-1" style="font-size: 11px;">...CLN/001/SB/001</span>
           <h4 class="modal-title font-weight-700" id="addSubClanModalLabel" style="color: var(--brand-dark);">
             📍 Add Territorial Node / Sub-Clan
           </h4>
@@ -1008,35 +1017,35 @@
           </p>
 
           <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-5 mb-3">
               <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node Type (PRD) *</label>
               <select name="node_type" id="detailSubclanTypeSelect" class="form-control form-control-modern" required>
                 {% for val, label in node_type_choices %}
-                  <option value="{{ val }}" {% if val == 'STREET' %}selected{% endif %}>{{ label }}</option>
+                  <option value="{{ val }}" {% if val == 'MAJOR_ROAD' %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-6 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">PRD Node ID</label>
-              <input type="text" name="node_id" id="detailSubclanIdInput" class="form-control form-control-modern" placeholder="e.g. {{ clan.code|default:'RUM' }}-ST-001" style="font-family: monospace; font-weight: 600; color: #0e7490;">
+            <div class="col-md-7 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territorial Node ID (Auto-generated)</label>
+              <input type="text" name="node_id" id="detailSubclanIdInput" class="form-control form-control-modern" placeholder="e.g. {{ clan.display_node_id }}/MR/001" style="font-family: monospace; font-weight: 600; color: #0e7490;">
               <small class="text-muted" style="font-size: 11px;">Auto-calculated or enter custom ID</small>
             </div>
           </div>
 
           <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node / Street Name *</label>
-            <input type="text" name="name" class="form-control form-control-modern" placeholder="e.g. Chikwe Orlu Street, Close 2, East-West Road" required>
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road / Node Name *</label>
+            <input type="text" name="name" class="form-control form-control-modern" placeholder="e.g. East-West Major Road, Chikwe Orlu Street, Close 2" required>
           </div>
 
           <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Road / Primary Connection (optional)</label>
-            <select name="parent_road" class="form-control form-control-modern">
-              <option value="">-- Primary Node / Arterial Road (No Parent) --</option>
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Road / Primary Connection</label>
+            <select name="parent_road" id="detailSubclanParentRoadSelect" class="form-control form-control-modern">
+              <option value="">-- Connected Directly to {{ clan.name }} [{{ clan.display_node_id }}] (Primary Trunk) --</option>
               {% for sc_opt in subclans %}
-                <option value="{{ sc_opt.id }}">{{ sc_opt.name }} [{{ sc_opt.display_node_id }}]</option>
+                <option value="{{ sc_opt.id }}" data-node-type="{{ sc_opt.node_type }}" data-node-id="{{ sc_opt.display_node_id }}">{{ sc_opt.name }} [{{ sc_opt.display_node_id }}] ({{ sc_opt.get_node_type_display|default:sc_opt.node_type }})</option>
               {% endfor %}
             </select>
-            <small class="text-muted" style="font-size: 11px;">If this street branches off a major or meta road, select it here.</small>
+            <small class="text-muted" style="font-size: 11px;">Major Roads connect to Clan or Sub-Clan; Sub Roads connect to Major Roads; Streets connect to Sub Roads or Major Roads; Closes connect to Streets.</small>
           </div>
 
           <div class="row">
@@ -1299,12 +1308,17 @@
       }
     });
 
-    // 4. Dynamic PRD Node ID generation in Add Sub-Clan Modal
+    // 4. Dynamic PRD Node ID generation in Add Sub-Clan / Road Modal
     function updateDetailNodeId() {
-      var nodeType = $('#detailSubclanTypeSelect').val() || 'STREET';
+      var nodeType = $('#detailSubclanTypeSelect').val() || 'MAJOR_ROAD';
+      var parentRoadId = $('#detailSubclanParentRoadSelect').val() || '';
       $.ajax({
         url: '{% url "platform_admin:api-generate-node-id" %}',
-        data: { clan_id: '{{ clan.id }}', node_type: nodeType },
+        data: {
+          clan_id: '{{ clan.id }}',
+          node_type: nodeType,
+          parent_road_id: parentRoadId
+        },
         dataType: 'json',
         success: function(data) {
           var nid = (data && (data.node_id || data.generated_node_id)) || '';
@@ -1313,22 +1327,74 @@
           }
         },
         error: function() {
-          var prefixMap = {
-            'STREET': 'ST', 'CLOSE': 'CL', 'LINK_ROAD': 'RD', 'META_ROAD': 'RD',
-            'COMMUNITY': 'COM', 'BUILDING': 'BLD', 'BUSINESS': 'BIZ',
-            'FACILITY': 'FAC', 'LANDMARK': 'LMK', 'OTHER': 'NOD'
-          };
-          var code = '{{ clan.code|default:"NOD" }}';
-          var pfx = prefixMap[nodeType] || 'ST';
-          $('#detailSubclanIdInput').val(code + '-' + pfx + '-001');
+          $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/MR/001');
         }
       });
     }
 
-    $('#detailSubclanTypeSelect').on('change', updateDetailNodeId);
-    $('#addSubClanModal').on('shown.bs.modal', updateDetailNodeId);
+    function filterDetailParentRoads() {
+      var nodeType = $('#detailSubclanTypeSelect').val() || 'MAJOR_ROAD';
 
-    // 5. Dynamic City AJAX loading for Edit Clan
+      $('#detailSubclanParentRoadSelect option').each(function() {
+        var optVal = $(this).val();
+        var optType = $(this).data('node-type');
+        if (!optVal) {
+          if (nodeType === 'MAJOR_ROAD' || nodeType === 'SUB_CLAN') {
+            $(this).text('-- Connected Directly to {{ clan.name }} [{{ clan.display_node_id }}] (Primary Trunk) --');
+          } else {
+            $(this).text('-- Standalone / Primary (No Parent Road) --');
+          }
+          $(this).show();
+          return;
+        }
+
+        // MAJOR_ROAD: connects to Clan (no parent) OR to Sub-Clan
+        // SUB_ROAD: connects to Major Road
+        // STREET: connects to Sub Road or Major Road or Sub-Clan
+        // CLOSE: connects to Street or Sub Road or Major Road
+        if (nodeType === 'MAJOR_ROAD') {
+          if (optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
+            $(this).show();
+          } else {
+            $(this).hide();
+          }
+        } else if (nodeType === 'SUB_ROAD') {
+          if (optType === 'MAJOR_ROAD' || optType === 'META_ROAD') {
+            $(this).show();
+          } else {
+            $(this).hide();
+          }
+        } else if (nodeType === 'STREET') {
+          if (optType === 'SUB_ROAD' || optType === 'LINK_ROAD' || optType === 'MAJOR_ROAD' || optType === 'META_ROAD' || optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
+            $(this).show();
+          } else {
+            $(this).hide();
+          }
+        } else if (nodeType === 'CLOSE') {
+          if (optType === 'STREET' || optType === 'SUB_ROAD' || optType === 'LINK_ROAD' || optType === 'MAJOR_ROAD' || optType === 'META_ROAD') {
+            $(this).show();
+          } else {
+            $(this).hide();
+          }
+        } else {
+          $(this).show();
+        }
+      });
+
+      var selectedOption = $('#detailSubclanParentRoadSelect option:selected');
+      if (selectedOption.length && !selectedOption.is(':visible')) {
+        $('#detailSubclanParentRoadSelect').val('');
+      }
+      updateDetailNodeId();
+    }
+
+    $('#detailSubclanTypeSelect').on('change', filterDetailParentRoads);
+    $('#detailSubclanParentRoadSelect').on('change', updateDetailNodeId);
+    $('#addSubClanModal').on('shown.bs.modal', function() {
+      filterDetailParentRoads();
+    });
+
+    // 5. Dynamic City AJAX loading for Edit Clan + Auto-set Geopolitical Zone
     $("#id_clan_state").change(function () {
       var url = $("#editClanForm").attr("data-cities-url");
       var stateId = $(this).val();
@@ -1338,10 +1404,15 @@
           data: { 'state': stateId },
           success: function (data) {
             $("#id_clan_city").html(data);
+            var geoZoneId = $("#id_clan_city option[data-geo-zone-id]").first().data("geo-zone-id");
+            if (geoZoneId) {
+              $("#id_clan_geo_zone").val(geoZoneId);
+            }
           }
         });
       } else {
         $("#id_clan_city").html('<option value="">-- Select City / LGA (optional) --</option>');
+        $("#id_clan_geo_zone").val('');
       }
     });
   });

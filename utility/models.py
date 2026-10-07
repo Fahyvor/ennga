@@ -203,11 +203,14 @@ class City(models.Model):
 import re
 
 NODE_TYPE_CHOICES = (
-    ('STREET', 'Street (ST)'),
-    ('CLOSE', 'Close / Crescent (CL)'),
-    ('LINK_ROAD', 'Sub / Link Road (RD)'),
-    ('META_ROAD', 'Meta Road (RD)'),
-    ('COMMUNITY', 'Community / Village (COM)'),
+    ('MAJOR_ROAD', 'Major Road (MR)'),
+    ('SUB_ROAD', 'Sub Road (SR)'),
+    ('STREET', 'Street (STR)'),
+    ('CLOSE', 'Close / Crescent (CLS)'),
+    ('SUB_CLAN', 'Sub-Clan / Community (SB)'),
+    ('COMMUNITY', 'Community / Village (SB)'),
+    ('LINK_ROAD', 'Sub / Link Road (SR)'),
+    ('META_ROAD', 'Meta Road (MR)'),
     ('BUILDING', 'Building (BLD)'),
     ('BUSINESS', 'Business (BIZ)'),
     ('FACILITY', 'Facility (FAC)'),
@@ -216,12 +219,15 @@ NODE_TYPE_CHOICES = (
 )
 
 NODE_TYPE_PREFIXES = {
+    'MAJOR_ROAD': 'MR',
+    'SUB_ROAD': 'SR',
+    'STREET': 'STR',
+    'CLOSE': 'CLS',
+    'SUB_CLAN': 'SB',
+    'COMMUNITY': 'SB',
+    'LINK_ROAD': 'SR',
+    'META_ROAD': 'MR',
     'CLAN': 'CLN',
-    'COMMUNITY': 'COM',
-    'META_ROAD': 'RD',
-    'LINK_ROAD': 'RD',
-    'STREET': 'ST',
-    'CLOSE': 'CL',
     'BUILDING': 'BLD',
     'BUSINESS': 'BIZ',
     'FACILITY': 'FAC',
@@ -306,7 +312,7 @@ class Clan(models.Model):
     city = models.ForeignKey(City, null=True, blank=True, on_delete=models.SET_NULL, related_name='clan_cities')
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=20, blank=True, null=True, help_text="Territory code prefix, e.g. RUM")
-    node_id = models.CharField(max_length=50, blank=True, null=True, db_index=True, help_text="Territorial Node ID, e.g. RUM-CLN-001")
+    node_id = models.CharField(max_length=150, blank=True, null=True, db_index=True, help_text="Territorial Node ID, e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001")
     managers = models.ManyToManyField("accounts.Profile", blank=True, related_name='clan_managers')
     restricted_users = models.ManyToManyField("accounts.Profile", blank=True, related_name='clan_restricted_users')
     is_deleted = models.BooleanField(default=False)
@@ -327,17 +333,31 @@ class Clan(models.Model):
     def display_node_id(self):
         if self.node_id:
             return self.node_id
+        if self.state or self.city:
+            return self.generate_next_node_id()
         prefix = self.code or generate_territory_code(self.name)
-        return f"{prefix}-CLN-{self.id:03d}"
+        return f"{prefix}-CLN-{self.id:03d}" if self.id else f"{prefix}-CLN-001"
 
     def generate_next_node_id(self):
-        prefix = self.code or generate_territory_code(self.name)
-        pattern_prefix = f"{prefix}-CLN-"
+        from .territory_codes import build_clan_node_prefix
+        state = self.state
+        if not state and self.city and self.city.state:
+            state = self.city.state
+        geo_zone = self.geo_political_zone
+        if not geo_zone and state and state.geo_political_zone:
+            geo_zone = state.geo_political_zone
+
+        pattern_prefix = build_clan_node_prefix(
+            country=self.country,
+            geo_zone=geo_zone,
+            state=state,
+            city=self.city
+        )
         existing = Clan.objects.filter(node_id__startswith=pattern_prefix)
         max_seq = 0
         for c in existing:
             if c.node_id:
-                m = re.search(rf"{pattern_prefix}(\d+)", c.node_id)
+                m = re.search(rf"{re.escape(pattern_prefix)}(\d+)", c.node_id)
                 if m:
                     try:
                         seq_val = int(m.group(1))
@@ -350,7 +370,7 @@ class Clan(models.Model):
     def save(self, *args, **kwargs):
         if not self.code and self.name:
             self.code = generate_territory_code(self.name)
-        if not self.node_id and self.name:
+        if not self.node_id:
             self.node_id = self.generate_next_node_id()
         super().save(*args, **kwargs)
 
@@ -390,7 +410,7 @@ class SubClan(models.Model):
     clan = models.ForeignKey(Clan, null=True, on_delete=models.SET_NULL)
     name = models.CharField(max_length=255)
     node_type = models.CharField(max_length=50, default='STREET', choices=NODE_TYPE_CHOICES, help_text="Territorial node classification")
-    node_id = models.CharField(max_length=50, blank=True, null=True, db_index=True, help_text="PRD pattern: [Territory]-[Node Type]-[Sequential Number], e.g. RUM-ST-001")
+    node_id = models.CharField(max_length=150, blank=True, null=True, db_index=True, help_text="Territorial Node ID, e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001/SB/001")
     parent_road = models.ForeignKey(
         'self',
         null=True,
@@ -435,10 +455,16 @@ class SubClan(models.Model):
     def display_node_id(self):
         if self.node_id:
             return self.node_id
-        clan = self.clan
-        territory = (clan.code or generate_territory_code(clan.name)) if clan else "NOD"
-        type_code = NODE_TYPE_PREFIXES.get(self.node_type or 'STREET', 'ST')
-        return f"{territory}-{type_code}-{self.id:03d}"
+        from .territory_codes import get_node_type_code
+        code = get_node_type_code(self.node_type)
+        parent = self.parent_road
+        if parent:
+            parent_nid = parent.node_id or parent.display_node_id
+        elif self.clan:
+            parent_nid = self.clan.node_id or self.clan.display_node_id
+        else:
+            parent_nid = "NOD"
+        return f"{parent_nid}/{code}/{self.id:03d}" if self.id else f"{parent_nid}/{code}/001"
 
     @property
     def total_infrastructures(self):
@@ -453,20 +479,27 @@ class SubClan(models.Model):
         return self.infrastructures.filter(infrastructure_type='STREET_LIGHT', is_deleted=False)
 
     def generate_next_node_id(self):
-        clan = self.clan
-        if clan:
-            territory = clan.code or generate_territory_code(clan.name)
+        from .territory_codes import build_road_node_prefix
+        parent = self.parent_road
+        if parent:
+            parent_nid = parent.node_id or parent.display_node_id
+        elif self.clan:
+            parent_nid = self.clan.node_id or self.clan.display_node_id
         else:
-            territory = "NOD"
-        type_code = NODE_TYPE_PREFIXES.get(self.node_type or 'STREET', 'ST')
-        prefix = f"{territory}-{type_code}-"
+            parent_nid = "NG/SS/RIV/OBIO-AKPOR/CLN/001"
 
-        # Find existing sequence numbers for this clan and node type
-        existing = SubClan.objects.filter(clan=clan, node_id__startswith=prefix)
+        prefix = build_road_node_prefix(parent_nid, self.node_type)
+
+        # Find existing sequence numbers for this prefix
+        existing_node_ids = SubClan.objects.filter(
+            node_id__startswith=prefix
+        ).values_list('node_id', flat=True)
+
         max_seq = 0
-        for sc in existing:
-            if sc.node_id:
-                m = re.search(rf"{prefix}(\d+)", sc.node_id)
+        pattern = re.compile(rf"^{re.escape(prefix)}(\d+)")
+        for nid in existing_node_ids:
+            if nid:
+                m = pattern.match(nid)
                 if m:
                     try:
                         seq_val = int(m.group(1))
