@@ -367,15 +367,17 @@ REST_FRAMEWORK = {
 REST_AUTH_SERIALIZERS = {
     'USER_DETAILS_SERIALIZER': 'accounts.serializers.UserDetailsSerializer'
 }
-ELASTIC_USER = config("ELASTIC_USER")
-ELASTIC_PASSWORD = config("ELASTIC_PASSWORD")
+ELASTIC_USER = config("ELASTIC_USER", default="")
+ELASTIC_PASSWORD = config("ELASTIC_PASSWORD", default="")
 
 ELASTICSEARCH_DSL = {
     "default": {
-        "hosts": "http://localhost:9200",
-        "http_auth": (ELASTIC_USER, ELASTIC_PASSWORD),
+        "hosts": config("ELASTIC_HOST", default="http://localhost:9200"),
     }
 }
+if ELASTIC_USER and ELASTIC_PASSWORD:
+    ELASTICSEARCH_DSL["default"]["http_auth"] = (ELASTIC_USER, ELASTIC_PASSWORD)
+
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=4320),  # 3 Days
