@@ -1,67 +1,111 @@
-version: '3.8'
-
 services:
+  # Django Web Application Service
   ennga:
-    container_name: ennga-prod
+    container_name: ennga-web
     build:
-      context: ./
-    #command: gunicorn ennga.wsgi:application --bind 0.0.0.0:8000 & celery -A ennga worker --loglevel=info -B
-    # command: python manage.py runserver 0.0.0.0:8000
-    # command: python manage.py runserver 0.0.0.0:8000 & celery -A ennga worker --loglevel=info -B
-    command: celery -A ennga worker --loglevel=info -B
+      context: .
+      dockerfile: Dockerfile
+    command: gunicorn ennga.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120 --no-control-socket
+    restart: unless-stopped
     volumes:
       - ./:/home/app/ennga
       - static_volume:/home/app/ennga/static_in_env
-    expose: 
-      - 8000:8000
+      - media_volume:/home/app/ennga/media
     ports:
-    - "8000:8000" 
+      - "8000:8000"
+    expose:
+      - "8000"
     env_file:
       - ./.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=8000
     depends_on:
-      - db
-      - redis
-      - elasticsearch
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+      elasticsearch:
+        condition: service_started
 
+  # Celery Background Worker & Beat Scheduler
+  celery:
+    container_name: ennga-celery
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A ennga worker --loglevel=info -B
+    restart: unless-stopped
+    volumes:
+      - ./:/home/app/ennga
+      - media_volume:/home/app/ennga/media
+    env_file:
+      - ./.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - SKIP_MIGRATIONS=true
+    depends_on:
+      - ennga
+      - redis
+
+  # PostgreSQL Database Service
   db:
-    image: postgres:15
+    container_name: ennga-postgres
+    image: postgres:15-alpine
+    restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    env_file:
-      - ./.env
-
-  nginx:
-    build: ./nginx
-    volumes:
-      - static_volume:/home/app/ennga/static_in_env
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-ennga_db}
+      - POSTGRES_USER=${POSTGRES_USER:-ennga_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ennga_password}
     ports:
-      - 1337:80
+      - "5432:5432"
+
+  # Redis Cache & Celery Message Broker
+  redis:
+    container_name: ennga-redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  # Nginx Reverse Proxy (Serving static files & forwarding traffic)
+  nginx:
+    container_name: ennga-nginx
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - static_volume:/home/app/ennga/static_in_env:ro
+      - media_volume:/home/app/ennga/media:ro
+    ports:
+      - "1337:80"
+      - "8080:80"
     depends_on:
       - ennga
 
-  redis:
-    image: redis:latest
-    ports:
-      - 6379:6379
-
-  # Elasticsearch
+  # Elasticsearch Search Engine
   elasticsearch:
+    container_name: ennga-elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.18
-    container_name: elasticsearch
+    restart: unless-stopped
     environment:
       - bootstrap.memory_lock=true
       - discovery.type=single-node
       - cluster.name=elasticsearch
-      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - cluster.routing.allocation.disk.threshold_enabled=false
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-changeme}
+      - xpack.security.enabled=false
     ports:
       - "9200:9200"
-    env_file:
-      - ./.env
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
 
 volumes:
   postgres_data:
   static_volume:
+  media_volume:
   elasticsearch_data:

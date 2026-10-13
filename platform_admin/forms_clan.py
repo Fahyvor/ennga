@@ -19,13 +19,16 @@ class ClanForm(forms.ModelForm):
         })
     )
     node_id = forms.CharField(
-        label='Territorial Node ID (optional)',
+        label='Territorial Node ID (Auto-generated)',
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-modern',
             'id': 'id_clan_node_id',
             'placeholder': 'PRD pattern: e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001 (auto-generated)',
-            'maxlength': '150'
+            'maxlength': '150',
+            'readonly': 'readonly',
+            'tabindex': '-1',
+            'style': 'cursor: not-allowed; background-color: #f8fafc; font-family: monospace; font-weight: 600; color: #0e7490;'
         })
     )
     state = forms.ModelChoiceField(
@@ -134,13 +137,16 @@ class SubClanForm(forms.ModelForm):
         })
     )
     node_id = forms.CharField(
-        label='PRD Node ID (optional)',
+        label='Territorial Node ID (Auto-generated)',
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-modern',
             'id': 'id_subclan_node_id',
             'placeholder': 'e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001/MR/001 (auto-generated)',
-            'maxlength': '150'
+            'maxlength': '150',
+            'readonly': 'readonly',
+            'tabindex': '-1',
+            'style': 'cursor: not-allowed; background-color: #f8fafc; font-family: monospace; font-weight: 600; color: #0e7490;'
         })
     )
     parent_road = forms.ModelChoiceField(

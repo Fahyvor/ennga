@@ -453,9 +453,11 @@
               <small class="text-muted" style="font-size: 11px;">3-letter code (optional)</small>
             </div>
             <div class="col-md-8 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Node ID (Auto-generated)</label>
-              <input type="text" name="node_id" id="accessClanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001" maxlength="150">
-              <small class="text-muted" style="font-size: 11px;">Format: NG/SS/RIV/OBIO-AKPOR/CLN/001</small>
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+                Territory Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated &bull; Non-editable</span>
+              </label>
+              <input type="text" name="node_id" id="accessClanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001" maxlength="150" readonly tabindex="-1" style="cursor: not-allowed; background-color: #f8fafc; font-family: monospace; font-weight: 600; color: #0e7490;">
+              <small class="text-muted" style="font-size: 11px;">Automatically generated sequentially as an addition to existing clans in the state.</small>
             </div>
           </div>
         </div>
@@ -521,10 +523,10 @@
             </div>
             <div class="col-md-7 mb-3">
               <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
-                Territorial Node ID (Auto-generated)
+                Territorial Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated &bull; Non-editable</span>
               </label>
-              <input type="text" name="node_id" id="accessSubclanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001/MR/001" style="font-family: monospace; font-weight: 600; color: #0e7490;">
-              <small class="text-muted" style="font-size: 11px;">Auto-calculated or enter custom ID</small>
+              <input type="text" name="node_id" id="accessSubclanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001/MR/001" readonly tabindex="-1" style="font-family: monospace; font-weight: 600; color: #0e7490; background-color: #f8fafc; cursor: not-allowed;">
+              <small class="text-muted" style="font-size: 11px;">Automatically generated sequentially as an addition to existing nodes.</small>
             </div>
           </div>
 

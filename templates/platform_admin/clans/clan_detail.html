@@ -190,12 +190,12 @@
 
     <!-- Breadcrumb Navigation -->
     <div class="d-flex align-items-center flex-wrap mb-3" style="gap: 8px;">
-      <a href="{% url 'platform_admin:clan-list' %}" class="text-muted" style="font-size: 13px; text-decoration: none; white-space: nowrap;">
+      <a href="{% url 'platform_admin:clan-list' %}" class="btn btn-sm btn-en-outline js-smart-back" data-fallback="{% url 'platform_admin:clan-list' %}" style="border-radius: 8px; font-weight: 600; text-decoration: none; padding: 4px 10px; font-size: 13px;">
         &larr; Back to Clans Directory
       </a>
       <span class="text-muted" style="font-size: 12px;">/</span>
       <span class="pill-badge pill-badge-cyan node-id-mono" style="font-size: 11px; font-weight: 700;">{{ clan.display_node_id }}</span>
-      <span class="text-muted ml-1" style="font-size: 12px; white-space: nowrap;">#{{ clan.id }}</span>
+      <span class="badge badge-light ml-1" style="font-size: 11px; font-weight: 600; color: #475569;" title="Sequential number in {{ clan.state.name|default:'State' }}">#{{ clan.state_number }} in {{ clan.state.name|default:"State" }}</span>
     </div>
 
     <!-- Page Header & Action Controls -->
@@ -1504,9 +1504,11 @@
               </select>
             </div>
             <div class="col-md-7 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territorial Node ID (Auto-generated)</label>
-              <input type="text" name="node_id" id="detailSubclanIdInput" class="form-control form-control-modern" placeholder="e.g. {{ clan.display_node_id }}/MR/001" style="font-family: monospace; font-weight: 600; color: #0e7490;">
-              <small class="text-muted" style="font-size: 11px;">Auto-calculated or enter custom ID</small>
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+                Territorial Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated &bull; Non-editable</span>
+              </label>
+              <input type="text" name="node_id" id="detailSubclanIdInput" class="form-control form-control-modern" placeholder="e.g. {{ clan.display_node_id }}/MR/001" readonly tabindex="-1" style="font-family: monospace; font-weight: 600; color: #0e7490; background-color: #f8fafc; cursor: not-allowed;">
+              <small class="text-muted" style="font-size: 11px;">Automatically generated sequentially as an addition to existing nodes.</small>
             </div>
           </div>
 

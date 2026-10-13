@@ -716,7 +716,7 @@
   </div>
 
   <div id="back-top" style="display: none;">
-    <a title="Go to Top" href="#">
+    <a title="Go to Top" href="javascript:void(0);">
       <i class="ti-angle-up"></i>
     </a>
   </div>
@@ -787,6 +787,23 @@
     document.body.addEventListener("htmx:configRequest", (event) => {
       event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}'
     })
+
+    // Global resilient Back navigation handler
+    window.smartGoBack = function(fallbackUrl) {
+      if (window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1 && document.referrer !== window.location.href) {
+        window.history.back();
+      } else if (fallbackUrl) {
+        window.location.href = fallbackUrl;
+      } else {
+        window.history.back();
+      }
+    };
+
+    $(document).on('click', '.js-smart-back', function(e) {
+      e.preventDefault();
+      var fallback = $(this).attr('data-fallback') || $(this).attr('href') || '/dashboard/';
+      window.smartGoBack(fallback);
+    });
   </script>
 
   {% block extra_js %}{% endblock extra_js %}

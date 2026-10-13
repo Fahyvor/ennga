@@ -6,10 +6,10 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
-*.sqlite3
-*.json
-.env
 .git
 .gitignore
 .DS_Store
 *.log
+.idea/
+.vscode/
+*.sqlite3-journal

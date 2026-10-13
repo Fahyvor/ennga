@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponseForbidden, JsonResponse
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Prefetch
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.urls import reverse
 
@@ -68,19 +68,29 @@ def clan_list_view(request):
     query = request.GET.get('q', '').strip()
     state_id = request.GET.get('state', '').strip()
     view_mode = request.GET.get('view_mode', 'all')
+    node_type_filter = request.GET.get('node_type', '').strip()
     page = request.GET.get('page', 1)
 
     user_profile = getattr(request.user, 'account_profile', None)
     admin_user = is_platform_admin(request.user)
 
+    # Prefetch active Sub-Clans for each Clan
+    active_subclans_prefetch = Prefetch(
+        'subclan_set',
+        queryset=SubClan.objects.filter(is_deleted=False).select_related(
+            'parent_road', 'city', 'state'
+        ).prefetch_related('managers__user', 'infrastructures').order_by('node_type', 'name'),
+        to_attr='active_subclans'
+    )
+
     # Base QuerySets
     clans_qs = Clan.objects.filter(is_deleted=False).select_related(
         'city', 'state', 'geo_political_zone'
-    ).prefetch_related('managers__user')
+    ).prefetch_related('managers__user', active_subclans_prefetch)
 
     subclans_qs = SubClan.objects.filter(is_deleted=False).select_related(
-        'clan', 'city', 'state'
-    ).prefetch_related('managers__user')
+        'clan', 'city', 'state', 'parent_road'
+    ).prefetch_related('managers__user', 'infrastructures')
 
     # Counts
     total_clans_count = Clan.objects.filter(is_deleted=False).count()
@@ -116,13 +126,21 @@ def clan_list_view(request):
                 Q(state__name__iexact=state_id) | Q(city__state__name__iexact=state_id) | Q(clan__state__name__iexact=state_id)
             ).distinct()
 
+    # Filter by node_type for Sub-Clans
+    if node_type_filter:
+        subclans_qs = subclans_qs.filter(node_type=node_type_filter)
+
     # Search Filter
     if query:
         clans_qs = clans_qs.filter(
             Q(name__icontains=query) |
+            Q(code__icontains=query) |
+            Q(node_id__icontains=query) |
             Q(city__name__icontains=query) |
             Q(state__name__icontains=query) |
             Q(geo_political_zone__name__icontains=query) |
+            Q(subclan__name__icontains=query) |
+            Q(subclan__node_id__icontains=query) |
             Q(managers__user__first_name__icontains=query) |
             Q(managers__user__last_name__icontains=query) |
             Q(managers__user__username__icontains=query) |
@@ -131,6 +149,7 @@ def clan_list_view(request):
 
         subclans_qs = subclans_qs.filter(
             Q(name__icontains=query) |
+            Q(node_id__icontains=query) |
             Q(clan__name__icontains=query) |
             Q(city__name__icontains=query) |
             Q(state__name__icontains=query) |
@@ -142,14 +161,21 @@ def clan_list_view(request):
     filtered_clans_count = clans_qs.count()
     filtered_subclans_count = subclans_qs.count()
 
-    # Annotate sub-clans count
+    # Annotate sub-clans count and order in ascending order according to number in state
     clans_qs = clans_qs.annotate(
         subclans_count=Count('subclan', filter=Q(subclan__is_deleted=False))
-    ).order_by('name')
+    )
+    if selected_state:
+        clans_qs = clans_qs.order_by('id')
+    else:
+        clans_qs = clans_qs.order_by('state__name', 'id')
 
     # Pagination
     if view_mode == 'subclans':
-        subclans_qs = subclans_qs.order_by('name')
+        if selected_state:
+            subclans_qs = subclans_qs.order_by('id')
+        else:
+            subclans_qs = subclans_qs.order_by('state__name', 'id')
         paginator = Paginator(subclans_qs, 40)
         try:
             page_obj = paginator.page(page)
@@ -173,8 +199,10 @@ def clan_list_view(request):
     all_states = State.objects.filter(is_deleted=False).annotate(
         clans_count=Count('clan_states', filter=Q(clan_states__is_deleted=False))
     ).order_by('name')
-    all_clans_dropdown = Clan.objects.filter(is_deleted=False).order_by('name')
+    all_geo_zones = GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')
+    all_clans_dropdown = Clan.objects.filter(is_deleted=False).select_related('city', 'state').order_by('name')
     clan_create_form = ClanForm()
+    subclan_create_form = SubClanForm()
 
     context = {
         'clans': clans_page,
@@ -189,10 +217,15 @@ def clan_list_view(request):
         'query': query,
         'state_id': state_id,
         'view_mode': view_mode,
+        'node_type_filter': node_type_filter,
         'all_states': all_states,
+        'all_geo_zones': all_geo_zones,
         'all_clans_dropdown': all_clans_dropdown,
         'node_type_choices': NODE_TYPE_CHOICES,
+        'road_surface_choices': ROAD_SURFACE_CHOICES,
+        'road_condition_choices': ROAD_CONDITION_CHOICES,
         'clan_create_form': clan_create_form,
+        'subclan_create_form': subclan_create_form,
         'is_admin': admin_user,
     }
     return render(request, 'platform_admin/clans/clan_list.html', context)
@@ -463,8 +496,10 @@ def subclan_create_general_view(request):
         city_id = request.POST.get('city') or (clan.city.id if clan.city else None)
         state_id = request.POST.get('state') or (clan.state.id if clan.state else None)
         city = City.objects.filter(id=city_id).first() if city_id else clan.city
-        state = State.objects.filter(id=state_id).first() if state_id else (city.state if city else clan.state)
-        geo_zone = (state.geo_political_zone if state else clan.geo_political_zone)
+        geo_zone_id = request.POST.get('geo_political_zone')
+        geo_zone = GeoPoliticalZone.objects.filter(id=geo_zone_id).first() if geo_zone_id else (
+            (state.geo_political_zone if state else None) or clan.geo_political_zone
+        )
 
         parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
 

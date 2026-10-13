@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
 from ckeditor_uploader.fields import RichTextUploadingField
 
@@ -338,6 +339,28 @@ class Clan(models.Model):
         prefix = self.code or generate_territory_code(self.name)
         return f"{prefix}-CLN-{self.id:03d}" if self.id else f"{prefix}-CLN-001"
 
+    @property
+    def state_number(self):
+        """
+        Returns the 1-based sequential number of this clan within its state.
+        Extracted from node_id or calculated from state query.
+        """
+        if self.node_id:
+            m = re.search(r'(\d+)$', self.node_id.strip())
+            if m:
+                try:
+                    return int(m.group(1))
+                except ValueError:
+                    pass
+        state = self.state or (self.city.state if self.city else None)
+        if state and self.pk:
+            return Clan.objects.filter(
+                Q(state=state) | Q(city__state=state),
+                id__lte=self.pk,
+                is_deleted=False
+            ).count()
+        return self.id or 1
+
     def generate_next_node_id(self):
         from .territory_codes import build_clan_node_prefix
         state = self.state
@@ -347,25 +370,28 @@ class Clan(models.Model):
         if not geo_zone and state and state.geo_political_zone:
             geo_zone = state.geo_political_zone
 
+        # Next sequential ID according to the clan's number in the state
+        if state:
+            state_clans = Clan.objects.filter(
+                Q(state=state) | Q(city__state=state),
+                is_deleted=False
+            )
+            if self.pk:
+                state_clans = state_clans.exclude(pk=self.pk)
+            next_seq = state_clans.count() + 1
+        else:
+            total_clans = Clan.objects.filter(is_deleted=False)
+            if self.pk:
+                total_clans = total_clans.exclude(pk=self.pk)
+            next_seq = total_clans.count() + 1
+
         pattern_prefix = build_clan_node_prefix(
             country=self.country,
             geo_zone=geo_zone,
             state=state,
             city=self.city
         )
-        existing = Clan.objects.filter(node_id__startswith=pattern_prefix)
-        max_seq = 0
-        for c in existing:
-            if c.node_id:
-                m = re.search(rf"{re.escape(pattern_prefix)}(\d+)", c.node_id)
-                if m:
-                    try:
-                        seq_val = int(m.group(1))
-                        if seq_val > max_seq:
-                            max_seq = seq_val
-                    except ValueError:
-                        pass
-        return f"{pattern_prefix}{max_seq + 1:03d}"
+        return f"{pattern_prefix}{next_seq:03d}"
 
     def save(self, *args, **kwargs):
         if not self.code and self.name:
@@ -507,6 +533,55 @@ class SubClan(models.Model):
                             max_seq = seq_val
                     except ValueError:
                         pass
+
+        # Also ensure sequential addition to existing sub-nodes under this parent / clan
+        if parent:
+            under_parent = SubClan.objects.filter(parent_road=parent, is_deleted=False)
+            if self.pk:
+                under_parent = under_parent.exclude(pk=self.pk)
+            max_seq = max(max_seq, under_parent.count())
+            for sc in under_parent:
+                nid = sc.node_id or sc.display_node_id
+                if nid:
+                    m_num = re.search(r'(\d+)$', nid.strip())
+                    if m_num:
+                        try:
+                            max_seq = max(max_seq, int(m_num.group(1)))
+                        except ValueError:
+                            pass
+        elif self.clan:
+            # Check nodes of the same type under this clan
+            same_type_nodes = SubClan.objects.filter(clan=self.clan, node_type=self.node_type, is_deleted=False)
+            if self.pk:
+                same_type_nodes = same_type_nodes.exclude(pk=self.pk)
+            max_seq = max(max_seq, same_type_nodes.count())
+
+            # For sub-clans/communities, check total sub-clans under this clan
+            if self.node_type in ('SUB_CLAN', 'COMMUNITY'):
+                all_clan_subnodes = SubClan.objects.filter(clan=self.clan, is_deleted=False)
+                if self.pk:
+                    all_clan_subnodes = all_clan_subnodes.exclude(pk=self.pk)
+                max_seq = max(max_seq, all_clan_subnodes.count())
+
+            # Also scan display_node_id or node_id of clan's nodes
+            for sc in SubClan.objects.filter(clan=self.clan, is_deleted=False):
+                nid = sc.node_id or sc.display_node_id
+                if nid:
+                    if nid.startswith(prefix):
+                        m = pattern.match(nid)
+                        if m:
+                            try:
+                                max_seq = max(max_seq, int(m.group(1)))
+                            except ValueError:
+                                pass
+                    elif f"/{self.node_type}/" in nid:
+                        m_num = re.search(r'(\d+)$', nid.strip())
+                        if m_num:
+                            try:
+                                max_seq = max(max_seq, int(m_num.group(1)))
+                            except ValueError:
+                                pass
+
         return f"{prefix}{max_seq + 1:03d}"
 
     def save(self, *args, **kwargs):

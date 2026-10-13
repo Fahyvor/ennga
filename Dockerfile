@@ -1,65 +1,79 @@
-FROM python:3.13-slim-bookworm as builder
+# Multi-stage build for optimal image size and speed
+FROM python:3.13-slim-bookworm AS builder
 
-# set work directory
+# Set work directory
 WORKDIR /usr/src/app
 
-# set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# install system dependencies
+# Install build dependencies for compiling Python packages
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc
+    apt-get install -y --no-install-recommends \
+        gcc \
+        libpq-dev \
+        default-libmysqlclient-dev \
+        pkg-config && \
+    rm -rf /var/lib/apt/lists/*
 
-# install python dependencies
+# Install python dependencies and create wheels
 RUN pip install --upgrade pip
 COPY ./requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
-# pull official base image
+# Final runtime image
 FROM python:3.13-slim-bookworm
 
-# create directory for the app user
+# Create directory for the app user
 RUN mkdir -p /home/app
 
-# create the app user
+# Create the app user and group
 RUN addgroup --system app && adduser --system --group app
 
-# create the appropriate directories
+# Create appropriate application directories
 ENV HOME=/home/app
 ENV APP_HOME=/home/app/ennga
 ENV GUNICORN_CMD_ARGS="--no-control-socket"
-RUN mkdir -p $APP_HOME/static $APP_HOME/media $APP_HOME/staticfiles /home/app/.ssh /home/app/.gunicorn && \
+RUN mkdir -p $APP_HOME/static $APP_HOME/media $APP_HOME/static_in_env /home/app/.ssh /home/app/.gunicorn && \
     chmod 700 /home/app/.ssh /home/app/.gunicorn
 WORKDIR $APP_HOME
 
-# install dependencies
+# Install runtime system dependencies (SSH tunneling, database clients, network utilities)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends netcat-openbsd openssh-client autossh sshpass && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        netcat-openbsd \
+        openssh-client \
+        autossh \
+        sshpass \
+        libpq5 \
+        default-mysql-client && \
     rm -rf /var/lib/apt/lists/*
+
+# Install pre-built wheels
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir /wheels/*
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir /wheels/* && \
+    rm -rf /wheels
 
-# copy entrypoint.sh
+# Copy entrypoint.sh and normalize line endings
 COPY ./entrypoint.sh .
-RUN sed -i 's/\r$//g'  $APP_HOME/entrypoint.sh
-RUN chmod +x  $APP_HOME/entrypoint.sh
+RUN sed -i 's/\r$//g' $APP_HOME/entrypoint.sh && \
+    chmod +x $APP_HOME/entrypoint.sh
 
-# Add wait-for-it script
-ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh $APP_HOME/wait-for-it.sh
-RUN chmod +x $APP_HOME/wait-for-it.sh
-
-# copy project
+# Copy project source files
 COPY . $APP_HOME
 
-# chown all the files to the app user
+# Fix permissions for the non-root app user
 RUN chown -R app:app /home/app
 
-# change to the app user
+# Switch to non-root user
 USER app
+
+EXPOSE 8000
 
 ENTRYPOINT ["/home/app/ennga/entrypoint.sh"]
 
-CMD ["sh", "-c", "exec gunicorn ennga.wsgi:application --bind 0.0.0.0:${PORT:-10000} --no-control-socket"]
+CMD ["sh", "-c", "exec gunicorn ennga.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120 --no-control-socket"]

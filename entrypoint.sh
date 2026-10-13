@@ -89,27 +89,58 @@ if [ "$USE_SSH_TUNNEL" = "true" ] || [ "$SSH_TUNNEL" = "true" ]; then
 fi
 
 # ==========================================
-# DATABASE MIGRATIONS
+# DATABASE READINESS CHECK
 # ==========================================
-echo "Applying database migrations..."
-if ! python manage.py migrate --noinput; then
-    echo "=========================================="
-    echo "WARNING / ERROR: Database migration failed."
-    echo "If using a remote database on Namecheap, make sure:"
-    echo "1. USE_SSH_TUNNEL=true is set in your environment."
-    echo "2. SSH_PRIVATE_KEY (or SSH_PASSWORD) is provided in Render."
-    echo "3. SSH_PORT is set to 21098 (Namecheap SSH port)."
-    echo "=========================================="
-    # If migrations fail, we exit so Render doesn't start an unhealthy service
-    exit 1
+IS_CELERY=0
+case "$*" in
+    *celery*) IS_CELERY=1 ;;
+esac
+
+if [ "$IS_CELERY" -eq 0 ] && [ "$SKIP_MIGRATIONS" != "true" ]; then
+    echo "Waiting for database connection to be ready..."
+    MAX_ATTEMPTS=30
+    ATTEMPT=0
+    until python -c "
+import sys, os, django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ennga.settings')
+django.setup()
+from django.db import connection
+connection.ensure_connection()
+sys.exit(0)
+" 2>/dev/null || [ $ATTEMPT -ge $MAX_ATTEMPTS ]; do
+        ATTEMPT=$((ATTEMPT + 1))
+        echo "Database is unavailable - attempt $ATTEMPT of $MAX_ATTEMPTS... sleeping 2s"
+        sleep 2
+    done
+
+    if [ $ATTEMPT -ge $MAX_ATTEMPTS ]; then
+        echo "WARNING: Database readiness check timed out after $((MAX_ATTEMPTS * 2))s. Proceeding with migration attempt..."
+    else
+        echo "Database is ready!"
+    fi
+
+    # ==========================================
+    # DATABASE MIGRATIONS
+    # ==========================================
+    echo "Applying database migrations..."
+    if ! python manage.py migrate --noinput; then
+        echo "=========================================="
+        echo "WARNING / ERROR: Database migration failed."
+        echo "If using a remote database on Namecheap, make sure:"
+        echo "1. USE_SSH_TUNNEL=true is set in your environment."
+        echo "2. SSH_PRIVATE_KEY (or SSH_PASSWORD) is provided."
+        echo "3. SSH_PORT is set to 21098 (Namecheap SSH port)."
+        echo "=========================================="
+        exit 1
+    fi
+
+    # ==========================================
+    # STATIC ASSETS
+    # ==========================================
+    echo "Collecting static files..."
+    python manage.py collectstatic --noinput || echo "Warning: collectstatic had errors, continuing..."
 fi
 
-# ==========================================
-# STATIC ASSETS
-# ==========================================
-echo "Collecting static files..."
-python manage.py collectstatic --noinput
-
-echo "Starting application process..."
+echo "Starting application process: $@"
 export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:---no-control-socket}"
 exec "$@"
