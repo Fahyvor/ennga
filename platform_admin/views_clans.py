@@ -5,6 +5,7 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.db.models import Q, Count, Prefetch
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.urls import reverse
+from django.core.cache import cache
 
 from accounts.models import Account, Profile
 from utility.models import (
@@ -59,6 +60,20 @@ def can_user_manage_subclan(user, subclan):
     return False
 
 
+def invalidate_clan_caches():
+    cache.delete_many([
+        'kpi_total_clans',
+        'kpi_total_subclans',
+        'dropdown_all_clans',
+        'dropdown_all_clans_simple',
+        'dropdown_all_subclans_simple',
+        'all_states_annotated',
+        'all_states_list',
+        'all_states_simple',
+        'all_geo_zones_list',
+    ])
+
+
 @login_required
 def clan_list_view(request):
     """
@@ -92,16 +107,20 @@ def clan_list_view(request):
         'clan', 'city', 'state', 'parent_road'
     ).prefetch_related('managers__user', 'infrastructures')
 
-    # Counts
-    total_clans_count = Clan.objects.filter(is_deleted=False).count()
-    total_subclans_count = SubClan.objects.filter(is_deleted=False).count()
+    # Cached Counts (300s) to eliminate repetitive count round-trips
+    total_clans_count = cache.get_or_set('kpi_total_clans', lambda: Clan.objects.filter(is_deleted=False).count(), 300)
+    total_subclans_count = cache.get_or_set('kpi_total_subclans', lambda: SubClan.objects.filter(is_deleted=False).count(), 300)
     
     my_clans_count = 0
     if user_profile:
-        my_clans_count = Clan.objects.filter(
-            Q(managers=user_profile) | Q(city__managers=user_profile),
-            is_deleted=False
-        ).exclude(restricted_users=user_profile).distinct().count()
+        my_clans_count = cache.get_or_set(
+            f'my_clans_count_{user_profile.id}',
+            lambda: Clan.objects.filter(
+                Q(managers=user_profile) | Q(city__managers=user_profile),
+                is_deleted=False
+            ).exclude(restricted_users=user_profile).distinct().count(),
+            60
+        )
 
     # Filter by view_mode
     if view_mode == 'my' and user_profile:
@@ -157,9 +176,14 @@ def clan_list_view(request):
             Q(managers__user__email__icontains=query)
         ).distinct()
 
-    # Filtered counts
-    filtered_clans_count = clans_qs.count()
-    filtered_subclans_count = subclans_qs.count()
+    # Filtered counts & smart paginator count bypass
+    is_unfiltered = not query and not state_id and view_mode == 'all' and not node_type_filter
+    if is_unfiltered:
+        filtered_clans_count = total_clans_count
+        filtered_subclans_count = total_subclans_count
+    else:
+        filtered_clans_count = clans_qs.count()
+        filtered_subclans_count = subclans_qs.count()
 
     # Annotate sub-clans count and order in ascending order according to number in state
     clans_qs = clans_qs.annotate(
@@ -177,6 +201,8 @@ def clan_list_view(request):
         else:
             subclans_qs = subclans_qs.order_by('state__name', 'id')
         paginator = Paginator(subclans_qs, 40)
+        if is_unfiltered:
+            paginator._count = total_subclans_count
         try:
             page_obj = paginator.page(page)
         except PageNotAnInteger:
@@ -187,6 +213,8 @@ def clan_list_view(request):
         subclans_page = page_obj
     else:
         paginator = Paginator(clans_qs, 40)
+        if is_unfiltered:
+            paginator._count = total_clans_count
         try:
             page_obj = paginator.page(page)
         except PageNotAnInteger:
@@ -196,13 +224,25 @@ def clan_list_view(request):
         clans_page = page_obj
         subclans_page = None
 
-    all_states = State.objects.filter(is_deleted=False).annotate(
-        clans_count=Count('clan_states', filter=Q(clan_states__is_deleted=False))
-    ).order_by('name')
-    all_geo_zones = GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')
-    all_clans_dropdown = Clan.objects.filter(is_deleted=False).select_related('city', 'state').order_by('name')
+    all_states = cache.get_or_set(
+        'all_states_annotated',
+        lambda: list(State.objects.filter(is_deleted=False).annotate(
+            clans_count=Count('clan_states', filter=Q(clan_states__is_deleted=False))
+        ).order_by('name')),
+        3600
+    )
+    all_geo_zones = cache.get_or_set(
+        'all_geo_zones_list',
+        lambda: list(GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')),
+        3600
+    )
+    all_clans_dropdown = cache.get_or_set(
+        'dropdown_all_clans',
+        lambda: list(Clan.objects.filter(is_deleted=False).select_related('city', 'state').only('id', 'name', 'code', 'node_id', 'city_id', 'city__name', 'state_id', 'state__name', 'geo_political_zone_id').order_by('name')),
+        3600
+    )
     clan_create_form = ClanForm()
-    subclan_create_form = SubClanForm()
+    subclan_create_form = None
 
     context = {
         'clans': clans_page,
@@ -251,27 +291,28 @@ def clan_detail_view(request, pk):
     is_admin = is_platform_admin(request.user)
 
     # Sub-clans under this clan
-    subclans = clan.subclan_set.filter(is_deleted=False).select_related(
+    subclans = list(clan.subclan_set.filter(is_deleted=False).select_related(
         'city', 'state', 'parent_road'
-    ).prefetch_related('managers__user', 'infrastructures').order_by('name')
+    ).prefetch_related('managers__user', 'infrastructures').order_by('name'))
+    subclans_count = len(subclans)
 
     # Territorial infrastructure records under this clan
-    infrastructures = clan.clan_infrastructures.filter(is_deleted=False).select_related(
+    infrastructures = list(clan.clan_infrastructures.filter(is_deleted=False).select_related(
         'subclan'
-    ).order_by('-date_created')
-    infrastructure_count = infrastructures.count()
-    drainage_count = infrastructures.filter(infrastructure_type='DRAINAGE').count()
-    street_light_count = infrastructures.filter(infrastructure_type='STREET_LIGHT').count()
+    ).order_by('-date_created'))
+    infrastructure_count = len(infrastructures)
+    drainage_count = sum(1 for inf in infrastructures if inf.infrastructure_type == 'DRAINAGE')
+    street_light_count = sum(1 for inf in infrastructures if inf.infrastructure_type == 'STREET_LIGHT')
     other_infra_count = max(0, infrastructure_count - (drainage_count + street_light_count))
 
     # Data records under this clan
-    historical_records = Historical.objects.filter(clan=clan, is_deleted=False).select_related('category').order_by('-date_created')[:15]
+    historical_records = list(Historical.objects.filter(clan=clan, is_deleted=False).select_related('category').order_by('-date_created')[:15])
     historical_count = Historical.objects.filter(clan=clan, is_deleted=False).count()
 
-    market_records = MarketSector.objects.filter(clan=clan, is_deleted=False).select_related('category', 'sub_category').order_by('-date_created')[:15]
+    market_records = list(MarketSector.objects.filter(clan=clan, is_deleted=False).select_related('category', 'sub_category').order_by('-date_created')[:15])
     market_count = MarketSector.objects.filter(clan=clan, is_deleted=False).count()
 
-    geo_records = GeoPhysicalData.objects.filter(clan=clan, is_deleted=False).select_related('category').order_by('-date_created')[:15]
+    geo_records = list(GeoPhysicalData.objects.filter(clan=clan, is_deleted=False).select_related('category').order_by('-date_created')[:15])
     geo_count = GeoPhysicalData.objects.filter(clan=clan, is_deleted=False).count()
 
     # Managers with access
@@ -297,7 +338,7 @@ def clan_detail_view(request, pk):
         'can_manage': can_manage,
         'is_admin': is_admin,
         'subclans': subclans,
-        'subclans_count': subclans.count(),
+        'subclans_count': subclans_count,
         'infrastructures': infrastructures,
         'infrastructure_count': infrastructure_count,
         'drainage_count': drainage_count,
@@ -342,6 +383,7 @@ def clan_create_view(request):
                     request.user.is_data_agent = True
                     request.user.save(update_fields=['is_data_agent'])
 
+            invalidate_clan_caches()
             messages.success(request, f"Clan '{clan.name}' [{clan.display_node_id}] created successfully! You can now input data and add sub-clans.")
             if next_url:
                 return redirect(next_url)
@@ -371,6 +413,7 @@ def clan_edit_view(request, pk):
         form = ClanForm(request.POST, instance=clan)
         if form.is_valid():
             form.save()
+            invalidate_clan_caches()
             messages.success(request, f"Clan '{clan.name}' updated successfully.")
             return redirect('platform_admin:clan-detail', pk=clan.pk)
         else:
@@ -395,6 +438,7 @@ def clan_delete_view(request, pk):
     if request.method == "POST":
         clan.is_deleted = True
         clan.save(update_fields=['is_deleted'])
+        invalidate_clan_caches()
         messages.info(request, f"Clan '{clan.name}' has been archived/deleted.")
         return redirect('platform_admin:clan-list')
 
@@ -436,6 +480,36 @@ def subclan_create_for_clan_view(request, clan_id):
 
         parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
 
+        # Enforce territorial architecture hierarchy:
+        # Sub-Clans -> Clan; Major Roads -> Sub-Clan or Clan; Sub Roads -> Major Road; Streets -> Sub Road; Closes -> Street
+        if node_type in ('SUB_CLAN', 'COMMUNITY'):
+            parent_road = None
+        elif node_type == 'MAJOR_ROAD':
+            if parent_road and parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
+                messages.error(request, "Major Roads can only belong to a Sub-Clan / Community or directly to a Clan.")
+                return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+        elif node_type == 'SUB_ROAD':
+            if not parent_road:
+                messages.error(request, "Sub Roads must belong to a Major Road.")
+                return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+            if parent_road.node_type not in ('MAJOR_ROAD', 'META_ROAD'):
+                messages.error(request, f"Sub Roads must belong to a Major Road (selected '{parent_road.name}' is {parent_road.get_node_type_display()}).")
+                return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+        elif node_type == 'STREET':
+            if not parent_road:
+                messages.error(request, "Streets must belong to a Sub Road.")
+                return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+            if parent_road.node_type not in ('SUB_ROAD', 'LINK_ROAD'):
+                messages.error(request, f"Streets must belong to a Sub Road (selected '{parent_road.name}' is {parent_road.get_node_type_display()}).")
+                return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+        elif node_type == 'CLOSE':
+            if not parent_road:
+                messages.error(request, "Closes must belong to a Street.")
+                return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+            if parent_road.node_type != 'STREET':
+                messages.error(request, f"Closes must belong to a Street (selected '{parent_road.name}' is {parent_road.get_node_type_display()}).")
+                return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+
         subclan = SubClan(
             name=name,
             clan=clan,
@@ -458,6 +532,7 @@ def subclan_create_for_clan_view(request, clan_id):
         if hasattr(request.user, 'account_profile'):
             subclan.managers.add(request.user.account_profile)
 
+        invalidate_clan_caches()
         messages.success(request, f"Territorial Node '{subclan.name}' [{subclan.display_node_id}] created successfully under '{clan.name}'.")
         return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
 
@@ -503,6 +578,36 @@ def subclan_create_general_view(request):
 
         parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
 
+        # Enforce territorial architecture hierarchy:
+        # Sub-Clans -> Clan; Major Roads -> Sub-Clan or Clan; Sub Roads -> Major Road; Streets -> Sub Road; Closes -> Street
+        if node_type in ('SUB_CLAN', 'COMMUNITY'):
+            parent_road = None
+        elif node_type == 'MAJOR_ROAD':
+            if parent_road and parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
+                messages.error(request, "Major Roads can only belong to a Sub-Clan / Community or directly to a Clan.")
+                return redirect(next_url or 'platform_admin:dashboard')
+        elif node_type == 'SUB_ROAD':
+            if not parent_road:
+                messages.error(request, "Sub Roads must belong to a Major Road.")
+                return redirect(next_url or 'platform_admin:dashboard')
+            if parent_road.node_type not in ('MAJOR_ROAD', 'META_ROAD'):
+                messages.error(request, f"Sub Roads must belong to a Major Road (selected '{parent_road.name}' is {parent_road.get_node_type_display()}).")
+                return redirect(next_url or 'platform_admin:dashboard')
+        elif node_type == 'STREET':
+            if not parent_road:
+                messages.error(request, "Streets must belong to a Sub Road.")
+                return redirect(next_url or 'platform_admin:dashboard')
+            if parent_road.node_type not in ('SUB_ROAD', 'LINK_ROAD'):
+                messages.error(request, f"Streets must belong to a Sub Road (selected '{parent_road.name}' is {parent_road.get_node_type_display()}).")
+                return redirect(next_url or 'platform_admin:dashboard')
+        elif node_type == 'CLOSE':
+            if not parent_road:
+                messages.error(request, "Closes must belong to a Street.")
+                return redirect(next_url or 'platform_admin:dashboard')
+            if parent_road.node_type != 'STREET':
+                messages.error(request, f"Closes must belong to a Street (selected '{parent_road.name}' is {parent_road.get_node_type_display()}).")
+                return redirect(next_url or 'platform_admin:dashboard')
+
         subclan = SubClan(
             name=name,
             clan=clan,
@@ -524,6 +629,7 @@ def subclan_create_general_view(request):
         if hasattr(request.user, 'account_profile'):
             subclan.managers.add(request.user.account_profile)
 
+        invalidate_clan_caches()
         messages.success(request, f"Territorial Node '{subclan.name}' [{subclan.display_node_id}] created successfully under '{clan.name}'.")
         return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
 
@@ -577,6 +683,7 @@ def subclan_edit_view(request, pk):
                 subclan.state = State.objects.filter(id=state_id).first()
 
             subclan.save()
+            invalidate_clan_caches()
             messages.success(request, f"Territorial Node '{subclan.name}' updated successfully.")
 
     next_url = request.POST.get('next') or (
@@ -600,6 +707,7 @@ def subclan_delete_view(request, pk):
     if request.method == "POST":
         subclan.is_deleted = True
         subclan.save(update_fields=['is_deleted'])
+        invalidate_clan_caches()
         messages.info(request, f"Sub-Clan '{subclan.name}' has been archived.")
 
     next_url = request.POST.get('next') or (

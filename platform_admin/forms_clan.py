@@ -19,16 +19,13 @@ class ClanForm(forms.ModelForm):
         })
     )
     node_id = forms.CharField(
-        label='Territorial Node ID (Auto-generated)',
+        label='Territory Node ID',
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-modern',
             'id': 'id_clan_node_id',
-            'placeholder': 'PRD pattern: e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001 (auto-generated)',
+            'placeholder': 'e.g. CLN-001',
             'maxlength': '150',
-            'readonly': 'readonly',
-            'tabindex': '-1',
-            'style': 'cursor: not-allowed; background-color: #f8fafc; font-family: monospace; font-weight: 600; color: #0e7490;'
         })
     )
     state = forms.ModelChoiceField(
@@ -48,7 +45,7 @@ class ClanForm(forms.ModelForm):
             'class': 'form-control form-control-modern',
             'id': 'id_clan_city'
         }),
-        queryset=City.objects.filter(is_deleted=False).order_by('name'),
+        queryset=City.objects.none(),
         required=False
     )
     geo_political_zone = forms.ModelChoiceField(
@@ -75,17 +72,25 @@ class ClanForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.instance.pk and not self.initial.get('node_id'):
+            self.initial['node_id'] = Clan().generate_next_node_id()
         self.fields['geo_political_zone'].queryset = GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')
         if 'state' in self.data:
             try:
                 state_id = int(self.data.get('state'))
                 self.fields['city'].queryset = City.objects.filter(state_id=state_id, is_deleted=False).order_by('name')
             except (ValueError, TypeError):
-                pass
+                self.fields['city'].queryset = City.objects.none()
         elif self.instance.pk and self.instance.state:
             self.fields['city'].queryset = City.objects.filter(state=self.instance.state, is_deleted=False).order_by('name')
         elif self.instance.pk and self.instance.city and self.instance.city.state:
             self.fields['city'].queryset = City.objects.filter(state=self.instance.city.state, is_deleted=False).order_by('name')
+        elif self.initial.get('city'):
+            c_val = self.initial.get('city')
+            c_id = c_val.id if hasattr(c_val, 'id') else c_val
+            self.fields['city'].queryset = City.objects.filter(id=c_id)
+        else:
+            self.fields['city'].queryset = City.objects.none()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -124,7 +129,7 @@ class SubClanForm(forms.ModelForm):
             'class': 'form-control form-control-modern',
             'id': 'id_subclan_clan'
         }),
-        queryset=Clan.objects.filter(is_deleted=False).order_by('name'),
+        queryset=Clan.objects.none(),
         required=True
     )
     node_type = forms.ChoiceField(
@@ -157,7 +162,7 @@ class SubClanForm(forms.ModelForm):
             'class': 'form-control form-control-modern',
             'id': 'id_subclan_parent_road'
         }),
-        queryset=SubClan.objects.filter(is_deleted=False).order_by('name')
+        queryset=SubClan.objects.none()
     )
     road_surface = forms.ChoiceField(
         label='Road Surface Type',
@@ -196,7 +201,7 @@ class SubClanForm(forms.ModelForm):
             'class': 'form-control form-control-modern',
             'id': 'id_subclan_city'
         }),
-        queryset=City.objects.filter(is_deleted=False).order_by('name'),
+        queryset=City.objects.none(),
         required=False
     )
 
@@ -223,13 +228,104 @@ class SubClanForm(forms.ModelForm):
         elif self.instance.pk and self.instance.clan:
             clan_id = self.instance.clan.id
 
-        parent_qs = SubClan.objects.filter(is_deleted=False)
         if clan_id:
-            parent_qs = parent_qs.filter(clan_id=clan_id)
-        if self.instance.pk:
-            parent_qs = parent_qs.exclude(pk=self.instance.pk)
-        self.fields['parent_road'].queryset = parent_qs.order_by('name')
+            try:
+                clan_id_int = int(clan_id)
+                parent_qs = SubClan.objects.filter(clan_id=clan_id_int, is_deleted=False).only('id', 'name', 'node_type', 'node_id')
+                if self.instance.pk:
+                    parent_qs = parent_qs.exclude(pk=self.instance.pk)
+                self.fields['parent_road'].queryset = parent_qs.order_by('name')
+                self.fields['clan'].queryset = Clan.objects.filter(id=clan_id_int).only('id', 'name', 'code', 'node_id')
+            except (ValueError, TypeError):
+                self.fields['parent_road'].queryset = SubClan.objects.none()
+                self.fields['clan'].queryset = Clan.objects.filter(is_deleted=False).only('id', 'name', 'code', 'node_id')
+        else:
+            self.fields['parent_road'].queryset = SubClan.objects.none()
+            if self.is_bound:
+                self.fields['clan'].queryset = Clan.objects.filter(is_deleted=False).only('id', 'name', 'code', 'node_id')
+            else:
+                self.fields['clan'].queryset = Clan.objects.none()
+
+        # Handle city field population
+        if 'state' in self.data:
+            try:
+                state_id = int(self.data.get('state'))
+                self.fields['city'].queryset = City.objects.filter(state_id=state_id, is_deleted=False).order_by('name')
+            except (ValueError, TypeError):
+                self.fields['city'].queryset = City.objects.none()
+        elif self.instance.pk and self.instance.state:
+            self.fields['city'].queryset = City.objects.filter(state=self.instance.state, is_deleted=False).order_by('name')
+        elif self.instance.pk and self.instance.city and self.instance.city.state:
+            self.fields['city'].queryset = City.objects.filter(state=self.instance.city.state, is_deleted=False).order_by('name')
+        elif self.initial.get('city'):
+            c_val = self.initial.get('city')
+            c_id = c_val.id if hasattr(c_val, 'id') else c_val
+            self.fields['city'].queryset = City.objects.filter(id=c_id)
+        else:
+            self.fields['city'].queryset = City.objects.none()
+
+        # Allow valid parent_road if submitted in POST
+        if 'parent_road' in self.data and self.data.get('parent_road'):
+            try:
+                pr_id = int(self.data.get('parent_road'))
+                self.fields['parent_road'].queryset = SubClan.objects.filter(id=pr_id).only('id', 'name', 'node_type', 'node_id')
+            except (ValueError, TypeError):
+                pass
+
         self.fields['parent_road'].label_from_instance = lambda obj: f"[{obj.display_node_id}] {obj.name} ({obj.get_node_type_display()})"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        node_type = cleaned_data.get('node_type')
+        clan = cleaned_data.get('clan')
+        parent_road = cleaned_data.get('parent_road')
+
+        # Architectural rules:
+        # 1. SUB_CLAN / COMMUNITY must belong to a Clan and cannot have a parent road
+        if node_type in ('SUB_CLAN', 'COMMUNITY'):
+            if not clan:
+                self.add_error('clan', 'Sub-clans and Communities must belong to a Clan.')
+            if parent_road:
+                cleaned_data['parent_road'] = None
+
+        # 2. MAJOR_ROAD can belong to a SubClan or directly to a Clan
+        elif node_type == 'MAJOR_ROAD':
+            if parent_road:
+                if parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
+                    self.add_error('parent_road', 'Major Roads can only be placed under a Sub-Clan / Community or directly under a Clan.')
+                elif not clan and parent_road.clan:
+                    cleaned_data['clan'] = parent_road.clan
+            elif not clan:
+                self.add_error('clan', 'Major Roads must belong to either a Clan or a Sub-Clan.')
+
+        # 3. SUB_ROAD must belong to a Major Road
+        elif node_type == 'SUB_ROAD':
+            if not parent_road:
+                self.add_error('parent_road', 'Sub Roads must have a parent Major Road.')
+            elif parent_road.node_type != 'MAJOR_ROAD':
+                self.add_error('parent_road', f'Sub Roads must belong to a Major Road (selected parent is {parent_road.get_node_type_display()}).')
+            elif not clan and parent_road.clan:
+                cleaned_data['clan'] = parent_road.clan
+
+        # 4. STREET must belong to a Sub Road
+        elif node_type == 'STREET':
+            if not parent_road:
+                self.add_error('parent_road', 'Streets must have a parent Sub Road.')
+            elif parent_road.node_type != 'SUB_ROAD':
+                self.add_error('parent_road', f'Streets must belong to a Sub Road (selected parent is {parent_road.get_node_type_display()}).')
+            elif not clan and parent_road.clan:
+                cleaned_data['clan'] = parent_road.clan
+
+        # 5. CLOSE must belong to a Street
+        elif node_type == 'CLOSE':
+            if not parent_road:
+                self.add_error('parent_road', 'Closes must have a parent Street.')
+            elif parent_road.node_type != 'STREET':
+                self.add_error('parent_road', f'Closes must belong to a Street (selected parent is {parent_road.get_node_type_display()}).')
+            elif not clan and parent_road.clan:
+                cleaned_data['clan'] = parent_road.clan
+
+        return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)

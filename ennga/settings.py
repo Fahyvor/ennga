@@ -77,6 +77,7 @@ AUTH_USER_MODEL = 'accounts.Account'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -163,7 +164,7 @@ if DATABASE_URL:
         "PASSWORD": unquote(url.password or ""),
         "HOST": url.hostname or "localhost",
         "PORT": str(url.port or default_port or ""),
-        "CONN_MAX_AGE": config("DB_CONN_MAX_AGE", default=0, cast=int),
+        "CONN_MAX_AGE": config("DB_CONN_MAX_AGE", default=600, cast=int),
     }
     if options:
         db_config["OPTIONS"] = options
@@ -215,6 +216,7 @@ elif DB_NAME:
             'PASSWORD': config("DB_PASSWORD", default=""),
             'HOST': db_host,
             'PORT': db_port,
+            'CONN_MAX_AGE': config("DB_CONN_MAX_AGE", default=600, cast=int),
         }
     }
     if options:
@@ -271,10 +273,30 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 #end
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Caching Configuration & High-Performance Session Storage
+REDIS_URL = config("REDIS_URL", default=None)
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'ennga-cache',
+            'TIMEOUT': 300,
+            'OPTIONS': {
+                'MAX_ENTRIES': 2000
+            }
+        }
+    }
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 
 ############################################### Beginning of Development ########################################

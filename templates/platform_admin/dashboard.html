@@ -89,7 +89,7 @@
               [Territory]-[Type]-[001]
             </div>
             <div class="text-white-50 mt-1" style="font-size: 12px;">
-              e.g. <code>RUM-CLN-001</code>, <code>RUM-ST-001</code>, <code>RUM-CL-001</code>
+              e.g. <code>CLN-001</code>, <code>MR-001</code>, <code>STR-001</code>, <code>CLS-001</code>
             </div>
           </div>
         </div>
@@ -504,8 +504,8 @@
             🏛️ Input New Clan
           </h4>
         </div>
-        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px;">
-          <span aria-hidden="true">&times;</span>
+        <button type="button" class="close btn-close js-modal-close-btn" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" onclick="$(this).closest('.modal').modal('hide');" style="font-size: 24px; cursor: pointer; background: transparent; border: none; line-height: 1;">
+          <span aria-hidden="true" style="pointer-events: none;">&times;</span>
         </button>
       </div>
 
@@ -551,24 +551,14 @@
             <small class="text-muted" style="font-size: 11px;">Automatically determined by the selected State.</small>
           </div>
 
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Code</label>
-              <input type="text" name="code" id="modalClanCodeInput" class="form-control form-control-modern" placeholder="e.g. RUM" maxlength="10">
-              <small class="text-muted" style="font-size: 11px;">3-letter code (optional)</small>
-            </div>
-            <div class="col-md-8 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
-                Territory Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated &bull; Non-editable</span>
-              </label>
-              <input type="text" name="node_id" id="modalClanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001" maxlength="150" readonly tabindex="-1" style="cursor: not-allowed; background-color: #f8fafc; font-family: monospace; font-weight: 600; color: #0e7490;">
-              <small class="text-muted" style="font-size: 11px;">Automatically generated sequentially as an addition to existing clans in the state.</small>
-            </div>
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Node ID</label>
+            <input type="text" name="node_id" id="modalClanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. CLN-001" maxlength="150">
           </div>
         </div>
 
         <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal" onclick="$(this).closest('.modal').modal('hide');">Cancel</button>
           <button type="submit" class="btn btn-en-cyan font-weight-700">
             Confirm & Create Clan
           </button>
@@ -591,8 +581,8 @@
             📍 Input New Sub-Clan / Territorial Node
           </h4>
         </div>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="font-size: 24px;">
-          <span aria-hidden="true">&times;</span>
+        <button type="button" class="close btn-close js-modal-close-btn" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" onclick="$(this).closest('.modal').modal('hide');" style="font-size: 24px; cursor: pointer; background: transparent; border: none; line-height: 1;">
+          <span aria-hidden="true" style="pointer-events: none;">&times;</span>
         </button>
       </div>
 
@@ -650,7 +640,7 @@
         </div>
 
         <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-en-outline" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal" onclick="$(this).closest('.modal').modal('hide');">Cancel</button>
           <button type="submit" class="btn btn-en-primary font-weight-700">
             Confirm & Save Territorial Node
           </button>
@@ -674,7 +664,7 @@
             🛡️ Grant Clan Data Entry Access
           </h4>
         </div>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px; cursor: pointer; background: transparent; border: none;">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -714,7 +704,7 @@
         </div>
 
         <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-en-outline" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-en-cyan font-weight-700">
             Confirm & Grant Access
           </button>
@@ -732,6 +722,7 @@
     $('.js-open-clan-modal').on('click', function(e) {
       e.preventDefault();
       $('#createClanModal').modal('show');
+      refreshDashboardClanNodeIdPreview();
     });
 
     $('.js-open-subclan-modal').on('click', function(e) {
@@ -770,10 +761,6 @@
       var cityId = $('#modalClanCitySelect').val();
       var nameVal = $('#modalClanNameInput').val() || 'Clan';
 
-      if (!stateId && !cityId) {
-        return;
-      }
-
       $.ajax({
         url: '{% url "platform_admin:api-generate-clan-node-id" %}',
         data: {
@@ -811,6 +798,7 @@
       } else {
         $('#modalClanCitySelect').html('<option value="">-- Select City / LGA (optional) --</option>');
         $('#modalClanGeoZoneSelect').val('');
+        refreshDashboardClanNodeIdPreview();
       }
     });
 

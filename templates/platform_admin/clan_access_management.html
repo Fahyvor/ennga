@@ -276,7 +276,7 @@
         <h4 class="modal-title font-weight-700" id="grantClanModalLabel" style="color: var(--brand-dark);">
           Grant Clan Data Input Access
         </h4>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px; cursor: pointer; background: transparent; border: none;">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -317,7 +317,7 @@
           </div>
         </div>
         <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-en-outline" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-en-cyan font-weight-600">
             Confirm & Grant Access
           </button>
@@ -335,7 +335,7 @@
         <h4 class="modal-title font-weight-700" id="grantSubClanModalLabel" style="color: var(--brand-dark);">
           Grant Sub-Clan Data Input Access
         </h4>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px; cursor: pointer; background: transparent; border: none;">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -359,24 +359,31 @@
           </div>
 
           <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Filter by Parent Clan *</label>
+            <select id="grantSubclanClanFilterSelect" class="form-control form-control-modern" required>
+              <option value="">-- Choose Parent Clan --</option>
+              {% for clan in all_clans_dropdown %}
+                <option value="{{ clan.id }}">
+                  {{ clan.name }} [{{ clan.display_node_id }}]{% if clan.city %} — ({{ clan.city.name }}, {{ clan.state.name }}){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group mb-3">
             <div class="d-flex justify-content-between align-items-center mb-1">
               <label class="font-weight-600 mb-0" style="font-size: 13px; color: var(--brand-dark);">Select Sub-Clan Node *</label>
               <a href="#" class="js-switch-to-create-subclan text-primary font-weight-600" style="font-size: 12px;">
                 + Node not listed? Input Sub-Clan Node
               </a>
             </div>
-            <select name="subclan_id" class="form-control form-control-modern" required>
-              <option value="">-- Choose a sub-clan --</option>
-              {% for sc in all_subclans_dropdown %}
-                <option value="{{ sc.id }}">
-                  [{{ sc.display_node_id }}] {{ sc.name }} {% if sc.clan %}(Clan: {{ sc.clan.name }}){% endif %}
-                </option>
-              {% endfor %}
+            <select name="subclan_id" id="grantSubclanNodeSelect" class="form-control form-control-modern" required>
+              <option value="">-- Select Parent Clan above first --</option>
             </select>
           </div>
         </div>
         <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-en-outline" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-en-primary font-weight-600">
             Confirm & Grant Access
           </button>
@@ -399,8 +406,8 @@
             🏛️ Input New Clan
           </h4>
         </div>
-        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px;">
-          <span aria-hidden="true">&times;</span>
+        <button type="button" class="close btn-close js-modal-close-btn" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" onclick="$(this).closest('.modal').modal('hide');" style="font-size: 24px; cursor: pointer; background: transparent; border: none; line-height: 1;">
+          <span aria-hidden="true" style="pointer-events: none;">&times;</span>
         </button>
       </div>
 
@@ -446,24 +453,14 @@
             <small class="text-muted" style="font-size: 11px;">Automatically determined by the selected State.</small>
           </div>
 
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Code</label>
-              <input type="text" name="code" id="accessClanCodeInput" class="form-control form-control-modern" placeholder="e.g. RUM" maxlength="10">
-              <small class="text-muted" style="font-size: 11px;">3-letter code (optional)</small>
-            </div>
-            <div class="col-md-8 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
-                Territory Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated &bull; Non-editable</span>
-              </label>
-              <input type="text" name="node_id" id="accessClanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001" maxlength="150" readonly tabindex="-1" style="cursor: not-allowed; background-color: #f8fafc; font-family: monospace; font-weight: 600; color: #0e7490;">
-              <small class="text-muted" style="font-size: 11px;">Automatically generated sequentially as an addition to existing clans in the state.</small>
-            </div>
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territory Node ID</label>
+            <input type="text" name="node_id" id="accessClanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. CLN-001" maxlength="150">
           </div>
         </div>
 
         <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal" onclick="$(this).closest('.modal').modal('hide');">Cancel</button>
           <button type="submit" class="btn btn-en-cyan font-weight-700">
             Confirm & Create Clan
           </button>
@@ -486,7 +483,7 @@
             📍 Input New Sub-Clan / Territorial Node
           </h4>
         </div>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 24px; cursor: pointer; background: transparent; border: none;">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -545,7 +542,7 @@
         </div>
 
         <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-en-outline" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-en-primary font-weight-700">
             Confirm & Save Territorial Node
           </button>
@@ -561,6 +558,7 @@
     $('.js-open-clan-modal').on('click', function(e) {
       e.preventDefault();
       $('#createClanModal').modal('show');
+      refreshAccessClanNodeIdPreview();
     });
 
     $('.js-open-subclan-modal').on('click', function(e) {
@@ -584,6 +582,7 @@
       $('#grantClanModal').modal('hide');
       setTimeout(function() {
         $('#createClanModal').modal('show');
+        refreshAccessClanNodeIdPreview();
       }, 350);
     });
 
@@ -595,15 +594,40 @@
       }, 350);
     });
 
-    // Helper to refresh Clan Node ID preview in Access modal
+    // Dynamic subclan loading when clan is chosen in Grant Sub-Clan modal
+    $('#grantSubclanClanFilterSelect').on('change', function() {
+      var clanId = $(this).val();
+      if (!clanId) {
+        $('#grantSubclanNodeSelect').html('<option value="">-- Select Parent Clan above first --</option>');
+        return;
+      }
+      $('#grantSubclanNodeSelect').html('<option value="">Loading sub-clans...</option>');
+      $.ajax({
+        url: '{% url "platform_admin:api-load-subclans" %}',
+        data: { 'clan_id': clanId },
+        dataType: 'json',
+        success: function(resp) {
+          var optionsHtml = '<option value="">-- Choose a sub-clan --</option>';
+          if (resp && resp.subclans && resp.subclans.length > 0) {
+            resp.subclans.forEach(function(sc) {
+              optionsHtml += '<option value="' + sc.id + '">[' + sc.node_id + '] ' + sc.name + ' (' + (sc.node_type_display || sc.node_type) + ')</option>';
+            });
+          } else {
+            optionsHtml = '<option value="">-- No sub-clans under this clan yet --</option>';
+          }
+          $('#grantSubclanNodeSelect').html(optionsHtml);
+        },
+        error: function() {
+          $('#grantSubclanNodeSelect').html('<option value="">-- Failed to load sub-clans --</option>');
+        }
+      });
+    });
+
+    // Helper to refresh Clan Node ID in Access modal
     function refreshAccessClanNodeIdPreview() {
       var stateId = $('#accessClanStateSelect').val();
       var cityId = $('#accessClanCitySelect').val();
       var nameVal = $('#accessClanNameInput').val() || 'Clan';
-
-      if (!stateId && !cityId) {
-        return;
-      }
 
       $.ajax({
         url: '{% url "platform_admin:api-generate-clan-node-id" %}',
@@ -642,6 +666,7 @@
       } else {
         $('#accessClanCitySelect').html('<option value="">-- Select City / LGA (optional) --</option>');
         $('#accessClanGeoZoneSelect').val('');
+        refreshAccessClanNodeIdPreview();
       }
     });
 
@@ -774,24 +799,10 @@
       }
     });
 
-    // Auto-derive clan code in Clan modal
+    // Clan modal name input hint
     $('#accessClanNameInput').on('input', function() {
-      var val = $(this).val().trim();
-      if (!val) return;
-      var words = val.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(Boolean);
-      var code = 'NOD';
-      if (words.length >= 3) {
-        code = (words[0][0] + words[1][0] + words[2][0]).toUpperCase();
-      } else if (words.length === 2) {
-        code = (words[0].substring(0, 2) + words[1][0]).toUpperCase();
-      } else if (words.length === 1 && words[0].length >= 3) {
-        code = words[0].substring(0, 3).toUpperCase();
-      }
-      if (!$('#accessClanCodeInput').val()) {
-        $('#accessClanCodeInput').attr('placeholder', code);
-      }
       if (!$('#accessClanNodeIdInput').val()) {
-        $('#accessClanNodeIdInput').attr('placeholder', code + '-CLN-001');
+        $('#accessClanNodeIdInput').attr('placeholder', 'CLN-001');
       }
     });
   });

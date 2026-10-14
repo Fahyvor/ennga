@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
+from django.core.cache import cache
 from django.db.models import Q
 from accounts.models import Account, Profile
 from utility.models import Clan, SubClan, State, City, GeoPoliticalZone, NODE_TYPE_CHOICES
@@ -22,35 +23,35 @@ def clan_access_list_view(request):
     query = request.GET.get('q', '').strip()
     filter_type = request.GET.get('filter_type', 'all')
 
-    clans = Clan.objects.filter(is_deleted=False).select_related('city', 'state', 'geo_political_zone').prefetch_related('managers__user', 'restricted_users__user')
-    subclans = SubClan.objects.filter(is_deleted=False).select_related('clan', 'city', 'state').prefetch_related('managers__user')
-    users = Account.objects.filter(is_active=True).select_related('account_profile').order_by('first_name', 'username')
+    # Efficiently load profiles with active clan or subclan manager assignments
+    profiles_with_access = Profile.objects.filter(
+        Q(clan_managers__isnull=False) | Q(subclan_managers__isnull=False)
+    ).distinct().select_related('user').prefetch_related(
+        'clan_managers__city', 'clan_managers__state',
+        'subclan_managers__clan', 'subclan_managers__city', 'subclan_managers__state'
+    )
+    users = Account.objects.filter(is_active=True).select_related('account_profile').only('id', 'first_name', 'last_name', 'username', 'email', 'account_profile__id').order_by('first_name', 'username')
 
-    if query:
-        clans = clans.filter(
-            Q(name__icontains=query) |
-            Q(city__name__icontains=query) |
-            Q(state__name__icontains=query) |
-            Q(managers__user__username__icontains=query) |
-            Q(managers__user__email__icontains=query)
-        ).distinct()
-
-        subclans = subclans.filter(
-            Q(name__icontains=query) |
-            Q(clan__name__icontains=query) |
-            Q(managers__user__username__icontains=query) |
-            Q(managers__user__email__icontains=query)
-        ).distinct()
-
-    # Collect active assignments
     clan_assignments = []
-    for clan in clans:
-        for mgr in clan.managers.all():
+    subclan_assignments = []
+
+    for prof in profiles_with_access:
+        u_name = prof.user.username
+        u_email = prof.user.email
+        for clan in prof.clan_managers.all():
+            if query:
+                q_lower = query.lower()
+                c_name = clan.name.lower()
+                city_name = (clan.city.name if clan.city else '').lower()
+                state_name = (clan.state.name if clan.state else '').lower()
+                if not (q_lower in c_name or q_lower in city_name or q_lower in state_name or q_lower in u_name.lower() or q_lower in u_email.lower()):
+                    continue
+
             clan_assignments.append({
                 'type': 'Clan',
                 'target_name': clan.name,
                 'location': f"{clan.city.name if clan.city else ''}, {clan.state.name if clan.state else ''}".strip(', '),
-                'profile': mgr,
+                'profile': prof,
                 'clan_id': clan.id,
                 'subclan_id': None,
                 'historical_url': reverse('platform_admin:historical-clan-create-view', kwargs={'clan_location_pk': clan.id}),
@@ -58,48 +59,64 @@ def clan_access_list_view(request):
                 'geophysical_url': reverse('platform_admin:geo-physical-clan-create-view', kwargs={'clan_location_pk': clan.id}),
             })
 
-    subclan_assignments = []
-    for sc in subclans:
-        for mgr in sc.managers.all():
+        for sc in prof.subclan_managers.all():
+            if query:
+                q_lower = query.lower()
+                sc_name = sc.name.lower()
+                c_name = (sc.clan.name if sc.clan else '').lower()
+                if not (q_lower in sc_name or q_lower in c_name or q_lower in u_name.lower() or q_lower in u_email.lower()):
+                    continue
+
             subclan_assignments.append({
                 'type': 'Sub-Clan',
                 'target_name': f"{sc.name} ({sc.clan.name if sc.clan else ''})",
                 'location': f"{sc.city.name if sc.city else ''}, {sc.state.name if sc.state else ''}".strip(', '),
-                'profile': mgr,
-                'clan_id': sc.clan.id if sc.clan else None,
+                'profile': prof,
+                'clan_id': sc.clan_id,
                 'subclan_id': sc.id,
-                'historical_url': reverse('platform_admin:historical-clan-create-view', kwargs={'clan_location_pk': sc.clan.id}) if sc.clan else "#",
-                'market_url': reverse('platform_admin:market-sector-clan-create-view', kwargs={'clan_location_pk': sc.clan.id}) if sc.clan else "#",
-                'geophysical_url': reverse('platform_admin:geo-physical-clan-create-view', kwargs={'clan_location_pk': sc.clan.id}) if sc.clan else "#",
+                'historical_url': reverse('platform_admin:historical-clan-create-view', kwargs={'clan_location_pk': sc.clan_id}) if sc.clan_id else "#",
+                'market_url': reverse('platform_admin:market-sector-clan-create-view', kwargs={'clan_location_pk': sc.clan_id}) if sc.clan_id else "#",
+                'geophysical_url': reverse('platform_admin:geo-physical-clan-create-view', kwargs={'clan_location_pk': sc.clan_id}) if sc.clan_id else "#",
             })
 
     all_assignments = clan_assignments + subclan_assignments
 
-    # Stats
-    total_clans_count = Clan.objects.filter(is_deleted=False).count()
-    total_subclans_count = SubClan.objects.filter(is_deleted=False).count()
+    # Stats (cached 300s)
+    total_clans_count = cache.get_or_set('kpi_total_clans', lambda: Clan.objects.filter(is_deleted=False).count(), 300)
+    total_subclans_count = cache.get_or_set('kpi_total_subclans', lambda: SubClan.objects.filter(is_deleted=False).count(), 300)
     assigned_users_count = len(set([a['profile'].id for a in all_assignments]))
 
-    all_clans_dropdown = Clan.objects.filter(is_deleted=False).order_by('name')
-    all_subclans_dropdown = SubClan.objects.filter(is_deleted=False).select_related('clan').order_by('name')
-    all_states = State.objects.filter(is_deleted=False).order_by('name')
-    all_geo_zones = GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')
+    all_clans_dropdown = cache.get_or_set(
+        'dropdown_all_clans',
+        lambda: list(Clan.objects.filter(is_deleted=False).select_related('city', 'state').only('id', 'name', 'code', 'node_id', 'city_id', 'city__name', 'state_id', 'state__name', 'geo_political_zone_id').order_by('name')),
+        3600
+    )
+    all_states = cache.get_or_set(
+        'all_states_simple',
+        lambda: list(State.objects.filter(is_deleted=False).only('id', 'name').order_by('name')),
+        3600
+    )
+    all_geo_zones = cache.get_or_set(
+        'all_geo_zones_list',
+        lambda: list(GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')),
+        3600
+    )
 
     context = {
-        'clans': clans,
-        'subclans': subclans,
+        'clans': [],
+        'subclans': [],
         'users': users,
         'all_assignments': all_assignments,
         'total_clans_count': total_clans_count,
         'total_subclans_count': total_subclans_count,
         'assigned_users_count': assigned_users_count,
         'all_clans_dropdown': all_clans_dropdown,
-        'all_subclans_dropdown': all_subclans_dropdown,
+        'all_subclans_dropdown': [],
         'all_states': all_states,
         'all_geo_zones': all_geo_zones,
         'node_type_choices': NODE_TYPE_CHOICES,
-        'clan_create_form': ClanForm(),
-        'subclan_create_form': SubClanForm(),
+        'clan_create_form': None,
+        'subclan_create_form': None,
         'query': query,
         'filter_type': filter_type,
     }
@@ -254,7 +271,11 @@ def api_generate_node_id_view(request):
     node_type = request.GET.get('node_type', 'MAJOR_ROAD').strip() or 'MAJOR_ROAD'
     parent_road_id = request.GET.get('parent_road_id') or request.GET.get('parent_road')
 
-    parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
+    if node_type in ('SUB_CLAN', 'COMMUNITY'):
+        parent_road = None
+    else:
+        parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
+
     clan = Clan.objects.filter(id=clan_id, is_deleted=False).first() if clan_id else (parent_road.clan if parent_road else None)
 
     if not clan and not parent_road:

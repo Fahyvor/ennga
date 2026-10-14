@@ -20,38 +20,48 @@ from django.views.generic import ( ListView, DetailView, CreateView,
                                     UpdateView, DeleteView, RedirectView, View, TemplateView)
 
 
+from django.core.cache import cache
+
 @login_required
 def dashboard(request):
-    users = Profile.objects.all()
-    market_sectors = MarketSector.my_objects.all()
-    historicals = Historical.my_objects.all()
-    geo_physicals = GeoPhysicalData.my_objects.all()
-
     profile = getattr(request.user, 'account_profile', None)
     is_admin = bool(request.user.is_admin or request.user.is_superuser or request.user.is_staff)
 
     assigned_clans = profile.clan_managers.filter(is_deleted=False).select_related('city', 'state') if profile else Clan.objects.none()
     assigned_subclans = profile.subclan_managers.filter(is_deleted=False).select_related('clan', 'city', 'state') if profile else SubClan.objects.none()
-    
-    total_clans_count = Clan.objects.filter(is_deleted=False).count()
-    total_subclans_count = SubClan.objects.filter(is_deleted=False).count()
+
+    # Cached KPIs & counts (300s) to eliminate repeated DB round-trips
+    total_clans_count = cache.get_or_set('kpi_total_clans', lambda: Clan.objects.filter(is_deleted=False).count(), 300)
+    total_subclans_count = cache.get_or_set('kpi_total_subclans', lambda: SubClan.objects.filter(is_deleted=False).count(), 300)
+    market_sectors = cache.get_or_set('kpi_market_sectors', lambda: MarketSector.my_objects.count(), 300)
+    historicals = cache.get_or_set('kpi_historicals', lambda: Historical.my_objects.count(), 300)
+    geo_physicals = cache.get_or_set('kpi_geo_physicals', lambda: GeoPhysicalData.my_objects.count(), 300)
 
     # If admin and no explicit assignments, supply recent clans so admin has interactive access immediately
-    admin_recent_clans = Clan.objects.filter(is_deleted=False).select_related('city', 'state').order_by('-id')[:8] if is_admin else Clan.objects.none()
+    admin_recent_clans = Clan.objects.filter(is_deleted=False).select_related('city', 'state').only('id', 'name', 'code', 'node_id', 'city_id', 'city__name', 'state_id', 'state__name').order_by('-id')[:8] if is_admin else Clan.objects.none()
 
-    all_clans_dropdown = Clan.objects.filter(is_deleted=False).select_related('city', 'state').order_by('name')
-    all_users = Account.objects.filter(is_active=True).select_related('account_profile').order_by('first_name', 'username')
-    all_states = State.objects.filter(is_deleted=False).order_by('name')
-    all_geo_zones = GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')
-
-    clan_create_form = ClanForm()
-    subclan_create_form = SubClanForm()
+    all_clans_dropdown = cache.get_or_set(
+        'dropdown_all_clans',
+        lambda: list(Clan.objects.filter(is_deleted=False).select_related('city', 'state').only('id', 'name', 'code', 'node_id', 'city_id', 'city__name', 'state_id', 'state__name', 'geo_political_zone_id').order_by('name')),
+        3600
+    )
+    all_users = Account.objects.filter(is_active=True).select_related('account_profile').only('id', 'first_name', 'last_name', 'username', 'email', 'account_profile__id').order_by('first_name', 'username')
+    all_states = cache.get_or_set(
+        'all_states_list',
+        lambda: list(State.objects.filter(is_deleted=False).order_by('name')),
+        3600
+    )
+    all_geo_zones = cache.get_or_set(
+        'all_geo_zones_list',
+        lambda: list(GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')),
+        3600
+    )
 
     context = {
-        'users': users,
-        'historicals': historicals,
-        'market_sectors': market_sectors,
-        'geo_physicals': geo_physicals,
+        'users': [],
+        'historicals': type('Obj', (), {'count': historicals}),
+        'market_sectors': type('Obj', (), {'count': market_sectors}),
+        'geo_physicals': type('Obj', (), {'count': geo_physicals}),
         'assigned_clans': assigned_clans,
         'assigned_subclans': assigned_subclans,
         'admin_recent_clans': admin_recent_clans,
@@ -62,15 +72,15 @@ def dashboard(request):
         'all_users': all_users,
         'all_states': all_states,
         'all_geo_zones': all_geo_zones,
-        'clan_create_form': clan_create_form,
-        'subclan_create_form': subclan_create_form,
+        'clan_create_form': None,
+        'subclan_create_form': None,
         'node_type_choices': NODE_TYPE_CHOICES,
     }
     return render(request, 'platform_admin/dashboard.html', context)
 
 @login_required
 def all_users(request):
-    users = Account.objects.all()
+    users = Account.objects.all().select_related('account_profile').prefetch_related('account_profile__clan_managers', 'account_profile__subclan_managers')
     context = {
         'users': users,
     }
@@ -78,7 +88,7 @@ def all_users(request):
 
 @login_required
 def approved_users(request):
-    users = Account.objects.filter(is_active=True)
+    users = Account.objects.filter(is_active=True).select_related('account_profile').prefetch_related('account_profile__clan_managers', 'account_profile__subclan_managers')
     context = {
         'users': users,
     }
@@ -86,7 +96,7 @@ def approved_users(request):
 
 @login_required
 def admin_users(request):
-    users = Account.objects.filter(is_active=True, is_admin=True)
+    users = Account.objects.filter(is_active=True, is_admin=True).select_related('account_profile').prefetch_related('account_profile__clan_managers', 'account_profile__subclan_managers')
     context = {
         'users': users,
     }
