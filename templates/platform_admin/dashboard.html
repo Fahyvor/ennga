@@ -620,7 +620,7 @@
               <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
                 Territorial Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated &bull; Non-editable</span>
               </label>
-              <input type="text" name="node_id" id="modalSubclanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001/MR/001" readonly tabindex="-1" style="font-family: monospace; font-weight: 600; color: #0e7490; background-color: #f8fafc; cursor: not-allowed;">
+              <input type="text" name="node_id" id="modalSubclanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. CLN-001/SB/001 or CLN-001/SB/001/MR/001" readonly tabindex="-1" style="font-family: monospace; font-weight: 600; color: #0e7490; background-color: #f8fafc; cursor: not-allowed;">
               <small class="text-muted" style="font-size: 11px;">Automatically generated sequentially as an addition to existing nodes.</small>
             </div>
           </div>
@@ -811,7 +811,7 @@
       var parentRoadId = $('#modalSubclanParentRoadSelect').val() || '';
 
       if (!clanId && !parentRoadId) {
-        $('#modalSubclanNodeIdInput').attr('placeholder', 'e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001/MR/001');
+        $('#modalSubclanNodeIdInput').attr('placeholder', 'e.g. CLN-001/SB/001 or CLN-001/SB/001/MR/001');
         return;
       }
 
@@ -830,8 +830,12 @@
         },
         error: function() {
           var opt = $('#modalSubclanClanSelect option:selected');
-          var clanNodeId = opt.data('node-id') || 'NG/SS/RIV/OBIO-AKPOR/CLN/001';
-          $('#modalSubclanNodeIdInput').val(clanNodeId + '/MR/001');
+          var clanNodeId = opt.data('node-id') || 'CLN-001';
+          if (nodeType === 'SUB_CLAN' || nodeType === 'COMMUNITY') {
+            $('#modalSubclanNodeIdInput').val(clanNodeId + '/SB/001');
+          } else {
+            $('#modalSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001');
+          }
         }
       });
     }

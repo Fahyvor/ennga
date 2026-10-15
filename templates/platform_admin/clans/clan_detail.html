@@ -1507,7 +1507,7 @@
               <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
                 Territorial Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated &bull; Non-editable</span>
               </label>
-              <input type="text" name="node_id" id="detailSubclanIdInput" class="form-control form-control-modern" placeholder="e.g. {{ clan.display_node_id }}/MR/001" readonly tabindex="-1" style="font-family: monospace; font-weight: 600; color: #0e7490; background-color: #f8fafc; cursor: not-allowed;">
+              <input type="text" name="node_id" id="detailSubclanIdInput" class="form-control form-control-modern" placeholder="e.g. {{ clan.display_node_id }}/SB/001 or {{ clan.display_node_id }}/SB/001/MR/001" readonly tabindex="-1" style="font-family: monospace; font-weight: 600; color: #0e7490; background-color: #f8fafc; cursor: not-allowed;">
               <small class="text-muted" style="font-size: 11px;">Automatically generated sequentially as an addition to existing nodes.</small>
             </div>
           </div>
@@ -1807,7 +1807,11 @@
           }
         },
         error: function() {
-          $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/MR/001');
+          if (nodeType === 'SUB_CLAN' || nodeType === 'COMMUNITY') {
+            $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/SB/001');
+          } else {
+            $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/SB/001/MR/001');
+          }
         }
       });
     }

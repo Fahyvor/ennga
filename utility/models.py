@@ -475,9 +475,19 @@ class SubClan(models.Model):
         if parent:
             parent_nid = parent.node_id or parent.display_node_id
         elif self.clan:
-            parent_nid = self.clan.node_id or self.clan.display_node_id
+            clan_nid = self.clan.node_id or self.clan.display_node_id
+            if self.node_type in ('MAJOR_ROAD', 'META_ROAD'):
+                parent_nid = f"{clan_nid}/SB/001"
+            elif self.node_type in ('SUB_ROAD', 'LINK_ROAD'):
+                parent_nid = f"{clan_nid}/SB/001/MR/001"
+            elif self.node_type == 'STREET':
+                parent_nid = f"{clan_nid}/SB/001/MR/001/SR/001"
+            elif self.node_type == 'CLOSE':
+                parent_nid = f"{clan_nid}/SB/001/MR/001/SR/001/STR/001"
+            else:
+                parent_nid = clan_nid
         else:
-            parent_nid = "NOD"
+            parent_nid = "CLN-001"
         return f"{parent_nid}/{code}/{self.id:03d}" if self.id else f"{parent_nid}/{code}/001"
 
     @property
@@ -493,18 +503,66 @@ class SubClan(models.Model):
         return self.infrastructures.filter(infrastructure_type='STREET_LIGHT', is_deleted=False)
 
     def generate_next_node_id(self):
-        from .territory_codes import build_road_node_prefix
+        from .territory_codes import get_node_type_code
         parent = self.parent_road
-        if parent:
-            parent_nid = parent.node_id or parent.display_node_id
-        elif self.clan:
-            parent_nid = self.clan.node_id or self.clan.display_node_id
+        node_type = self.node_type or 'SUB_CLAN'
+        clan_nid = (self.clan.node_id or self.clan.display_node_id) if self.clan else "CLN-001"
+
+        if node_type in ('SUB_CLAN', 'COMMUNITY'):
+            prefix = f"{clan_nid}/SB/"
+        elif node_type in ('MAJOR_ROAD', 'META_ROAD'):
+            if parent:
+                parent_nid = parent.node_id or parent.display_node_id
+            else:
+                subclan = SubClan.objects.filter(
+                    clan=self.clan,
+                    node_type__in=['SUB_CLAN', 'COMMUNITY'],
+                    is_deleted=False
+                ).first() if self.clan else None
+                parent_nid = (subclan.node_id or subclan.display_node_id) if subclan else f"{clan_nid}/SB/001"
+            # Ensure parent_nid has the territorial sub-clan node if it's just clan_nid
+            if not any(f"/{c}/" in parent_nid or parent_nid.endswith(f"/{c}") for c in ['SB', 'MR', 'SR', 'STR', 'CLS']):
+                parent_nid = f"{parent_nid}/SB/001"
+            prefix = f"{parent_nid}/MR/"
+        elif node_type in ('SUB_ROAD', 'LINK_ROAD'):
+            if parent:
+                parent_nid = parent.node_id or parent.display_node_id
+            else:
+                mr = SubClan.objects.filter(
+                    clan=self.clan,
+                    node_type__in=['MAJOR_ROAD', 'META_ROAD'],
+                    is_deleted=False
+                ).first() if self.clan else None
+                parent_nid = (mr.node_id or mr.display_node_id) if mr else f"{clan_nid}/SB/001/MR/001"
+            prefix = f"{parent_nid}/SR/"
+        elif node_type == 'STREET':
+            if parent:
+                parent_nid = parent.node_id or parent.display_node_id
+            else:
+                sr = SubClan.objects.filter(
+                    clan=self.clan,
+                    node_type__in=['SUB_ROAD', 'LINK_ROAD'],
+                    is_deleted=False
+                ).first() if self.clan else None
+                parent_nid = (sr.node_id or sr.display_node_id) if sr else f"{clan_nid}/SB/001/MR/001/SR/001"
+            prefix = f"{parent_nid}/STR/"
+        elif node_type == 'CLOSE':
+            if parent:
+                parent_nid = parent.node_id or parent.display_node_id
+            else:
+                st = SubClan.objects.filter(
+                    clan=self.clan,
+                    node_type='STREET',
+                    is_deleted=False
+                ).first() if self.clan else None
+                parent_nid = (st.node_id or st.display_node_id) if st else f"{clan_nid}/SB/001/MR/001/SR/001/STR/001"
+            prefix = f"{parent_nid}/CLS/"
         else:
-            parent_nid = "NG/SS/RIV/OBIO-AKPOR/CLN/001"
+            code = get_node_type_code(node_type)
+            parent_nid = (parent.node_id or parent.display_node_id) if parent else clan_nid
+            prefix = f"{parent_nid}/{code}/"
 
-        prefix = build_road_node_prefix(parent_nid, self.node_type)
-
-        # Find existing sequence numbers for this prefix
+        # Find existing sequence numbers for this exact prefix
         existing_node_ids = SubClan.objects.filter(
             node_id__startswith=prefix
         ).values_list('node_id', flat=True)
@@ -522,41 +580,25 @@ class SubClan(models.Model):
                     except ValueError:
                         pass
 
-        # Also ensure sequential addition to existing sub-nodes under this parent / clan
-        if parent and getattr(parent, 'pk', None):
-            under_parent = SubClan.objects.filter(parent_road=parent, node_type=self.node_type, is_deleted=False)
-            if self.pk:
-                under_parent = under_parent.exclude(pk=self.pk)
-            max_seq = max(max_seq, under_parent.count())
-            for sc in under_parent:
-                nid = sc.node_id
-                if nid and nid.startswith(prefix):
-                    m = pattern.match(nid)
-                    if m:
-                        try:
-                            max_seq = max(max_seq, int(m.group(1)))
-                        except ValueError:
-                            pass
-        elif self.clan and getattr(self.clan, 'pk', None):
-            same_type_nodes = SubClan.objects.filter(clan=self.clan, parent_road__isnull=True, node_type=self.node_type, is_deleted=False)
-            if self.pk:
-                same_type_nodes = same_type_nodes.exclude(pk=self.pk)
-            max_seq = max(max_seq, same_type_nodes.count())
-            for sc in same_type_nodes:
-                nid = sc.node_id
-                if nid and nid.startswith(prefix):
-                    m = pattern.match(nid)
-                    if m:
-                        try:
-                            max_seq = max(max_seq, int(m.group(1)))
-                        except ValueError:
-                            pass
+        # If this instance is being saved and already has a valid node_id with this prefix, keep it
+        if self.pk and self.node_id and self.node_id.startswith(prefix):
+            m = pattern.match(self.node_id)
+            if m:
+                return self.node_id
 
         return f"{prefix}{max_seq + 1:03d}"
 
     def save(self, *args, **kwargs):
         if not self.node_id:
             self.node_id = self.generate_next_node_id()
+        if not self.parent_road and self.clan and self.node_type in ('MAJOR_ROAD', 'META_ROAD'):
+            subclan = SubClan.objects.filter(
+                clan=self.clan,
+                node_type__in=['SUB_CLAN', 'COMMUNITY'],
+                is_deleted=False
+            ).first()
+            if subclan and subclan.pk != self.pk:
+                self.parent_road = subclan
         super().save(*args, **kwargs)
 
 

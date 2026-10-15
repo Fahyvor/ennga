@@ -13,3 +13,13 @@ __pycache__/
 .idea/
 .vscode/
 *.sqlite3-journal
+db.sqlite3
+backup_database/
+.tempmediaStorage/
+.env
+*.webp
+*.png
+node_modules/
+DOCKER.md
+Dockerfile*
+docker-compose*

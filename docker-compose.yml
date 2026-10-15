@@ -1,5 +1,7 @@
 services:
-  # Django Web Application Service
+  # -------------------------------------------------------------
+  # Django Web Application Service (Gunicorn ASGI/WSGI)
+  # -------------------------------------------------------------
   ennga:
     container_name: ennga-web
     build:
@@ -9,26 +11,33 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/home/app/ennga
-      - static_volume:/home/app/ennga/static_in_env
+      - static_volume:/home/app/ennga/static
       - media_volume:/home/app/ennga/media
     ports:
       - "8000:8000"
     expose:
       - "8000"
     env_file:
-      - ./.env
+      - path: ./.env
+        required: false
     environment:
       - PYTHONUNBUFFERED=1
       - PORT=8000
+      - DATABASE_URL=${DATABASE_URL:-postgres://${POSTGRES_USER:-ennga_user}:${POSTGRES_PASSWORD:-ennga_password}@db:5432/${POSTGRES_DB:-ennga_db}}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - ELASTIC_HOST=${ELASTIC_HOST:-http://elasticsearch:9200}
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       elasticsearch:
         condition: service_started
 
+  # -------------------------------------------------------------
   # Celery Background Worker & Beat Scheduler
+  # -------------------------------------------------------------
   celery:
     container_name: ennga-celery
     build:
@@ -40,15 +49,24 @@ services:
       - ./:/home/app/ennga
       - media_volume:/home/app/ennga/media
     env_file:
-      - ./.env
+      - path: ./.env
+        required: false
     environment:
       - PYTHONUNBUFFERED=1
       - SKIP_MIGRATIONS=true
+      - DATABASE_URL=${DATABASE_URL:-postgres://${POSTGRES_USER:-ennga_user}:${POSTGRES_PASSWORD:-ennga_password}@db:5432/${POSTGRES_DB:-ennga_db}}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - ELASTIC_HOST=${ELASTIC_HOST:-http://elasticsearch:9200}
     depends_on:
-      - ennga
-      - redis
+      ennga:
+        condition: service_started
+      redis:
+        condition: service_healthy
 
+  # -------------------------------------------------------------
   # PostgreSQL Database Service
+  # -------------------------------------------------------------
   db:
     container_name: ennga-postgres
     image: postgres:15-alpine
@@ -61,16 +79,30 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ennga_password}
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ennga_user} -d ${POSTGRES_DB:-ennga_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  # -------------------------------------------------------------
   # Redis Cache & Celery Message Broker
+  # -------------------------------------------------------------
   redis:
     container_name: ennga-redis
     image: redis:7-alpine
     restart: unless-stopped
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # Nginx Reverse Proxy (Serving static files & forwarding traffic)
+  # -------------------------------------------------------------
+  # Nginx Reverse Proxy (Serves static/media & forwards HTTP)
+  # -------------------------------------------------------------
   nginx:
     container_name: ennga-nginx
     build:
@@ -78,15 +110,18 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     volumes:
-      - static_volume:/home/app/ennga/static_in_env:ro
+      - static_volume:/home/app/ennga/static:ro
       - media_volume:/home/app/ennga/media:ro
     ports:
-      - "1337:80"
+      - "80:80"
       - "8080:80"
     depends_on:
-      - ennga
+      ennga:
+        condition: service_started
 
+  # -------------------------------------------------------------
   # Elasticsearch Search Engine
+  # -------------------------------------------------------------
   elasticsearch:
     container_name: ennga-elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.18

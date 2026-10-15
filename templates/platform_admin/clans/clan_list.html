@@ -62,6 +62,91 @@
     background: #f1f5f9;
     color: #334155;
   }
+
+  /* Prevent table and card from clipping dropdown menus */
+  .clan-table-card.has-dropdown-open,
+  .clan-table-card:has(.dropdown.show) {
+    overflow: visible !important;
+  }
+  .table-responsive.has-dropdown-open,
+  .table-responsive:has(.dropdown.show) {
+    overflow: visible !important;
+  }
+  .table-modern {
+    overflow: visible !important;
+  }
+  .table-modern tr.has-dropdown-open,
+  .table-modern tr:has(.dropdown.show) {
+    position: relative !important;
+    z-index: 1055 !important;
+  }
+  .table-modern td.has-dropdown-open,
+  .table-modern td:has(.dropdown.show) {
+    position: relative !important;
+    z-index: 1056 !important;
+  }
+
+  /* Robust and beautiful dropdown menu styles */
+  .dropdown {
+    position: relative !important;
+  }
+  .dropdown.show {
+    z-index: 1060 !important;
+  }
+  .dropdown-menu {
+    position: absolute !important;
+    top: 100% !important;
+    right: 0 !important;
+    left: auto !important;
+    z-index: 1070 !important;
+    margin-top: 6px !important;
+    min-width: 230px !important;
+    background-color: #ffffff !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+    padding: 8px !important;
+    display: none;
+  }
+  .dropdown.dropup .dropdown-menu {
+    top: auto !important;
+    bottom: 100% !important;
+    margin-top: 0 !important;
+    margin-bottom: 6px !important;
+  }
+  .dropdown-menu.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  .dropdown-menu .dropdown-item {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 8px 12px !important;
+    color: var(--text-main, #1e293b) !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
+    white-space: nowrap !important;
+  }
+  .dropdown-menu .dropdown-item:hover,
+  .dropdown-menu .dropdown-item:focus {
+    background-color: #f1f5f9 !important;
+    color: #7c3aed !important;
+  }
+  .dropdown-header {
+    font-size: 10px !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    color: #64748b !important;
+    padding: 4px 12px 6px !important;
+    margin-bottom: 2px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+  }
 </style>
 
 <div class="main_content_iner overly_inner p-4">
@@ -109,7 +194,7 @@
           Create New Clan
         </button>
 
-        <!-- Direct Button: + Add Sub-Clan -->
+        <!-- Direct Button: Add Sub-Clan -->
         <button type="button" class="btn btn-en-primary font-weight-700 js-open-subclan-modal" data-node-type="SUB_CLAN" data-toggle="modal" data-target="#createSubClanModal" data-bs-toggle="modal" data-bs-target="#createSubClanModal" style="cursor: pointer;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -117,7 +202,7 @@
             <line x1="20" y1="8" x2="20" y2="14"></line>
             <line x1="23" y1="11" x2="17" y2="11"></line>
           </svg>
-          + Add Sub-Clan
+          Add Sub-Clan
         </button>
 
         <!-- Dropdown for Adding Other Territorial Nodes (Major Roads, Sub Roads, Streets, Closes) -->
@@ -125,7 +210,7 @@
           <button type="button" class="btn btn-en-outline font-weight-700 dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="cursor: pointer;">
             + Add Territorial Node
           </button>
-          <div class="dropdown-menu dropdown-menu-right shadow-sm p-2" style="border-radius: 14px; min-width: 250px;">
+          <div class="dropdown-menu dropdown-menu-end dropdown-menu-right shadow-sm p-2" style="border-radius: 14px; min-width: 250px;">
             <h6 class="dropdown-header text-uppercase font-weight-700 pb-1" style="font-size: 10px; letter-spacing: 0.5px; color: #64748b;">Territorial Hierarchy</h6>
             
             <a class="dropdown-item py-2 js-open-subclan-modal" href="#" data-node-type="SUB_CLAN" data-toggle="modal" data-target="#createSubClanModal" style="border-radius: 8px;">
@@ -252,7 +337,7 @@
     </div>
 
     <!-- Navigation Tabs & Search Controls Card -->
-    <div class="en-card mb-4">
+    <div class="en-card clan-table-card mb-4">
       <div class="p-3 border-bottom d-flex flex-column justify-content-between gap-3" style="border-color: var(--border-color) !important; gap: 12px;">
         
         <!-- View Mode Navigation Tabs -->
@@ -414,7 +499,7 @@
                     <button class="btn btn-en-outline btn-en-sm py-1 px-2 text-nowrap font-weight-600 dropdown-toggle" style="white-space: nowrap;" type="button" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Add Territorial Node under {{ clan.name }}">
                       + Node
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right shadow-sm p-2" style="border-radius: 12px; min-width: 220px;">
+                    <div class="dropdown-menu dropdown-menu-end dropdown-menu-right shadow-sm p-2" style="border-radius: 12px; min-width: 220px;">
                       <h6 class="dropdown-header text-uppercase font-weight-700" style="font-size: 10px; letter-spacing: 0.5px; color: #64748b;">Add under {{ clan.name }}</h6>
                       <a class="dropdown-item py-1 font-weight-600 js-open-subclan-modal" href="#" data-clan-id="{{ clan.id }}" data-clan-name="{{ clan.name }}" data-node-type="SUB_CLAN" data-toggle="modal" data-target="#createSubClanModal" data-bs-toggle="modal" data-bs-target="#createSubClanModal">
                         🏘️ Add Sub-Clan
@@ -438,7 +523,7 @@
                     <button class="btn btn-en-outline btn-en-sm py-1 px-2 text-nowrap dropdown-toggle" style="white-space: nowrap;" type="button" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Data Entry Shortcuts">
                       + Data
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right shadow-sm p-2" style="border-radius: 12px; min-width: 190px;">
+                    <div class="dropdown-menu dropdown-menu-end dropdown-menu-right shadow-sm p-2" style="border-radius: 12px; min-width: 190px;">
                       <a class="dropdown-item py-2" href="{% url 'platform_admin:historical-clan-create-view' clan_location_pk=clan.id %}">
                         🏛️ Historical Data
                       </a>
@@ -1006,7 +1091,7 @@
             <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
               Territorial Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated &bull; Non-editable</span>
             </label>
-            <input type="text" name="node_id" id="listSubclanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001/SB/001" readonly tabindex="-1" style="font-family: monospace; font-weight: 600; color: #0e7490; background-color: #f8fafc; cursor: not-allowed;">
+            <input type="text" name="node_id" id="listSubclanNodeIdInput" class="form-control form-control-modern" placeholder="e.g. CLN-001/SB/001" readonly tabindex="-1" style="font-family: monospace; font-weight: 600; color: #0e7490; background-color: #f8fafc; cursor: not-allowed;">
             <small class="text-muted" style="font-size: 11px;">Automatically generated sequentially as an addition to existing nodes for the clan or state.</small>
           </div>
 
@@ -1111,26 +1196,80 @@
     // Guaranteed click listeners for modals
     $(document).on('click', '.js-open-clan-modal', function(e) {
       e.preventDefault();
-      $('#createClanModal').modal('show');
+      var modalEl = document.getElementById('createClanModal');
+      if (modalEl) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+          var inst = bootstrap.Modal.getOrCreateInstance ? bootstrap.Modal.getOrCreateInstance(modalEl) : new bootstrap.Modal(modalEl);
+          inst.show();
+        } else if ($.fn.modal) {
+          $(modalEl).modal('show');
+        }
+      }
       refreshClanNodeIdPreview();
     });
 
-    // Delegated dropdown toggle handler ensuring all dropdowns always display smoothly
+    // Delegated dropdown toggle handler ensuring all dropdowns always display smoothly without clipping
     $(document).on('click', '[data-toggle="dropdown"], [data-bs-toggle="dropdown"]', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      var parent = $(this).closest('.dropdown');
+
+      var btn = $(this);
+      var parent = btn.closest('.dropdown');
       var menu = parent.find('.dropdown-menu');
-      $('.dropdown-menu').not(menu).removeClass('show');
-      $('.dropdown').not(parent).removeClass('show');
-      parent.toggleClass('show');
-      menu.toggleClass('show');
+      var tr = parent.closest('tr');
+      var tableContainer = parent.closest('.table-responsive');
+      var cardContainer = parent.closest('.en-card');
+      var isCurrentlyOpen = parent.hasClass('show');
+
+      // Close all existing open dropdowns
+      $('.dropdown').removeClass('show dropup');
+      $('.dropdown-menu').removeClass('show');
+      $('tr, td, .table-responsive, .en-card').removeClass('has-dropdown-open');
+
+      if (!isCurrentlyOpen) {
+        // Check if button is close to viewport bottom; if so, open upwards (dropup)
+        if (btn.length && btn[0].getBoundingClientRect) {
+          var btnRect = btn[0].getBoundingClientRect();
+          var spaceBelow = $(window).height() - btnRect.bottom;
+          if (spaceBelow < 280 && btnRect.top > 280) {
+            parent.addClass('dropup');
+          } else {
+            parent.removeClass('dropup');
+          }
+        }
+
+        parent.addClass('show');
+        menu.addClass('show');
+        tr.addClass('has-dropdown-open');
+        parent.closest('td').addClass('has-dropdown-open');
+        tableContainer.addClass('has-dropdown-open');
+        cardContainer.addClass('has-dropdown-open');
+      }
     });
 
+    // Close dropdown when clicking an item inside it
+    $(document).on('click', '.dropdown-menu .dropdown-item', function(e) {
+      var dropdown = $(this).closest('.dropdown');
+      dropdown.removeClass('show dropup');
+      dropdown.find('.dropdown-menu').removeClass('show');
+      $('tr, td, .table-responsive, .en-card').removeClass('has-dropdown-open');
+    });
+
+    // Close dropdown on click outside
     $(document).on('click', function(e) {
       if (!$(e.target).closest('.dropdown').length) {
-        $('.dropdown').removeClass('show');
+        $('.dropdown').removeClass('show dropup');
         $('.dropdown-menu').removeClass('show');
+        $('tr, td, .table-responsive, .en-card').removeClass('has-dropdown-open');
+      }
+    });
+
+    // Close dropdown on ESC key
+    $(document).on('keydown', function(e) {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        $('.dropdown').removeClass('show dropup');
+        $('.dropdown-menu').removeClass('show');
+        $('tr, td, .table-responsive, .en-card').removeClass('has-dropdown-open');
       }
     });
 
@@ -1334,12 +1473,26 @@
       var nodeType = $(this).data('node-type') || 'SUB_CLAN';
       var clanId = $(this).data('clan-id');
 
+      // Close all dropdowns
+      $('.dropdown').removeClass('show dropup');
+      $('.dropdown-menu').removeClass('show');
+      $('tr, td, .table-responsive, .en-card').removeClass('has-dropdown-open');
+
       if (clanId) {
         $('#listSubclanClanSelect').val(clanId).trigger('change');
       }
 
       applyNodeTypeUI(nodeType);
-      $('#createSubClanModal').modal('show');
+
+      var modalEl = document.getElementById('createSubClanModal');
+      if (modalEl) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+          var inst = bootstrap.Modal.getOrCreateInstance ? bootstrap.Modal.getOrCreateInstance(modalEl) : new bootstrap.Modal(modalEl);
+          inst.show();
+        } else if ($.fn.modal) {
+          $(modalEl).modal('show');
+        }
+      }
     });
 
     // -------------------------------------------------------------
@@ -1351,7 +1504,7 @@
       var parentRoadId = $('#listSubclanParentRoadSelect').val() || '';
 
       if (!clanId && !parentRoadId) {
-        $('#listSubclanNodeIdInput').attr('placeholder', 'e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001/SB/001');
+        $('#listSubclanNodeIdInput').attr('placeholder', 'e.g. CLN-001/SB/001 or CLN-001/SB/001/MR/001');
         return;
       }
 
@@ -1369,13 +1522,20 @@
         },
         error: function() {
           var selectedOption = $('#listSubclanClanSelect option:selected');
-          var clanNodeId = selectedOption.data('node-id') || 'NG/SS/RIV/OBIO-AKPOR/CLN/001';
-          var code = 'SB';
-          if (nodeType === 'MAJOR_ROAD') code = 'MR';
-          else if (nodeType === 'SUB_ROAD') code = 'SR';
-          else if (nodeType === 'STREET') code = 'STR';
-          else if (nodeType === 'CLOSE') code = 'CLS';
-          $('#listSubclanNodeIdInput').val(clanNodeId + '/' + code + '/001');
+          var clanNodeId = selectedOption.data('node-id') || 'CLN-001';
+          if (nodeType === 'SUB_CLAN') {
+            $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001');
+          } else if (nodeType === 'MAJOR_ROAD') {
+            $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001');
+          } else if (nodeType === 'SUB_ROAD') {
+            $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001/SR/001');
+          } else if (nodeType === 'STREET') {
+            $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001/SR/001/STR/001');
+          } else if (nodeType === 'CLOSE') {
+            $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001/SR/001/STR/001/CLS/001');
+          } else {
+            $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001');
+          }
         }
       });
     }
@@ -1383,6 +1543,7 @@
     function filterListParentRoads() {
       var nodeType = $('#modalSubclanNodeTypeHidden').val() || 'SUB_CLAN';
       var clanName = $('#listSubclanClanSelect option:selected').text() || 'Clan';
+      var clanNodeId = $('#listSubclanClanSelect option:selected').data('node-id') || 'CLN-001';
 
       $('#listSubclanParentRoadSelect option').each(function() {
         var optVal = $(this).val();
@@ -1392,7 +1553,7 @@
             $(this).text('-- Attached Directly to ' + clanName + ' (Primary Community) --');
             $(this).hide();
           } else if (nodeType === 'MAJOR_ROAD') {
-            $(this).text('-- Connected Directly to ' + clanName + ' (Primary Trunk) --');
+            $(this).text('-- Connected to Primary Community (' + clanNodeId + '/SB/001) --');
             $(this).show();
           } else if (nodeType === 'SUB_ROAD') {
             $(this).text('-- Select Parent Major Road * --');

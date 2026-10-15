@@ -25,13 +25,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-pud1ka-bnw5$d=-yp-$=#x_for3s^72-vd&s*nn8*1+$0enepf'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-pud1ka-bnw5$d=-yp-$=#x_for3s^72-vd&s*nn8*1+$0enepf')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ["*"]
+allowed_hosts_cfg = config('ALLOWED_HOSTS', default='*')
+ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_cfg.split(',') if h.strip()] if allowed_hosts_cfg != '*' else ['*']
+
+csrf_trusted_cfg = config('CSRF_TRUSTED_ORIGINS', default='')
+if csrf_trusted_cfg:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_trusted_cfg.split(',') if o.strip()]
+
+# Reverse proxy / Docker container HTTPS detection
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 
 # Application definition
 INSTALLED_APPS = [
@@ -343,8 +352,12 @@ SITE_URL = 'https://ennga.com'
 SITE_ID = 1
 
 # CELERY SETTINGS
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
-# CELERY_BROKER_URL = 'rediss://:pa4cd541ac58e26357078bdf9d04b5b65be73f2f18cd66d5840e4dc1513db97cd@ec2-34-193-69-177.compute-1.amazonaws.com:19720'
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default=config("REDIS_URL", default='redis://127.0.0.1:6379/0'))
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
 
 # DRF 
 CORS_ALLOW_ALL_ORIGINS = True

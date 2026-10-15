@@ -39,7 +39,7 @@ RUN mkdir -p $APP_HOME/static $APP_HOME/media $APP_HOME/static_in_env /home/app/
     chmod 700 /home/app/.ssh /home/app/.gunicorn
 WORKDIR $APP_HOME
 
-# Install runtime system dependencies (SSH tunneling, database clients, network utilities)
+# Install runtime system dependencies (SSH tunneling, database clients, font & image libraries, network utilities)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
@@ -48,7 +48,9 @@ RUN apt-get update && \
         autossh \
         sshpass \
         libpq5 \
-        default-mysql-client && \
+        default-mysql-client \
+        fontconfig \
+        libfreetype6 && \
     rm -rf /var/lib/apt/lists/*
 
 # Install pre-built wheels
@@ -73,6 +75,9 @@ RUN chown -R app:app /home/app
 USER app
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://127.0.0.1:${PORT:-8000}/ || exit 1
 
 ENTRYPOINT ["/home/app/ennga/entrypoint.sh"]
 

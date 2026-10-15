@@ -147,7 +147,7 @@ class SubClanForm(forms.ModelForm):
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-modern',
             'id': 'id_subclan_node_id',
-            'placeholder': 'e.g. NG/SS/RIV/OBIO-AKPOR/CLN/001/MR/001 (auto-generated)',
+            'placeholder': 'e.g. CLN-001/SB/001 or CLN-001/SB/001/MR/001 (auto-generated)',
             'maxlength': '150',
             'readonly': 'readonly',
             'tabindex': '-1',
