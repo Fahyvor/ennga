@@ -64,7 +64,7 @@
             </button>
 
             {% if is_admin %}
-              <button type="button" class="btn btn-en-outline font-weight-700 js-open-grant-modal" data-toggle="modal" data-target="#grantAccessModal" style="color: #fff; border-color: rgba(255,255,255,0.4); cursor: pointer;">
+              <button type="button" class="btn font-weight-700 js-open-grant-modal" data-toggle="modal" data-target="#grantAccessModal" style="color: #ffffff; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.35); border-radius: 10px; padding: 9px 18px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'; this.style.borderColor='#ffffff';" onmouseout="this.style.background='rgba(255,255,255,0.12)'; this.style.borderColor='rgba(255,255,255,0.35)';">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                   <path d="M9 12l2 2 4-4"/>
@@ -73,23 +73,27 @@
               </button>
             {% endif %}
 
-            <a href="{% url 'platform_admin:clan-list' %}" class="btn btn-en-outline font-weight-600" style="color: #fff; border-color: rgba(255,255,255,0.25);">
-              Explore Clans Directory &rarr;
+            <a href="{% url 'platform_admin:clan-list' %}" class="btn font-weight-600" style="color: #ffffff; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.35); border-radius: 10px; padding: 9px 18px; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'; this.style.borderColor='#ffffff';" onmouseout="this.style.background='rgba(255,255,255,0.12)'; this.style.borderColor='rgba(255,255,255,0.35)';">
+              🏛️ Explore Clans &rarr;
+            </a>
+
+            <a href="{% url 'platform_admin:road-list' %}" class="btn font-weight-700" style="color: #C4F2F4; background: rgba(196, 242, 244, 0.16); border: 1.5px solid #C4F2F4; border-radius: 10px; padding: 9px 18px; transition: all 0.2s; box-shadow: 0 2px 10px rgba(196, 242, 244, 0.2);" onmouseover="this.style.background='rgba(196, 242, 244, 0.3)';" onmouseout="this.style.background='rgba(196, 242, 244, 0.16)';">
+              🛣️ View Roads &rarr;
             </a>
           </div>
         </div>
 
-        <div class="col-lg-4 mt-4 mt-lg-0 text-lg-right">
-          <div class="p-3" style="background: rgba(255,255,255,0.06); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); display: inline-block; min-width: 250px; text-align: left;">
+        <div class="col-lg-5 mt-4 mt-lg-0 text-lg-right">
+          <div class="p-3" style="background: rgba(6, 22, 26, 0.88); border-radius: 16px; border: 1.5px solid rgba(196, 242, 244, 0.35); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); display: inline-block; min-width: 300px; text-align: left;">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="text-white-50" style="font-size: 12px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">PRD Territory Structure</span>
-              <span class="pill-badge pill-badge-cyan" style="font-size: 10px;">ID PATTERN</span>
+              <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px; color: #94a3b8;">PRD Territory Structure</span>
+              <span class="pill-badge" style="font-size: 10px; font-weight: 700; background: rgba(196, 242, 244, 0.2); color: #C4F2F4; border: 1px solid rgba(196, 242, 244, 0.45); padding: 2px 8px;">HIERARCHY FLOW</span>
             </div>
-            <div class="font-weight-700 text-white" style="font-family: monospace; font-size: 15px; color: #C4F2F4 !important;">
-              [Territory]-[Type]-[001]
+            <div style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px; font-weight: 700; color: #ffffff; letter-spacing: -0.2px;">
+              Clan &rarr; Major Road &rarr; Sub Road &rarr; Street
             </div>
-            <div class="text-white-50 mt-1" style="font-size: 12px;">
-              e.g. <code>CLN-001</code>, <code>MR-001</code>, <code>STR-001</code>, <code>CLS-001</code>
+            <div class="mt-2" style="font-size: 12px; color: #cbd5e1;">
+              e.g. <span style="display: inline-block; background: rgba(14, 116, 144, 0.4); color: #C4F2F4; border: 1px solid rgba(196, 242, 244, 0.45); border-radius: 6px; padding: 2px 8px; font-weight: 700; font-family: ui-monospace, monospace; font-size: 12px; letter-spacing: 0.3px;">CLN-082/MR/001/SR/001/STR/001</span>
             </div>
           </div>
         </div>
@@ -98,7 +102,7 @@
 
     <!-- Core Territorial & Dataset KPIs -->
     <div class="row mb-4">
-      <div class="col-xl-4 col-md-4 col-sm-6 mb-3">
+      <div class="col-xl-3 col-md-6 col-sm-6 mb-3">
         <a href="{% url 'platform_admin:clan-list' %}" class="stat-card-modern d-block" style="text-decoration: none; border-top: 3px solid #0e7490;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -117,7 +121,7 @@
         </a>
       </div>
 
-      <div class="col-xl-4 col-md-4 col-sm-6 mb-3">
+      <div class="col-xl-3 col-md-6 col-sm-6 mb-3">
         <a href="{% url 'platform_admin:clan-list' %}?view_mode=subclans" class="stat-card-modern d-block" style="text-decoration: none; border-top: 3px solid #7c3aed;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -132,11 +136,32 @@
               </svg>
             </div>
           </div>
-          <small class="text-muted mt-2 d-block">Streets, Closes, Roads</small>
+          <small class="text-muted mt-2 d-block">Sub-Clans & Communities</small>
         </a>
       </div>
 
-      <div class="col-xl-4 col-md-4 col-sm-6 mb-3">
+      <div class="col-xl-3 col-md-6 col-sm-6 mb-3">
+        <a href="{% url 'platform_admin:road-list' %}" class="stat-card-modern d-block" style="text-decoration: none; border-top: 3px solid #0284c7;">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted text-uppercase mb-1" style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">Roads Network</p>
+              <h3 class="mb-0 font-weight-700" style="color: #0284c7;">{{ total_roads_count }}</h3>
+            </div>
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(2, 132, 199, 0.12); display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19L8 5"></path>
+                <path d="M16 5l4 14"></path>
+                <path d="M12 3v4"></path>
+                <path d="M12 11v4"></path>
+                <path d="M12 19v2"></path>
+              </svg>
+            </div>
+          </div>
+          <small class="text-muted mt-2 d-block">Major, Sub, Streets & Closes &rarr;</small>
+        </a>
+      </div>
+
+      <div class="col-xl-3 col-md-6 col-sm-6 mb-3">
         <a href="{% url 'platform_admin:clan-access-management' %}" class="stat-card-modern d-block" style="text-decoration: none; border-top: 3px solid #10b981;">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -211,16 +236,13 @@
       </div>
     </div>
 
-    <!-- Interactive Territorial Data Entry Station (PRD Section 16 Workflow) -->
+    <!-- Interactive Territorial Data Entry Station -->
     <div class="en-card p-4 mb-4" style="background: #ffffff; border-left: 5px solid #0e7490; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
         <div>
-          <div class="d-flex align-items-center mb-1">
-            <span class="pill-badge pill-badge-cyan mr-2" style="font-size: 11px;">PRD SECTION 16</span>
-            <h4 class="font-weight-700 mb-0" style="color: var(--brand-dark); font-size: 18px;">
-              Territorial Field Data Entry Station
-            </h4>
-          </div>
+          <h4 class="font-weight-700 mb-1" style="color: var(--brand-dark); font-size: 18px;">
+            Territorial Field Data Entry Station
+          </h4>
           <p class="text-muted mb-0" style="font-size: 13px;">
             Input workflow: Select Territory &rarr; Select Street/Node &rarr; Choose Data Domain &rarr; Submit Field Observations.
           </p>
@@ -379,7 +401,7 @@
             <div class="en-card p-3 h-100" style="border-left: 4px solid var(--brand-dark); transition: transform 0.2s, box-shadow 0.2s;">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
-                  <div class="d-flex align-items-center mb-1">
+                  <div class="d-flex align-items-center mb-1 gap-1">
                     <span class="pill-badge pill-badge-cyan" style="font-size: 11px;">{{ clan.display_node_id }}</span>
                     <span class="pill-badge pill-badge-dark ml-1" style="font-size: 10px;">CLAN</span>
                   </div>
@@ -571,6 +593,9 @@
 <!-- ============================================== -->
 <!-- MODAL 2: Input Sub-Clan Node (Dashboard Modal) -->
 <!-- ============================================== -->
+<!-- ============================================== -->
+<!-- MODAL 2: Input Sub-Clan Node (Dashboard Modal) -->
+<!-- ============================================== -->
 <div class="modal fade" id="createSubClanModal" tabindex="-1" role="dialog" aria-labelledby="createSubClanModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content en-card p-3" style="border-radius: 20px;">
@@ -592,19 +617,42 @@
 
         <div class="modal-body pt-3">
           <p class="text-muted" style="font-size: 13px;">
-            Create a territorial node (Street, Close, Road, Village) attached to a parent Clan. The permanent <strong>Node ID</strong> pattern is automatically calculated incrementally.
+            Create a territorial node (Sub-Clan, Major Road, Sub Road, Street, Close) attached to a parent Clan. The permanent <strong>Node ID</strong> pattern is automatically calculated incrementally.
           </p>
 
-          <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Clan *</label>
-            <select name="clan" id="modalSubclanClanSelect" class="form-control form-control-modern" required>
-              <option value="">-- Choose Parent Clan --</option>
-              {% for c in all_clans_dropdown %}
-                <option value="{{ c.id }}" data-code="{{ c.code }}" data-node-id="{{ c.display_node_id }}">
-                  {{ c.name }} [{{ c.display_node_id }}]
-                </option>
-              {% endfor %}
-            </select>
+          <!-- 1. State Location & 2. Parent Clan (State clicked -> Clan displayed -> Sub-clans displayed) -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">1. State Location *</label>
+              <select name="state" id="modalSubclanStateSelect" class="form-control form-control-modern" required>
+                <option value="">-- Select State to Load Clans --</option>
+                {% for s in all_states %}
+                  <option value="{{ s.id }}">{{ s.name }}</option>
+                {% endfor %}
+              </select>
+              <small class="text-muted" style="font-size: 11px;">Select a state to automatically display its available Clans.</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="font-weight-600 mb-0" style="font-size: 13px; color: var(--brand-dark);">2. Parent Clan *</label>
+                <span id="dashboardClanSearchBadge" class="badge badge-light text-muted font-weight-normal" style="font-size: 10px; display: none;"></span>
+              </div>
+              <div class="position-relative mb-2">
+                <input type="text" id="dashboardSubclanClanSearchInput" class="form-control form-control-modern" placeholder="🔍 Search parent clans by name or node ID..." style="font-size: 12.5px; height: 36px; padding-left: 32px; padding-right: 28px;" autocomplete="off">
+                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #94a3b8; pointer-events: none;">🔍</span>
+                <button type="button" id="dashboardClanSearchClearBtn" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 14px; color: #94a3b8; cursor: pointer; display: none; padding: 0 4px; line-height: 1;" title="Clear search">✕</button>
+              </div>
+              <select name="clan" id="modalSubclanClanSelect" class="form-control form-control-modern" required>
+                <option value="">-- Choose Parent Clan --</option>
+                {% for c in all_clans_dropdown %}
+                  <option value="{{ c.id }}" data-code="{{ c.code|default:'' }}" data-node-id="{{ c.display_node_id }}" data-state-id="{{ c.state_id|default:'' }}" data-city-id="{{ c.city_id|default:'' }}" data-geo-zone-id="{{ c.geo_political_zone_id|default:'' }}">
+                    {{ c.name }} [{{ c.display_node_id }}]
+                  </option>
+                {% endfor %}
+              </select>
+              <small class="text-muted" style="font-size: 11px;">Search or select a clan to automatically load available Sub-Clans & Roads.</small>
+            </div>
           </div>
 
           <div class="row">
@@ -625,17 +673,49 @@
             </div>
           </div>
 
-          <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Road / Primary Connection</label>
-            <select name="parent_road" id="modalSubclanParentRoadSelect" class="form-control form-control-modern">
-              <option value="">-- Connected Directly to Clan (Primary Trunk) --</option>
+          <!-- Major Road Territorial Scope & Alignment (Contained inside vs Passing through Clan / Sub-Clan) -->
+          <div class="form-group mb-3" id="dashboardMajorRoadRelationGroup">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              Major Road Territorial Scope & Alignment *
+            </label>
+            <select name="road_relation" id="modalSubclanRoadRelationSelect" class="form-control form-control-modern">
+              {% for val, label in road_relation_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
             </select>
-            <small class="text-muted" style="font-size: 11px;">Major Roads connect to Clan or Sub-Clan; Sub Roads connect to Major Roads; Streets connect to Sub Roads or Major Roads; Closes connect to Streets.</small>
+            <small class="text-muted" style="font-size: 11px;">Identify if this major road is passing through the clan or sub-clan, or contained inside the clan or sub-clan.</small>
           </div>
 
           <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road / Node Name *</label>
-            <input type="text" name="name" class="form-control form-control-modern" placeholder="e.g. East-West Major Road, Chikwe Orlu Street, Close 2" required>
+            <label class="font-weight-600 mb-1" id="modalSubclanParentRoadLabel" style="font-size: 13px; color: var(--brand-dark);">Parent Road / Primary Connection</label>
+            <select name="parent_road" id="modalSubclanParentRoadSelect" class="form-control form-control-modern">
+              <option value="">-- Connected Directly to Clan (Primary Trunk) --</option>
+            </select>
+            <small class="text-muted" id="modalSubclanParentRoadHelp" style="font-size: 11px;">Major Roads connect to Clan or Sub-Clan; Sub Roads connect to Major Roads; Streets connect to Sub Roads; Closes connect to Streets.</small>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" id="modalSubclanNameLabel" style="font-size: 13px; color: var(--brand-dark);">Road / Node Name *</label>
+            <input type="text" name="name" id="modalSubclanNameInput" class="form-control form-control-modern" placeholder="e.g. East-West Major Road, Chikwe Orlu Street, Close 2" required>
+          </div>
+
+          <div class="row" id="dashboardRoadSurfaceConditionRow">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Surface</label>
+              <select name="road_surface" class="form-control form-control-modern">
+                {% for val, label in road_surface_choices %}
+                  <option value="{{ val }}" {% if val == 'ASPHALT' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Condition</label>
+              <select name="road_condition" class="form-control form-control-modern">
+                {% for val, label in road_condition_choices %}
+                  <option value="{{ val }}" {% if val == 'GOOD' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -806,11 +886,13 @@
 
     // 4. Live PRD Node ID preview in SubClan / Road creation modal
     function refreshSubclanNodeIdPreview() {
+      var stateId = $('#modalSubclanStateSelect').val();
       var clanId = $('#modalSubclanClanSelect').val();
       var nodeType = $('#modalSubclanNodeTypeSelect').val() || 'MAJOR_ROAD';
       var parentRoadId = $('#modalSubclanParentRoadSelect').val() || '';
+      var roadRelation = $('#modalSubclanRoadRelationSelect').val() || 'CONTAINED_CLAN';
 
-      if (!clanId && !parentRoadId) {
+      if (!clanId && !parentRoadId && !stateId) {
         $('#modalSubclanNodeIdInput').attr('placeholder', 'e.g. CLN-001/SB/001 or CLN-001/SB/001/MR/001');
         return;
       }
@@ -818,9 +900,11 @@
       $.ajax({
         url: '{% url "platform_admin:api-generate-node-id" %}',
         data: {
+          state_id: stateId,
           clan_id: clanId,
           node_type: nodeType,
-          parent_road_id: parentRoadId
+          parent_road_id: parentRoadId,
+          road_relation: roadRelation
         },
         dataType: 'json',
         success: function(data) {
@@ -833,8 +917,16 @@
           var clanNodeId = opt.data('node-id') || 'CLN-001';
           if (nodeType === 'SUB_CLAN' || nodeType === 'COMMUNITY') {
             $('#modalSubclanNodeIdInput').val(clanNodeId + '/SB/001');
+          } else if (nodeType === 'MAJOR_ROAD') {
+            $('#modalSubclanNodeIdInput').val(clanNodeId + '/MR/001');
+          } else if (nodeType === 'SUB_ROAD') {
+            $('#modalSubclanNodeIdInput').val(clanNodeId + '/MR/001/SR/001');
+          } else if (nodeType === 'STREET') {
+            $('#modalSubclanNodeIdInput').val(clanNodeId + '/MR/001/SR/001/STR/001');
+          } else if (nodeType === 'CLOSE') {
+            $('#modalSubclanNodeIdInput').val(clanNodeId + '/MR/001/SR/001/STR/001/CLS/001');
           } else {
-            $('#modalSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001');
+            $('#modalSubclanNodeIdInput').val(clanNodeId + '/MR/001');
           }
         }
       });
@@ -843,40 +935,94 @@
     function filterDashboardParentRoads() {
       var nodeType = $('#modalSubclanNodeTypeSelect').val() || 'MAJOR_ROAD';
       var clanName = $('#modalSubclanClanSelect option:selected').text() || 'Clan';
+      var roadRelation = $('#modalSubclanRoadRelationSelect').val() || 'CONTAINED_CLAN';
 
+      // Show/hide Major Road Relation Group
+      if (nodeType === 'MAJOR_ROAD') {
+        $('#dashboardMajorRoadRelationGroup').show();
+        $('#dashboardRoadSurfaceConditionRow').show();
+        $('#modalSubclanNameLabel').text('Major Road Name *');
+        $('#modalSubclanNameInput').attr('placeholder', 'e.g. East-West Major Road, Aba-Port Harcourt Expressway');
+      } else if (nodeType === 'SUB_CLAN' || nodeType === 'COMMUNITY') {
+        $('#dashboardMajorRoadRelationGroup').hide();
+        $('#dashboardRoadSurfaceConditionRow').hide();
+        $('#modalSubclanNameLabel').text('Sub-Clan / Community Name *');
+        $('#modalSubclanNameInput').attr('placeholder', 'e.g. Rumueme Community, Obio Sub-Clan');
+      } else if (nodeType === 'SUB_ROAD') {
+        $('#dashboardMajorRoadRelationGroup').hide();
+        $('#dashboardRoadSurfaceConditionRow').show();
+        $('#modalSubclanNameLabel').text('Sub Road Name *');
+        $('#modalSubclanNameInput').attr('placeholder', 'e.g. Chief Wike Link Road, Market Bypass Road');
+      } else if (nodeType === 'STREET') {
+        $('#dashboardMajorRoadRelationGroup').hide();
+        $('#dashboardRoadSurfaceConditionRow').show();
+        $('#modalSubclanNameLabel').text('Street Name *');
+        $('#modalSubclanNameInput').attr('placeholder', 'e.g. Chikwe Orlu Street, Commercial Avenue');
+      } else if (nodeType === 'CLOSE') {
+        $('#dashboardMajorRoadRelationGroup').hide();
+        $('#dashboardRoadSurfaceConditionRow').show();
+        $('#modalSubclanNameLabel').text('Close / Crescent Name *');
+        $('#modalSubclanNameInput').attr('placeholder', 'e.g. Close 2, Sunrise Crescent');
+      } else {
+        $('#dashboardMajorRoadRelationGroup').hide();
+        $('#dashboardRoadSurfaceConditionRow').show();
+        $('#modalSubclanNameLabel').text('Territorial Node Name *');
+      }
+
+      // Filter Parent Road options based on node type and relation
       $('#modalSubclanParentRoadSelect option').each(function() {
         var optVal = $(this).val();
         var optType = $(this).data('node-type');
+
         if (!optVal) {
-          if (nodeType === 'MAJOR_ROAD' || nodeType === 'SUB_CLAN') {
-            $(this).text('-- Connected Directly to ' + clanName + ' (Primary Trunk) --');
+          if (nodeType === 'MAJOR_ROAD') {
+            if (roadRelation === 'CONTAINED_SUBCLAN' || roadRelation === 'PASSING_SUBCLAN') {
+              $(this).text('-- Select Parent Sub-Clan below --');
+            } else {
+              $(this).text('-- Connected Directly to ' + clanName + ' (Trunk Road) --');
+            }
+          } else if (nodeType === 'SUB_CLAN') {
+            $(this).text('-- Belongs directly to ' + clanName + ' --');
+          } else if (nodeType === 'SUB_ROAD') {
+            $(this).text('-- Choose Parent Major Road --');
+          } else if (nodeType === 'STREET') {
+            $(this).text('-- Choose Parent Sub Road --');
+          } else if (nodeType === 'CLOSE') {
+            $(this).text('-- Choose Parent Street --');
           } else {
-            $(this).text('-- Standalone / Primary (No Parent Road) --');
+            $(this).text('-- Standalone / Primary Connection --');
           }
           $(this).show();
           return;
         }
 
         if (nodeType === 'MAJOR_ROAD') {
-          if (optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
-            $(this).show();
+          if (roadRelation === 'CONTAINED_SUBCLAN' || roadRelation === 'PASSING_SUBCLAN') {
+            if (optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
+              $(this).show();
+            } else {
+              $(this).hide();
+            }
           } else {
             $(this).hide();
           }
         } else if (nodeType === 'SUB_ROAD') {
+          // Sub Road is contained inside Major Road
           if (optType === 'MAJOR_ROAD' || optType === 'META_ROAD') {
             $(this).show();
           } else {
             $(this).hide();
           }
         } else if (nodeType === 'STREET') {
-          if (optType === 'SUB_ROAD' || optType === 'LINK_ROAD' || optType === 'MAJOR_ROAD' || optType === 'META_ROAD' || optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
+          // Street is contained inside Sub Road (or Major Road if direct)
+          if (optType === 'SUB_ROAD' || optType === 'LINK_ROAD' || optType === 'MAJOR_ROAD' || optType === 'META_ROAD') {
             $(this).show();
           } else {
             $(this).hide();
           }
         } else if (nodeType === 'CLOSE') {
-          if (optType === 'STREET' || optType === 'SUB_ROAD' || optType === 'LINK_ROAD' || optType === 'MAJOR_ROAD' || optType === 'META_ROAD') {
+          // Close is contained inside Street
+          if (optType === 'STREET' || optType === 'SUB_ROAD') {
             $(this).show();
           } else {
             $(this).hide();
@@ -921,18 +1067,155 @@
       });
     }
 
+    // Dynamic State -> Clan cascade for SubClan / Road Modal
+    $('#modalSubclanStateSelect').on('change', function() {
+      var stateId = $(this).val();
+
+      // Reset search box when state changes
+      $('#dashboardSubclanClanSearchInput').val('');
+      $('#dashboardClanSearchClearBtn').hide();
+      $('#dashboardClanSearchBadge').hide();
+
+      if (stateId) {
+        $.ajax({
+          url: '{% url "platform_admin:api-load-clans" %}',
+          data: { 'state_id': stateId },
+          dataType: 'json',
+          success: function(resp) {
+            var options = '<option value="">-- Choose Parent Clan --</option>';
+            if (resp && resp.clans && resp.clans.length > 0) {
+              resp.clans.forEach(function(c) {
+                options += '<option value="' + c.id + '" data-node-id="' + c.node_id + '" data-state-id="' + (c.state_id || stateId) + '">' + c.name + ' [' + c.node_id + ']</option>';
+              });
+            } else {
+              options += '<option value="" disabled>No Clans found in this State</option>';
+            }
+            $('#modalSubclanClanSelect').html(options);
+            $('#modalSubclanParentRoadSelect').html('<option value="">-- First choose a Parent Clan --</option>');
+            refreshSubclanNodeIdPreview();
+          }
+        });
+      } else {
+        $('#modalSubclanClanSelect').html('<option value="">-- Select State to Load Clans --</option>');
+        $('#modalSubclanParentRoadSelect').html('<option value="">-- Connected Directly to Clan (Primary Trunk) --</option>');
+        refreshSubclanNodeIdPreview();
+      }
+    });
+
+    // Parent Clan Search Functionality
+    var dashClanSearchTimer = null;
+    $('#dashboardSubclanClanSearchInput').on('input', function() {
+      var query = $(this).val().trim().toLowerCase();
+      var clanSelect = $('#modalSubclanClanSelect');
+      var clearBtn = $('#dashboardClanSearchClearBtn');
+      var badge = $('#dashboardClanSearchBadge');
+      var stateId = $('#modalSubclanStateSelect').val();
+
+      if (query.length > 0) {
+        clearBtn.show();
+      } else {
+        clearBtn.hide();
+        badge.hide();
+      }
+
+      clearTimeout(dashClanSearchTimer);
+
+      var matchCount = 0;
+      clanSelect.find('option').each(function() {
+        var opt = $(this);
+        var val = opt.val();
+        if (!val) {
+          opt.show();
+          return;
+        }
+        var text = (opt.text() || '').toLowerCase();
+        var code = (opt.data('code') || '').toLowerCase();
+        var nodeId = (opt.data('node-id') || '').toLowerCase();
+
+        if (!query || text.indexOf(query) !== -1 || code.indexOf(query) !== -1 || nodeId.indexOf(query) !== -1) {
+          opt.show();
+          matchCount++;
+        } else {
+          opt.hide();
+        }
+      });
+
+      if (query.length > 0) {
+        badge.text(matchCount + ' match' + (matchCount === 1 ? '' : 'es')).show();
+      }
+
+      if (query.length >= 2 && matchCount === 0) {
+        dashClanSearchTimer = setTimeout(function() {
+          badge.text('Searching...').show();
+          $.ajax({
+            url: '{% url "platform_admin:api-load-clans" %}',
+            data: {
+              'q': query,
+              'state_id': stateId || ''
+            },
+            dataType: 'json',
+            success: function(resp) {
+              if (resp && resp.clans && resp.clans.length > 0) {
+                var html = '<option value="">-- Found ' + resp.clans.length + ' matching Clan' + (resp.clans.length === 1 ? '' : 's') + ' --</option>';
+                resp.clans.forEach(function(c) {
+                  html += '<option value="' + c.id + '" data-code="' + (c.code || '') + '" data-node-id="' + c.node_id + '" data-state-id="' + (c.state_id || '') + '" data-city-id="' + (c.city_id || '') + '">' + c.name + ' [' + c.node_id + ']' + (c.state_name ? ' (' + c.state_name + ')' : '') + '</option>';
+                });
+                clanSelect.html(html);
+                badge.text(resp.clans.length + ' match' + (resp.clans.length === 1 ? '' : 'es')).show();
+              } else {
+                badge.text('No matching clans').show();
+              }
+            }
+          });
+        }, 250);
+      }
+    });
+
+    $('#dashboardSubclanClanSearchInput').on('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var firstMatch = $('#modalSubclanClanSelect option:visible').filter(function() {
+          return $(this).val() !== '';
+        }).first();
+        if (firstMatch.length > 0) {
+          $('#modalSubclanClanSelect').val(firstMatch.val()).trigger('change');
+          $('#dashboardClanSearchBadge').text('Selected: ' + firstMatch.text().split(' [')[0]).show();
+        }
+      }
+    });
+
+    $('#dashboardClanSearchClearBtn').on('click', function() {
+      $('#dashboardSubclanClanSearchInput').val('');
+      $(this).hide();
+      $('#dashboardClanSearchBadge').hide();
+      var stateId = $('#modalSubclanStateSelect').val();
+      if (stateId) {
+        $('#modalSubclanStateSelect').trigger('change');
+      } else {
+        $('#modalSubclanClanSelect option').show();
+      }
+    });
+
     $('#modalSubclanClanSelect').on('change', function() {
       var clanId = $(this).val();
+      var opt = $(this).find('option:selected');
+      var stateId = opt.data('state-id');
+      if (stateId && !$('#modalSubclanStateSelect').val()) {
+        $('#modalSubclanStateSelect').val(stateId);
+      }
       loadDashboardModalSubclans(clanId);
     });
+
     $('#modalSubclanNodeTypeSelect').on('change', filterDashboardParentRoads);
+    $('#modalSubclanRoadRelationSelect').on('change', filterDashboardParentRoads);
     $('#modalSubclanParentRoadSelect').on('change', refreshSubclanNodeIdPreview);
-    $('#addSubClanModal').on('shown.bs.modal', function() {
+
+    $('#createSubClanModal').on('shown.bs.modal', function() {
       var clanId = $('#modalSubclanClanSelect').val();
       if (clanId) {
         loadDashboardModalSubclans(clanId);
       } else {
-        refreshSubclanNodeIdPreview();
+        filterDashboardParentRoads();
       }
     });
 

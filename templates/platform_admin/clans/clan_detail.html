@@ -417,6 +417,13 @@
                           <span class="pill-badge pill-badge-subclan node-id-mono" style="font-size: 11px;">{{ sc.display_node_id }}</span>
                           <span class="pill-badge pill-badge-cyan" style="font-size: 10px;">{{ sc.get_node_type_display|default:sc.node_type }}</span>
                         </div>
+                        {% if sc.node_type == 'MAJOR_ROAD' and sc.road_relation_display %}
+                          <div class="mt-1">
+                            <span class="pill-badge" style="font-size: 10px; background: rgba(14, 116, 144, 0.12); color: #0e7490; font-weight: 600;">
+                              {{ sc.road_relation_display }}
+                            </span>
+                          </div>
+                        {% endif %}
                         {% if sc.parent_road %}
                           <div class="text-muted mt-1" style="font-size: 11px;">
                             ↳ Connected to: <strong>{{ sc.parent_road.name }}</strong>
@@ -558,6 +565,13 @@
                 </div>
 
                 <!-- Parent Route / Arterial Connection -->
+                {% if sc.node_type == 'MAJOR_ROAD' and sc.road_relation_display %}
+                  <div class="mb-2">
+                    <span class="pill-badge" style="font-size: 10px; background: rgba(14, 116, 144, 0.12); color: #0e7490; font-weight: 600;">
+                      {{ sc.road_relation_display }}
+                    </span>
+                  </div>
+                {% endif %}
                 {% if sc.parent_road %}
                   <div class="text-muted mb-2" style="font-size: 12px; line-height: 1.35;">
                     ↳ <strong>Connected to:</strong> {{ sc.parent_road.name }}
@@ -1513,19 +1527,32 @@
           </div>
 
           <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road / Node Name *</label>
-            <input type="text" name="name" class="form-control form-control-modern" placeholder="e.g. East-West Major Road, Chikwe Orlu Street, Close 2" required>
+            <label class="font-weight-600 mb-1" id="detailSubclanNameLabel" style="font-size: 13px; color: var(--brand-dark);">Road / Node Name *</label>
+            <input type="text" name="name" id="detailSubclanNameInput" class="form-control form-control-modern" placeholder="e.g. East-West Major Road, Chikwe Orlu Street, Close 2" required>
+          </div>
+
+          <!-- Major Road Territorial Scope & Alignment (Contained inside vs Passing through Clan / Sub-Clan) -->
+          <div class="form-group mb-3" id="detailMajorRoadRelationGroup">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              Major Road Territorial Scope & Alignment *
+            </label>
+            <select name="road_relation" id="detailSubclanRoadRelationSelect" class="form-control form-control-modern">
+              {% for val, label in road_relation_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted" style="font-size: 11px;">Identify if this major road is passing through the clan or sub-clan, or contained inside the clan or sub-clan.</small>
           </div>
 
           <div class="form-group mb-3">
-            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Road / Primary Connection</label>
+            <label class="font-weight-600 mb-1" id="detailSubclanParentRoadLabel" style="font-size: 13px; color: var(--brand-dark);">Parent Road / Primary Connection</label>
             <select name="parent_road" id="detailSubclanParentRoadSelect" class="form-control form-control-modern">
               <option value="">-- Connected Directly to {{ clan.name }} [{{ clan.display_node_id }}] (Primary Trunk) --</option>
               {% for sc_opt in subclans %}
                 <option value="{{ sc_opt.id }}" data-node-type="{{ sc_opt.node_type }}" data-node-id="{{ sc_opt.display_node_id }}">{{ sc_opt.name }} [{{ sc_opt.display_node_id }}] ({{ sc_opt.get_node_type_display|default:sc_opt.node_type }})</option>
               {% endfor %}
             </select>
-            <small class="text-muted" style="font-size: 11px;">Major Roads connect to Clan or Sub-Clan; Sub Roads connect to Major Roads; Streets connect to Sub Roads or Major Roads; Closes connect to Streets.</small>
+            <small class="text-muted" id="detailSubclanParentRoadHelp" style="font-size: 11px;">Major Roads connect to Clan or Sub-Clan; Sub Roads connect to Major Roads; Streets connect to Sub Roads; Closes connect to Streets.</small>
           </div>
 
           <div class="row">
@@ -1792,12 +1819,15 @@
     function updateDetailNodeId() {
       var nodeType = $('#detailSubclanTypeSelect').val() || 'MAJOR_ROAD';
       var parentRoadId = $('#detailSubclanParentRoadSelect').val() || '';
+      var roadRelation = $('#detailSubclanRoadRelationSelect').val() || 'CONTAINED_CLAN';
+
       $.ajax({
         url: '{% url "platform_admin:api-generate-node-id" %}',
         data: {
           clan_id: '{{ clan.id }}',
           node_type: nodeType,
-          parent_road_id: parentRoadId
+          parent_road_id: parentRoadId,
+          road_relation: roadRelation
         },
         dataType: 'json',
         success: function(data) {
@@ -1809,8 +1839,16 @@
         error: function() {
           if (nodeType === 'SUB_CLAN' || nodeType === 'COMMUNITY') {
             $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/SB/001');
+          } else if (nodeType === 'MAJOR_ROAD') {
+            $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/MR/001');
+          } else if (nodeType === 'SUB_ROAD') {
+            $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/MR/001/SR/001');
+          } else if (nodeType === 'STREET') {
+            $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/MR/001/SR/001/STR/001');
+          } else if (nodeType === 'CLOSE') {
+            $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/MR/001/SR/001/STR/001/CLS/001');
           } else {
-            $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/SB/001/MR/001');
+            $('#detailSubclanIdInput').val('{{ clan.display_node_id }}/MR/001');
           }
         }
       });
@@ -1818,13 +1856,51 @@
 
     function filterDetailParentRoads() {
       var nodeType = $('#detailSubclanTypeSelect').val() || 'MAJOR_ROAD';
+      var roadRelation = $('#detailSubclanRoadRelationSelect').val() || 'CONTAINED_CLAN';
+
+      if (nodeType === 'MAJOR_ROAD') {
+        $('#detailMajorRoadRelationGroup').show();
+        $('#detailSubclanNameLabel').text('Major Road Name *');
+        $('#detailSubclanNameInput').attr('placeholder', 'e.g. East-West Major Road, Aba-Port Harcourt Expressway');
+      } else if (nodeType === 'SUB_CLAN' || nodeType === 'COMMUNITY') {
+        $('#detailMajorRoadRelationGroup').hide();
+        $('#detailSubclanNameLabel').text('Sub-Clan / Community Name *');
+        $('#detailSubclanNameInput').attr('placeholder', 'e.g. Rumueme Community, Obio Sub-Clan');
+      } else if (nodeType === 'SUB_ROAD') {
+        $('#detailMajorRoadRelationGroup').hide();
+        $('#detailSubclanNameLabel').text('Sub Road Name *');
+        $('#detailSubclanNameInput').attr('placeholder', 'e.g. Chief Wike Link Road, Market Bypass Road');
+      } else if (nodeType === 'STREET') {
+        $('#detailMajorRoadRelationGroup').hide();
+        $('#detailSubclanNameLabel').text('Street Name *');
+        $('#detailSubclanNameInput').attr('placeholder', 'e.g. Chikwe Orlu Street, Commercial Avenue');
+      } else if (nodeType === 'CLOSE') {
+        $('#detailMajorRoadRelationGroup').hide();
+        $('#detailSubclanNameLabel').text('Close / Crescent Name *');
+        $('#detailSubclanNameInput').attr('placeholder', 'e.g. Close 2, Sunrise Crescent');
+      } else {
+        $('#detailMajorRoadRelationGroup').hide();
+        $('#detailSubclanNameLabel').text('Territorial Node Name *');
+      }
 
       $('#detailSubclanParentRoadSelect option').each(function() {
         var optVal = $(this).val();
         var optType = $(this).data('node-type');
         if (!optVal) {
-          if (nodeType === 'MAJOR_ROAD' || nodeType === 'SUB_CLAN') {
-            $(this).text('-- Connected Directly to {{ clan.name }} [{{ clan.display_node_id }}] (Primary Trunk) --');
+          if (nodeType === 'MAJOR_ROAD') {
+            if (roadRelation === 'CONTAINED_SUBCLAN' || roadRelation === 'PASSING_SUBCLAN') {
+              $(this).text('-- Select Parent Sub-Clan below --');
+            } else {
+              $(this).text('-- Connected Directly to {{ clan.name }} [{{ clan.display_node_id }}] (Primary Trunk) --');
+            }
+          } else if (nodeType === 'SUB_CLAN') {
+            $(this).text('-- Belongs directly to {{ clan.name }} --');
+          } else if (nodeType === 'SUB_ROAD') {
+            $(this).text('-- Choose Parent Major Road --');
+          } else if (nodeType === 'STREET') {
+            $(this).text('-- Choose Parent Sub Road --');
+          } else if (nodeType === 'CLOSE') {
+            $(this).text('-- Choose Parent Street --');
           } else {
             $(this).text('-- Standalone / Primary (No Parent Road) --');
           }
@@ -1832,30 +1908,37 @@
           return;
         }
 
-        // MAJOR_ROAD: connects to Clan (no parent) OR to Sub-Clan
+        // MAJOR_ROAD: connects to Clan directly or to Sub-Clan
         // SUB_ROAD: connects to Major Road
-        // STREET: connects to Sub Road or Major Road or Sub-Clan
-        // CLOSE: connects to Street or Sub Road or Major Road
+        // STREET: connects to Sub Road (or Major Road)
+        // CLOSE: connects to Street
         if (nodeType === 'MAJOR_ROAD') {
-          if (optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
-            $(this).show();
+          if (roadRelation === 'CONTAINED_SUBCLAN' || roadRelation === 'PASSING_SUBCLAN') {
+            if (optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
+              $(this).show();
+            } else {
+              $(this).hide();
+            }
           } else {
             $(this).hide();
           }
         } else if (nodeType === 'SUB_ROAD') {
+          // Sub Road is contained inside Major Road
           if (optType === 'MAJOR_ROAD' || optType === 'META_ROAD') {
             $(this).show();
           } else {
             $(this).hide();
           }
         } else if (nodeType === 'STREET') {
-          if (optType === 'SUB_ROAD' || optType === 'LINK_ROAD' || optType === 'MAJOR_ROAD' || optType === 'META_ROAD' || optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
+          // Street is contained inside Sub Road (or Major Road)
+          if (optType === 'SUB_ROAD' || optType === 'LINK_ROAD' || optType === 'MAJOR_ROAD' || optType === 'META_ROAD') {
             $(this).show();
           } else {
             $(this).hide();
           }
         } else if (nodeType === 'CLOSE') {
-          if (optType === 'STREET' || optType === 'SUB_ROAD' || optType === 'LINK_ROAD' || optType === 'MAJOR_ROAD' || optType === 'META_ROAD') {
+          // Close is contained inside Street
+          if (optType === 'STREET' || optType === 'SUB_ROAD') {
             $(this).show();
           } else {
             $(this).hide();
@@ -1873,6 +1956,7 @@
     }
 
     $('#detailSubclanTypeSelect').on('change', filterDetailParentRoads);
+    $('#detailSubclanRoadRelationSelect').on('change', filterDetailParentRoads);
     $('#detailSubclanParentRoadSelect').on('change', updateDetailNodeId);
     $('#addSubClanModal').on('shown.bs.modal', function() {
       filterDetailParentRoads();

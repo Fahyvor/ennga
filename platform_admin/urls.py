@@ -10,12 +10,14 @@ from .views_clan_access import (
     grant_subclan_access_view,
     revoke_subclan_access_view,
     api_load_subclans_for_clan_view,
+    api_load_clans_for_state_view,
     api_generate_node_id_view,
     api_generate_clan_node_id_view,
     api_state_details_view,
 )
 from .views_clans import (
     clan_list_view,
+    road_list_view,
     clan_detail_view,
     clan_create_view,
     clan_edit_view,
@@ -84,12 +86,14 @@ urlpatterns = [
     path('subclan-access/grant/', grant_subclan_access_view, name='grant-subclan-access'),
     path('subclan-access/revoke/<int:subclan_id>/<int:profile_id>/', revoke_subclan_access_view, name='revoke-subclan-access'),
     path('api/load-subclans/', api_load_subclans_for_clan_view, name='api-load-subclans'),
+    path('api/load-clans/', api_load_clans_for_state_view, name='api-load-clans'),
     path('api/generate-node-id/', api_generate_node_id_view, name='api-generate-node-id'),
     path('api/generate-clan-node-id/', api_generate_clan_node_id_view, name='api-generate-clan-node-id'),
     path('api/state-details/', api_state_details_view, name='api-state-details'),
 
-    # Clans Directory & Management
+    # Clans & Roads Directory & Management
     path('clans/', clan_list_view, name='clan-list'),
+    path('roads/', road_list_view, name='road-list'),
     path('clans/create/', clan_create_view, name='clan-create'),
     path('clans/<int:pk>/', clan_detail_view, name='clan-detail'),
     path('clans/<int:pk>/edit/', clan_edit_view, name='clan-edit'),

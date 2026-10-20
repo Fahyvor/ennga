@@ -17,9 +17,18 @@ def load_cities(request):
     return render(request, 'utility/city_dropdown_list_options.html', {'cities': cities, 'state': state})
 
 
+from django.db.models import Q
+
+
 def load_clans(request):
-    city_id = request.GET.get('city')
-    clans = Clan.my_objects.filter(city_id=city_id).order_by('name')
+    city_id = request.GET.get('city') or request.GET.get('city_id')
+    state_id = request.GET.get('state') or request.GET.get('state_id')
+    if city_id:
+        clans = Clan.my_objects.filter(city_id=city_id).order_by('name')
+    elif state_id:
+        clans = Clan.my_objects.filter(Q(state_id=state_id) | Q(city__state_id=state_id)).distinct().order_by('name')
+    else:
+        clans = Clan.my_objects.all().order_by('name')
     return render(request, 'utility/clan_dropdown_list_options.html', {'clans': clans})
 
 

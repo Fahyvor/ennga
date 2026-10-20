@@ -361,7 +361,14 @@
               <a class="nav-link {% if view_mode == 'subclans' %}active bg-dark text-white{% else %}text-muted{% endif %}" 
                  href="{% url 'platform_admin:clan-list' %}?view_mode=subclans{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}"
                  style="border-radius: 8px; font-weight: 600; font-size: 13px; padding: 8px 16px;">
-                📍 Sub-Clans & Roads Directory ({% if state_id or query %}{{ filtered_subclans_count }}{% else %}{{ total_subclans_count }}{% endif %})
+                📍 Sub-Clans & Nodes ({% if state_id or query %}{{ filtered_subclans_count }}{% else %}{{ total_subclans_count }}{% endif %})
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-muted" 
+                 href="{% url 'platform_admin:road-list' %}"
+                 style="border-radius: 8px; font-weight: 600; font-size: 13px; padding: 8px 16px;">
+                🛣️ Roads Directory ({{ total_roads_count }})
               </a>
             </li>
           </ul>
@@ -776,6 +783,13 @@
                 {% endif %}
               </td>
               <td>
+                {% if sc.node_type == 'MAJOR_ROAD' and sc.road_relation_display %}
+                  <div class="mb-1">
+                    <span class="pill-badge" style="font-size: 10px; background: rgba(14, 116, 144, 0.12); color: #0e7490; font-weight: 600;">
+                      {{ sc.road_relation_display }}
+                    </span>
+                  </div>
+                {% endif %}
                 {% if sc.parent_road %}
                   <div>
                     <span class="font-weight-600" style="color: var(--brand-dark); font-size: 12px;">↳ {{ sc.parent_road.name }}</span>
@@ -809,7 +823,7 @@
               </td>
               <td class="text-right">
                 <div class="d-inline-flex align-items-center" style="gap: 6px;">
-                  <button type="button" class="btn btn-en-outline btn-en-sm py-1 px-2 font-weight-600 text-nowrap js-open-edit-subclan-modal" data-id="{{ sc.id }}" data-name="{{ sc.name }}" data-node-type="{{ sc.node_type }}" data-parent-road="{{ sc.parent_road_id|default:'' }}" data-surface="{{ sc.road_surface|default:'' }}" data-condition="{{ sc.road_condition|default:'' }}" data-node-id="{{ sc.display_node_id }}" data-clan-id="{{ sc.clan_id|default:'' }}" data-url="{% url 'platform_admin:subclan-edit' pk=sc.id %}" title="Edit Territorial Node">
+                  <button type="button" class="btn btn-en-outline btn-en-sm py-1 px-2 font-weight-600 text-nowrap js-open-edit-subclan-modal" data-id="{{ sc.id }}" data-name="{{ sc.name }}" data-node-type="{{ sc.node_type }}" data-road-relation="{{ sc.road_relation|default:'' }}" data-parent-road="{{ sc.parent_road_id|default:'' }}" data-surface="{{ sc.road_surface|default:'' }}" data-condition="{{ sc.road_condition|default:'' }}" data-node-id="{{ sc.display_node_id }}" data-clan-id="{{ sc.clan_id|default:'' }}" data-url="{% url 'platform_admin:subclan-edit' pk=sc.id %}" title="Edit Territorial Node">
                     ✏️ Edit
                   </button>
                   <form method="post" action="{% url 'platform_admin:subclan-delete' pk=sc.id %}" onsubmit="return confirm('Archive {{ sc.name }}?');" style="display: inline; margin: 0;">
@@ -1000,62 +1014,56 @@
             Create a territorial node attached to a parent Clan. The permanent <strong>Node ID</strong> pattern is automatically calculated incrementally.
           </p>
 
+          <!-- Location Hierarchy: State first, then Parent Clan automatically displayed -->
           <div class="row">
-            <!-- Parent Clan -->
+            <!-- 1. State Location -->
             <div class="col-md-6 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Clan *</label>
-              <select name="clan" id="listSubclanClanSelect" class="form-control form-control-modern" required>
-                <option value="">-- Choose Parent Clan --</option>
-                {% for c in all_clans_dropdown %}
-                  <option value="{{ c.id }}" data-code="{{ c.code }}" data-node-id="{{ c.node_id }}" data-state-id="{{ c.state_id|default:'' }}" data-city-id="{{ c.city_id|default:'' }}" data-geo-zone-id="{{ c.geo_political_zone_id|default:'' }}">
-                    {{ c.name }} [{{ c.node_id }}]
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <!-- Road / Node Name -->
-            <div class="col-md-6 mb-3">
-              <label class="font-weight-600 mb-1" id="listSubclanNameLabel" style="font-size: 13px; color: var(--brand-dark);">
-                Sub-Clan Name *
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+                1. State Location *
               </label>
-              <input type="text" name="name" id="listSubclanNameInput" class="form-control form-control-modern" placeholder="e.g. Rumueme Community, Obio Sub-Clan" required>
-            </div>
-          </div>
-
-          <!-- Hierarchy Connection / Parent Road -->
-          <div class="form-group mb-3" id="parentRoadFormGroup">
-            <label class="font-weight-600 mb-1" id="parentRoadFieldLabel" style="font-size: 13px; color: var(--brand-dark);">
-              Parent Road / Primary Connection
-            </label>
-            <select name="parent_road" id="listSubclanParentRoadSelect" class="form-control form-control-modern">
-              <option value="">-- Connected Directly to Clan (Primary Trunk) --</option>
-            </select>
-            <small class="text-muted" id="parentRoadHelpText" style="font-size: 11px;">
-              Sub-clans belong to Clan; Major Roads belong to Sub-Clan or Clan; Sub Roads belong to Major Road; Streets belong to Sub Road; Closes belong to Street.
-            </small>
-          </div>
-
-          <!-- Location (State, LGA/City, Geo-Political Zone) conforming to Clan Pattern -->
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">State Location (optional)</label>
-              <select name="state" id="modalSubclanStateSelect" class="form-control form-control-modern">
-                <option value="">-- Inherit from Clan / Select --</option>
+              <select name="state" id="modalSubclanStateSelect" class="form-control form-control-modern" required>
+                <option value="">-- Select State to Load Clans --</option>
                 {% for s in all_states %}
                   <option value="{{ s.id }}">{{ s.name }}</option>
                 {% endfor %}
               </select>
+              <small class="text-muted" style="font-size: 11px;">Select state to automatically display its available Clans.</small>
             </div>
 
-            <div class="col-md-4 mb-3">
+            <!-- 2. Parent Clan -->
+            <div class="col-md-6 mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="font-weight-600 mb-0" style="font-size: 13px; color: var(--brand-dark);">
+                  2. Parent Clan *
+                </label>
+                <span id="modalClanSearchBadge" class="badge badge-light text-muted font-weight-normal" style="font-size: 10px; display: none;"></span>
+              </div>
+              <div class="position-relative mb-2">
+                <input type="text" id="modalSubclanClanSearchInput" class="form-control form-control-modern" placeholder="🔍 Search parent clans by name or node ID..." style="font-size: 12.5px; height: 36px; padding-left: 32px; padding-right: 28px;" autocomplete="off">
+                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #94a3b8; pointer-events: none;">🔍</span>
+                <button type="button" id="modalClanSearchClearBtn" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 14px; color: #94a3b8; cursor: pointer; display: none; padding: 0 4px; line-height: 1;" title="Clear search">✕</button>
+              </div>
+              <select name="clan" id="listSubclanClanSelect" class="form-control form-control-modern" required>
+                <option value="">-- Choose Parent Clan --</option>
+                {% for c in all_clans_dropdown %}
+                  <option value="{{ c.id }}" data-code="{{ c.code|default:'' }}" data-node-id="{{ c.node_id }}" data-state-id="{{ c.state_id|default:'' }}" data-city-id="{{ c.city_id|default:'' }}" data-geo-zone-id="{{ c.geo_political_zone_id|default:'' }}">
+                    {{ c.name }} [{{ c.node_id }}]
+                  </option>
+                {% endfor %}
+              </select>
+              <small class="text-muted" id="clanSelectHelpText" style="font-size: 11px;">Search or select a Clan to automatically load available Sub-Clans & Roads.</small>
+            </div>
+          </div>
+
+          <!-- Secondary Location Context (City / LGA & Geo-Political Zone) -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
               <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">City / LGA (optional)</label>
               <select name="city" id="modalSubclanCitySelect" class="form-control form-control-modern">
-                <option value="">-- Inherit from Clan / Select --</option>
+                <option value="">-- Auto-assigned from Clan / State --</option>
               </select>
             </div>
-
-            <div class="col-md-4 mb-3">
+            <div class="col-md-6 mb-3">
               <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Geo-Political Zone</label>
               <select name="geo_political_zone" id="modalSubclanGeoZoneSelect" class="form-control form-control-modern">
                 <option value="">-- Auto-assigned from State --</option>
@@ -1064,6 +1072,41 @@
                 {% endfor %}
               </select>
             </div>
+          </div>
+
+          <!-- Major Road Relationship (Contained inside vs Passing through Clan / Sub-Clan) -->
+          <div class="form-group mb-3" id="majorRoadRelationGroup" style="display: none;">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              Major Road Territorial Scope & Alignment *
+            </label>
+            <select name="road_relation" id="listSubclanRoadRelationSelect" class="form-control form-control-modern">
+              <option value="CONTAINED_CLAN">📌 Contained inside Clan</option>
+              <option value="PASSING_CLAN">🚗 Passing through Clan</option>
+              <option value="CONTAINED_SUBCLAN">📌 Contained inside Sub-Clan / Community</option>
+              <option value="PASSING_SUBCLAN">🚗 Passing through Sub-Clan / Community</option>
+            </select>
+            <small class="text-muted" style="font-size: 11px;">Specify whether this major road is contained within or passing through the clan or its sub-clans.</small>
+          </div>
+
+          <!-- Hierarchy Connection / Parent Road -->
+          <div class="form-group mb-3" id="parentRoadFormGroup">
+            <label class="font-weight-600 mb-1" id="parentRoadFieldLabel" style="font-size: 13px; color: var(--brand-dark);">
+              Parent Road / Connection *
+            </label>
+            <select name="parent_road" id="listSubclanParentRoadSelect" class="form-control form-control-modern">
+              <option value="">-- Choose Connection --</option>
+            </select>
+            <small class="text-muted" id="parentRoadHelpText" style="font-size: 11px;">
+              Sub-clans belong to Clan; Major Roads belong to Sub-Clan or Clan; Sub Roads belong to Major Road; Streets belong to Sub Road; Closes belong to Street.
+            </small>
+          </div>
+
+          <!-- Road / Node Name -->
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" id="listSubclanNameLabel" style="font-size: 13px; color: var(--brand-dark);">
+              Sub-Clan Name *
+            </label>
+            <input type="text" name="name" id="listSubclanNameInput" class="form-control form-control-modern" placeholder="e.g. Rumueme Community, Obio Sub-Clan" required>
           </div>
 
           <!-- Road Surface & Condition (Applicable for Road types) -->
@@ -1143,6 +1186,19 @@
                 <option value="{{ val }}">{{ label }}</option>
               {% endfor %}
             </select>
+          </div>
+
+          <!-- Major Road Territorial Scope & Alignment (Contained inside vs Passing through Clan / Sub-Clan) -->
+          <div class="form-group mb-3" id="editMajorRoadRelationGroup" style="display: none;">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              Major Road Territorial Scope & Alignment *
+            </label>
+            <select name="road_relation" id="editSubClanRoadRelationSelect" class="form-control form-control-modern">
+              {% for val, label in road_relation_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted" style="font-size: 11px;">Specify whether this major road is contained within or passing through the clan or its sub-clans.</small>
           </div>
 
           <div class="form-group mb-3">
@@ -1448,12 +1504,28 @@
         $('#roadSurfaceConditionRow').slideUp(150);
       }
 
+      if (nodeType === 'MAJOR_ROAD') {
+        $('#majorRoadRelationGroup').slideDown(150);
+      } else {
+        $('#majorRoadRelationGroup').slideUp(150);
+      }
+
       if (nodeType === 'SUB_CLAN') {
         $('#parentRoadFormGroup').slideUp(150);
         $('#listSubclanParentRoadSelect').prop('required', false).val('');
+      } else if (nodeType === 'MAJOR_ROAD') {
+        var rel = $('#listSubclanRoadRelationSelect').val() || 'CONTAINED_CLAN';
+        if (rel === 'CONTAINED_SUBCLAN' || rel === 'PASSING_SUBCLAN') {
+          $('#parentRoadFormGroup').slideDown(150);
+          $('#parentRoadFieldLabel').text('Target Sub-Clan / Community *');
+          $('#listSubclanParentRoadSelect').prop('required', true);
+        } else {
+          $('#parentRoadFormGroup').slideUp(150);
+          $('#listSubclanParentRoadSelect').prop('required', false).val('');
+        }
       } else {
         $('#parentRoadFormGroup').slideDown(150);
-        $('#parentRoadFieldLabel').text(cfg.parentLabel || 'Parent Road / Connection');
+        $('#parentRoadFieldLabel').text(cfg.parentLabel || 'Parent Road / Connection *');
         $('#listSubclanParentRoadSelect').prop('required', !!cfg.parentRequired);
       }
 
@@ -1465,6 +1537,23 @@
       e.preventDefault();
       var nodeType = $(this).data('type');
       applyNodeTypeUI(nodeType);
+    });
+
+    // Road relation change for Major Road
+    $('#listSubclanRoadRelationSelect').on('change', function() {
+      var nodeType = $('#modalSubclanNodeTypeHidden').val() || 'MAJOR_ROAD';
+      if (nodeType === 'MAJOR_ROAD') {
+        var rel = $(this).val();
+        if (rel === 'CONTAINED_SUBCLAN' || rel === 'PASSING_SUBCLAN') {
+          $('#parentRoadFormGroup').slideDown(150);
+          $('#parentRoadFieldLabel').text('Target Sub-Clan / Community *');
+          $('#listSubclanParentRoadSelect').prop('required', true);
+        } else {
+          $('#parentRoadFormGroup').slideUp(150);
+          $('#listSubclanParentRoadSelect').prop('required', false).val('');
+        }
+        filterListParentRoads();
+      }
     });
 
     // Open Sub-Clan Modal with specific node type and/or pre-selected Clan
@@ -1479,7 +1568,14 @@
       $('tr, td, .table-responsive, .en-card').removeClass('has-dropdown-open');
 
       if (clanId) {
-        $('#listSubclanClanSelect').val(clanId).trigger('change');
+        var clanOpt = $('#listSubclanClanSelect option[value="' + clanId + '"]');
+        if (clanOpt.length > 0) {
+          var stateId = clanOpt.data('state-id');
+          if (stateId) {
+            $('#modalSubclanStateSelect').val(stateId);
+          }
+          $('#listSubclanClanSelect').val(clanId).trigger('change');
+        }
       }
 
       applyNodeTypeUI(nodeType);
@@ -1495,6 +1591,12 @@
       }
     });
 
+    $('#createSubClanModal').on('shown.bs.modal', function() {
+      if (!$('#listSubclanClanSelect').val()) {
+        $('#modalSubclanClanSearchInput').focus();
+      }
+    });
+
     // -------------------------------------------------------------
     // Dynamic PRD Node ID preview generation
     // -------------------------------------------------------------
@@ -1502,6 +1604,7 @@
       var clanId = $('#listSubclanClanSelect').val();
       var nodeType = $('#modalSubclanNodeTypeHidden').val() || 'SUB_CLAN';
       var parentRoadId = $('#listSubclanParentRoadSelect').val() || '';
+      var roadRelation = $('#listSubclanRoadRelationSelect').val() || 'CONTAINED_CLAN';
 
       if (!clanId && !parentRoadId) {
         $('#listSubclanNodeIdInput').attr('placeholder', 'e.g. CLN-001/SB/001 or CLN-001/SB/001/MR/001');
@@ -1513,7 +1616,8 @@
         data: {
           'clan_id': clanId,
           'node_type': nodeType,
-          'parent_road_id': parentRoadId
+          'parent_road_id': parentRoadId,
+          'road_relation': roadRelation
         },
         success: function(data) {
           if (data && (data.generated_node_id || data.node_id)) {
@@ -1526,13 +1630,17 @@
           if (nodeType === 'SUB_CLAN') {
             $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001');
           } else if (nodeType === 'MAJOR_ROAD') {
-            $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001');
+            if (roadRelation === 'CONTAINED_CLAN' || roadRelation === 'PASSING_CLAN') {
+              $('#listSubclanNodeIdInput').val(clanNodeId + '/MR/001');
+            } else {
+              $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001');
+            }
           } else if (nodeType === 'SUB_ROAD') {
-            $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001/SR/001');
+            $('#listSubclanNodeIdInput').val(clanNodeId + '/MR/001/SR/001');
           } else if (nodeType === 'STREET') {
-            $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001/SR/001/STR/001');
+            $('#listSubclanNodeIdInput').val(clanNodeId + '/MR/001/SR/001/STR/001');
           } else if (nodeType === 'CLOSE') {
-            $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001/MR/001/SR/001/STR/001/CLS/001');
+            $('#listSubclanNodeIdInput').val(clanNodeId + '/MR/001/SR/001/STR/001/CLS/001');
           } else {
             $('#listSubclanNodeIdInput').val(clanNodeId + '/SB/001');
           }
@@ -1544,6 +1652,7 @@
       var nodeType = $('#modalSubclanNodeTypeHidden').val() || 'SUB_CLAN';
       var clanName = $('#listSubclanClanSelect option:selected').text() || 'Clan';
       var clanNodeId = $('#listSubclanClanSelect option:selected').data('node-id') || 'CLN-001';
+      var roadRelation = $('#listSubclanRoadRelationSelect').val() || 'CONTAINED_CLAN';
 
       $('#listSubclanParentRoadSelect option').each(function() {
         var optVal = $(this).val();
@@ -1553,19 +1662,23 @@
             $(this).text('-- Attached Directly to ' + clanName + ' (Primary Community) --');
             $(this).hide();
           } else if (nodeType === 'MAJOR_ROAD') {
-            $(this).text('-- Connected to Primary Community (' + clanNodeId + '/SB/001) --');
+            if (roadRelation === 'CONTAINED_SUBCLAN' || roadRelation === 'PASSING_SUBCLAN') {
+              $(this).text('-- Select Target Sub-Clan / Community * --');
+            } else {
+              $(this).text('-- Attached Directly to ' + clanName + ' (' + clanNodeId + ') --');
+            }
             $(this).show();
           } else if (nodeType === 'SUB_ROAD') {
-            $(this).text('-- Select Parent Major Road * --');
+            $(this).text('-- Select Parent Major Road * (Sub Road is Contained in Major Road) --');
             $(this).show();
           } else if (nodeType === 'STREET') {
-            $(this).text('-- Select Parent Sub Road * --');
+            $(this).text('-- Select Parent Sub Road * (Street is Contained in Sub Road) --');
             $(this).show();
           } else if (nodeType === 'CLOSE') {
-            $(this).text('-- Select Parent Street * --');
+            $(this).text('-- Select Parent Street * (Close is Contained in Street) --');
             $(this).show();
           } else {
-            $(this).text('-- Standalone / Primary (No Parent Road) --');
+            $(this).text('-- Choose Connection --');
             $(this).show();
           }
           return;
@@ -1574,28 +1687,31 @@
         if (nodeType === 'SUB_CLAN') {
           $(this).hide();
         } else if (nodeType === 'MAJOR_ROAD') {
-          // Major roads can belong to sub-clan / community
-          if (optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
-            $(this).show();
+          if (roadRelation === 'CONTAINED_SUBCLAN' || roadRelation === 'PASSING_SUBCLAN') {
+            if (optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
+              $(this).show();
+            } else {
+              $(this).hide();
+            }
           } else {
             $(this).hide();
           }
         } else if (nodeType === 'SUB_ROAD') {
-          // Sub roads must belong to major road
+          // Sub roads must belong to a major road
           if (optType === 'MAJOR_ROAD' || optType === 'META_ROAD') {
             $(this).show();
           } else {
             $(this).hide();
           }
         } else if (nodeType === 'STREET') {
-          // Streets must belong to sub road
+          // Streets must belong to a sub road
           if (optType === 'SUB_ROAD' || optType === 'LINK_ROAD') {
             $(this).show();
           } else {
             $(this).hide();
           }
         } else if (nodeType === 'CLOSE') {
-          // Closes must belong to street
+          // Closes must belong to a street
           if (optType === 'STREET') {
             $(this).show();
           } else {
@@ -1613,9 +1729,10 @@
       refreshListSubclanPreview();
     }
 
+    // Load available sub-clans and existing roads for the selected parent clan
     function loadListModalSubclans(clanId) {
       if (!clanId) {
-        $('#listSubclanParentRoadSelect').html('<option value="">-- Connected Directly to Clan (Primary Trunk) --</option>');
+        $('#listSubclanParentRoadSelect').html('<option value="">-- Choose Connection --</option>');
         refreshListSubclanPreview();
         return;
       }
@@ -1625,23 +1742,187 @@
         data: { clan_id: clanId },
         dataType: 'json',
         success: function(resp) {
-          var optionsHtml = '<option value="">-- Connected Directly to Clan (Primary Trunk) --</option>';
+          var optionsHtml = '<option value="">-- Choose Connection --</option>';
           if (resp && resp.subclans && resp.subclans.length > 0) {
             resp.subclans.forEach(function(sc) {
-              optionsHtml += '<option value="' + sc.id + '" data-node-type="' + sc.node_type + '" data-node-id="' + sc.node_id + '">' + sc.name + ' [' + sc.node_id + '] (' + (sc.node_type_display || sc.node_type) + ')</option>';
+              var relationLabel = sc.road_relation_display ? ' [' + sc.road_relation_display + ']' : '';
+              optionsHtml += '<option value="' + sc.id + '" data-node-type="' + sc.node_type + '" data-node-id="' + sc.node_id + '">' + sc.name + ' [' + sc.node_id + '] (' + (sc.node_type_display || sc.node_type) + ')' + relationLabel + '</option>';
             });
           }
           $('#listSubclanParentRoadSelect').html(optionsHtml);
           filterListParentRoads();
         },
         error: function() {
-          $('#listSubclanParentRoadSelect').html('<option value="">-- Connected Directly to Clan (Primary Trunk) --</option>');
+          $('#listSubclanParentRoadSelect').html('<option value="">-- Choose Connection --</option>');
           refreshListSubclanPreview();
         }
       });
     }
 
-    // Clan change in creation modal: auto-inherits state & city
+    // 1. When State is clicked on / changed:
+    // Automatically loads/displays the Parent Clans available to that State
+    $("#modalSubclanStateSelect").on('change', function () {
+      var stateId = $(this).val();
+      var clanSelect = $('#listSubclanClanSelect');
+      var citySelect = $('#modalSubclanCitySelect');
+
+      // Reset search box when state changes
+      $('#modalSubclanClanSearchInput').val('');
+      $('#modalClanSearchClearBtn').hide();
+      $('#modalClanSearchBadge').hide();
+
+      if (stateId) {
+        // Load Clans for this State
+        $.ajax({
+          url: "{% url 'platform_admin:api-load-clans' %}",
+          data: { 'state_id': stateId },
+          dataType: 'json',
+          success: function (data) {
+            var currentClanId = clanSelect.val();
+            var optionsHtml = '<option value="">-- Choose Parent Clan (' + (data.clans ? data.clans.length : 0) + ' available) --</option>';
+            if (data && data.clans && data.clans.length > 0) {
+              data.clans.forEach(function (c) {
+                optionsHtml += '<option value="' + c.id + '" data-code="' + (c.code || '') + '" data-node-id="' + c.node_id + '" data-state-id="' + (c.state_id || '') + '" data-city-id="' + (c.city_id || '') + '" data-geo-zone-id="' + (c.geo_zone_id || '') + '">' + c.name + ' [' + c.node_id + ']</option>';
+              });
+            } else {
+              optionsHtml = '<option value="">-- No Clans registered in this State yet --</option>';
+            }
+            clanSelect.html(optionsHtml);
+
+            // Re-select clan if still in state
+            if (currentClanId && clanSelect.find('option[value="' + currentClanId + '"]').length > 0) {
+              clanSelect.val(currentClanId);
+            } else {
+              clanSelect.val('');
+            }
+            clanSelect.trigger('change');
+          }
+        });
+
+        // Load Cities for this State
+        var citiesUrl = $("#createSubClanForm").attr("data-cities-url");
+        $.ajax({
+          url: citiesUrl,
+          data: { 'state': stateId },
+          success: function (data) {
+            citySelect.html(data);
+            var geoZoneId = citySelect.find("option[data-geo-zone-id]").first().data("geo-zone-id");
+            if (geoZoneId) {
+              $("#modalSubclanGeoZoneSelect").val(geoZoneId);
+            }
+          }
+        });
+      } else {
+        citySelect.html('<option value="">-- Auto-assigned from Clan / State --</option>');
+      }
+    });
+
+    // 1b. Search functionality for Parent Clans
+    var clanSearchTimer = null;
+    $('#modalSubclanClanSearchInput').on('input', function() {
+      var query = $(this).val().trim().toLowerCase();
+      var clanSelect = $('#listSubclanClanSelect');
+      var clearBtn = $('#modalClanSearchClearBtn');
+      var badge = $('#modalClanSearchBadge');
+      var stateId = $('#modalSubclanStateSelect').val();
+
+      if (query.length > 0) {
+        clearBtn.show();
+      } else {
+        clearBtn.hide();
+        badge.hide();
+      }
+
+      clearTimeout(clanSearchTimer);
+
+      // Instant local option filter
+      var matchCount = 0;
+      var hasVisibleSelection = false;
+      var currentVal = clanSelect.val();
+
+      clanSelect.find('option').each(function() {
+        var opt = $(this);
+        var val = opt.val();
+        if (!val) {
+          opt.show();
+          return;
+        }
+        var text = (opt.text() || '').toLowerCase();
+        var code = (opt.data('code') || '').toLowerCase();
+        var nodeId = (opt.data('node-id') || '').toLowerCase();
+
+        if (!query || text.indexOf(query) !== -1 || code.indexOf(query) !== -1 || nodeId.indexOf(query) !== -1) {
+          opt.show();
+          matchCount++;
+          if (val === currentVal) {
+            hasVisibleSelection = true;
+          }
+        } else {
+          opt.hide();
+        }
+      });
+
+      if (query.length > 0) {
+        badge.text(matchCount + ' match' + (matchCount === 1 ? '' : 'es')).show();
+      }
+
+      // If local matches are 0 and query is >= 2 chars, perform debounced server query
+      if (query.length >= 2 && matchCount === 0) {
+        clanSearchTimer = setTimeout(function() {
+          badge.text('Searching...').show();
+          $.ajax({
+            url: "{% url 'platform_admin:api-load-clans' %}",
+            data: {
+              'q': query,
+              'state_id': stateId || ''
+            },
+            dataType: 'json',
+            success: function(resp) {
+              if (resp && resp.clans && resp.clans.length > 0) {
+                var html = '<option value="">-- Found ' + resp.clans.length + ' matching Clan' + (resp.clans.length === 1 ? '' : 's') + ' --</option>';
+                resp.clans.forEach(function(c) {
+                  html += '<option value="' + c.id + '" data-code="' + (c.code || '') + '" data-node-id="' + c.node_id + '" data-state-id="' + (c.state_id || '') + '" data-city-id="' + (c.city_id || '') + '" data-geo-zone-id="' + (c.geo_zone_id || '') + '">' + c.name + ' [' + c.node_id + ']' + (c.state_name ? ' (' + c.state_name + ')' : '') + '</option>';
+                });
+                clanSelect.html(html);
+                badge.text(resp.clans.length + ' match' + (resp.clans.length === 1 ? '' : 'es')).show();
+              } else {
+                badge.text('No matching clans').show();
+              }
+            }
+          });
+        }, 250);
+      }
+    });
+
+    // Press Enter in clan search input to automatically pick the first matching clan
+    $('#modalSubclanClanSearchInput').on('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var firstMatch = $('#listSubclanClanSelect option:visible').filter(function() {
+          return $(this).val() !== '';
+        }).first();
+        if (firstMatch.length > 0) {
+          $('#listSubclanClanSelect').val(firstMatch.val()).trigger('change');
+          $('#modalClanSearchBadge').text('Selected: ' + firstMatch.text().split(' [')[0]).show();
+        }
+      }
+    });
+
+    // Clear search button
+    $('#modalClanSearchClearBtn').on('click', function() {
+      $('#modalSubclanClanSearchInput').val('');
+      $(this).hide();
+      $('#modalClanSearchBadge').hide();
+      var stateId = $('#modalSubclanStateSelect').val();
+      if (stateId) {
+        $('#modalSubclanStateSelect').trigger('change');
+      } else {
+        $('#listSubclanClanSelect option').show();
+      }
+    });
+
+    // 2. When Parent Clan is clicked / changed:
+    // Automatically displays available Sub-Clans & Road hierarchy for that Clan
     $('#listSubclanClanSelect').on('change', function() {
       var clanId = $(this).val();
       var selectedOpt = $(this).find('option:selected');
@@ -1649,47 +1930,17 @@
       var cityId = selectedOpt.data('city-id');
       var geoZoneId = selectedOpt.data('geo-zone-id');
 
-      if (stateId) {
+      if (stateId && !$('#modalSubclanStateSelect').val()) {
         $('#modalSubclanStateSelect').val(stateId);
-        // Load cities for this state
-        var url = $("#createSubClanForm").attr("data-cities-url");
-        $.ajax({
-          url: url,
-          data: { 'state': stateId },
-          success: function (data) {
-            $("#modalSubclanCitySelect").html(data);
-            if (cityId) {
-              $("#modalSubclanCitySelect").val(cityId);
-            }
-          }
-        });
+      }
+      if (cityId) {
+        $('#modalSubclanCitySelect').val(cityId);
       }
       if (geoZoneId) {
         $('#modalSubclanGeoZoneSelect').val(geoZoneId);
       }
 
       loadListModalSubclans(clanId);
-    });
-
-    // Cascading State -> City for Subclan Modal
-    $("#modalSubclanStateSelect").change(function () {
-      var url = $("#createSubClanForm").attr("data-cities-url");
-      var stateId = $(this).val();
-      if (stateId) {
-        $.ajax({
-          url: url,
-          data: { 'state': stateId },
-          success: function (data) {
-            $("#modalSubclanCitySelect").html(data);
-            var geoZoneId = $("#modalSubclanCitySelect option[data-geo-zone-id]").first().data("geo-zone-id");
-            if (geoZoneId) {
-              $("#modalSubclanGeoZoneSelect").val(geoZoneId);
-            }
-          }
-        });
-      } else {
-        $("#modalSubclanCitySelect").html('<option value="">-- Select City / LGA (optional) --</option>');
-      }
     });
 
     $('#listSubclanParentRoadSelect').on('change', refreshListSubclanPreview);
@@ -1701,6 +1952,7 @@
       var scId = btn.data('id');
       var name = btn.data('name') || '';
       var nodeType = btn.data('node-type') || 'SUB_CLAN';
+      var roadRelation = btn.data('road-relation') || 'CONTAINED_CLAN';
       var parentRoadId = btn.data('parent-road') || '';
       var surface = btn.data('surface') || '';
       var condition = btn.data('condition') || '';
@@ -1711,10 +1963,17 @@
       $('#editSubClanForm').attr('action', url);
       $('#editSubClanNameInput').val(name);
       $('#editSubClanNodeTypeSelect').val(nodeType);
+      $('#editSubClanRoadRelationSelect').val(roadRelation);
       $('#editSubClanSurfaceSelect').val(surface);
       $('#editSubClanConditionSelect').val(condition);
       $('#editSubClanNodeIdInput').val(nodeId);
       $('#editSubClanModalTitle').html('✏️ Modify ' + (name ? $('<div>').text(name).html() : 'Territorial Node'));
+
+      if (nodeType === 'MAJOR_ROAD') {
+        $('#editMajorRoadRelationGroup').show();
+      } else {
+        $('#editMajorRoadRelationGroup').hide();
+      }
 
       // Populate parent road select dynamically for this clan
       var parentSelect = $('#editSubClanParentRoadSelect');
@@ -1743,6 +2002,14 @@
       }
 
       $('#editSubClanModal').modal('show');
+    });
+
+    $('#editSubClanNodeTypeSelect').on('change', function() {
+      if ($(this).val() === 'MAJOR_ROAD') {
+        $('#editMajorRoadRelationGroup').show();
+      } else {
+        $('#editMajorRoadRelationGroup').hide();
+      }
     });
 
   });

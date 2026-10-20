@@ -254,6 +254,13 @@ ROAD_CONDITION_CHOICES = (
     ('CRITICAL', 'Critical / Impassable / Flooded'),
 )
 
+ROAD_RELATION_CHOICES = (
+    ('CONTAINED_CLAN', 'Contained inside Clan'),
+    ('CONTAINED_SUBCLAN', 'Contained inside Sub-Clan'),
+    ('PASSING_CLAN', 'Passing through Clan'),
+    ('PASSING_SUBCLAN', 'Passing through Sub-Clan'),
+)
+
 INFRASTRUCTURE_TYPE_CHOICES = (
     ('DRAINAGE', 'Drainage / Storm Water Channel'),
     ('STREET_LIGHT', 'Street Lighting (Solar / Grid)'),
@@ -449,6 +456,14 @@ class SubClan(models.Model):
         default='GOOD',
         help_text="Overall condition of the road"
     )
+    road_relation = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        choices=ROAD_RELATION_CHOICES,
+        default='CONTAINED_CLAN',
+        help_text="Identifies if the road is contained inside or passing through the clan or sub-clan"
+    )
     managers = models.ManyToManyField("accounts.Profile", blank=True, related_name='subclan_managers')
     restricted_users = models.ManyToManyField("accounts.Profile", blank=True, related_name='subclan_restricted_users')
     is_deleted = models.BooleanField(default=False)
@@ -468,6 +483,18 @@ class SubClan(models.Model):
     @property
     def display_node_id(self):
         if self.node_id:
+            # If node_id is an unnested street/close format (e.g. CLN-082/STR-001),
+            # normalize to the complete territorial hierarchy CLN-082/MR/001/SR/001/STR/001
+            if self.node_type == 'STREET' and '/STR' in self.node_id and '/MR/' not in self.node_id:
+                m = re.match(r'^(.*?)/STR[-/]?(\d+)$', self.node_id)
+                if m:
+                    clan_part, seq = m.group(1), m.group(2)
+                    return f"{clan_part}/MR/001/SR/001/STR/{int(seq):03d}"
+            elif self.node_type == 'CLOSE' and '/CLS' in self.node_id and '/STR/' not in self.node_id:
+                m = re.match(r'^(.*?)/CLS[-/]?(\d+)$', self.node_id)
+                if m:
+                    clan_part, seq = m.group(1), m.group(2)
+                    return f"{clan_part}/MR/001/SR/001/STR/001/CLS/{int(seq):03d}"
             return self.node_id
         from .territory_codes import get_node_type_code
         code = get_node_type_code(self.node_type)
@@ -477,18 +504,47 @@ class SubClan(models.Model):
         elif self.clan:
             clan_nid = self.clan.node_id or self.clan.display_node_id
             if self.node_type in ('MAJOR_ROAD', 'META_ROAD'):
-                parent_nid = f"{clan_nid}/SB/001"
+                if self.road_relation in ('CONTAINED_SUBCLAN', 'PASSING_SUBCLAN'):
+                    parent_nid = f"{clan_nid}/SB/001"
+                else:
+                    parent_nid = clan_nid
             elif self.node_type in ('SUB_ROAD', 'LINK_ROAD'):
-                parent_nid = f"{clan_nid}/SB/001/MR/001"
+                parent_nid = f"{clan_nid}/MR/001"
             elif self.node_type == 'STREET':
-                parent_nid = f"{clan_nid}/SB/001/MR/001/SR/001"
+                parent_nid = f"{clan_nid}/MR/001/SR/001"
             elif self.node_type == 'CLOSE':
-                parent_nid = f"{clan_nid}/SB/001/MR/001/SR/001/STR/001"
+                parent_nid = f"{clan_nid}/MR/001/SR/001/STR/001"
             else:
                 parent_nid = clan_nid
         else:
             parent_nid = "CLN-001"
         return f"{parent_nid}/{code}/{self.id:03d}" if self.id else f"{parent_nid}/{code}/001"
+
+    @property
+    def road_relation_display(self):
+        if self.node_type in ('MAJOR_ROAD', 'META_ROAD'):
+            if self.road_relation == 'PASSING_CLAN':
+                return f"Passing through {self.clan.name if self.clan else 'Clan'}"
+            elif self.road_relation == 'PASSING_SUBCLAN':
+                target = self.parent_road.name if self.parent_road else 'Sub-Clan'
+                return f"Passing through {target}"
+            elif self.road_relation == 'CONTAINED_SUBCLAN':
+                target = self.parent_road.name if self.parent_road else 'Sub-Clan'
+                return f"Contained inside {target}"
+            elif self.road_relation == 'CONTAINED_CLAN':
+                return f"Contained inside {self.clan.name if self.clan else 'Clan'}"
+            elif self.parent_road:
+                return f"Contained inside {self.parent_road.name}"
+            return f"Contained inside {self.clan.name if self.clan else 'Clan'}"
+        elif self.node_type in ('SUB_ROAD', 'LINK_ROAD'):
+            return f"Contained inside {self.parent_road.name if self.parent_road else 'Major Road'}"
+        elif self.node_type == 'STREET':
+            return f"Contained inside {self.parent_road.name if self.parent_road else 'Sub-Road'}"
+        elif self.node_type == 'CLOSE':
+            return f"Contained inside {self.parent_road.name if self.parent_road else 'Street'}"
+        elif self.node_type in ('SUB_CLAN', 'COMMUNITY'):
+            return f"Belongs to {self.clan.name if self.clan else 'Clan'}"
+        return ""
 
     @property
     def total_infrastructures(self):
@@ -514,14 +570,17 @@ class SubClan(models.Model):
             if parent:
                 parent_nid = parent.node_id or parent.display_node_id
             else:
-                subclan = SubClan.objects.filter(
-                    clan=self.clan,
-                    node_type__in=['SUB_CLAN', 'COMMUNITY'],
-                    is_deleted=False
-                ).first() if self.clan else None
-                parent_nid = (subclan.node_id or subclan.display_node_id) if subclan else f"{clan_nid}/SB/001"
-            # Ensure parent_nid has the territorial sub-clan node if it's just clan_nid
-            if not any(f"/{c}/" in parent_nid or parent_nid.endswith(f"/{c}") for c in ['SB', 'MR', 'SR', 'STR', 'CLS']):
+                if self.road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
+                    parent_nid = clan_nid
+                else:
+                    subclan = SubClan.objects.filter(
+                        clan=self.clan,
+                        node_type__in=['SUB_CLAN', 'COMMUNITY'],
+                        is_deleted=False
+                    ).first() if self.clan else None
+                    parent_nid = (subclan.node_id or subclan.display_node_id) if subclan else f"{clan_nid}/SB/001"
+            # Ensure parent_nid has territorial node type before /MR/
+            if parent_nid == clan_nid and self.road_relation not in ('CONTAINED_CLAN', 'PASSING_CLAN'):
                 parent_nid = f"{parent_nid}/SB/001"
             prefix = f"{parent_nid}/MR/"
         elif node_type in ('SUB_ROAD', 'LINK_ROAD'):
@@ -533,7 +592,7 @@ class SubClan(models.Model):
                     node_type__in=['MAJOR_ROAD', 'META_ROAD'],
                     is_deleted=False
                 ).first() if self.clan else None
-                parent_nid = (mr.node_id or mr.display_node_id) if mr else f"{clan_nid}/SB/001/MR/001"
+                parent_nid = (mr.node_id or mr.display_node_id) if mr else f"{clan_nid}/MR/001"
             prefix = f"{parent_nid}/SR/"
         elif node_type == 'STREET':
             if parent:
@@ -544,7 +603,7 @@ class SubClan(models.Model):
                     node_type__in=['SUB_ROAD', 'LINK_ROAD'],
                     is_deleted=False
                 ).first() if self.clan else None
-                parent_nid = (sr.node_id or sr.display_node_id) if sr else f"{clan_nid}/SB/001/MR/001/SR/001"
+                parent_nid = (sr.node_id or sr.display_node_id) if sr else f"{clan_nid}/MR/001/SR/001"
             prefix = f"{parent_nid}/STR/"
         elif node_type == 'CLOSE':
             if parent:
@@ -555,7 +614,7 @@ class SubClan(models.Model):
                     node_type='STREET',
                     is_deleted=False
                 ).first() if self.clan else None
-                parent_nid = (st.node_id or st.display_node_id) if st else f"{clan_nid}/SB/001/MR/001/SR/001/STR/001"
+                parent_nid = (st.node_id or st.display_node_id) if st else f"{clan_nid}/MR/001/SR/001/STR/001"
             prefix = f"{parent_nid}/CLS/"
         else:
             code = get_node_type_code(node_type)
@@ -592,13 +651,14 @@ class SubClan(models.Model):
         if not self.node_id:
             self.node_id = self.generate_next_node_id()
         if not self.parent_road and self.clan and self.node_type in ('MAJOR_ROAD', 'META_ROAD'):
-            subclan = SubClan.objects.filter(
-                clan=self.clan,
-                node_type__in=['SUB_CLAN', 'COMMUNITY'],
-                is_deleted=False
-            ).first()
-            if subclan and subclan.pk != self.pk:
-                self.parent_road = subclan
+            if self.road_relation in ('CONTAINED_SUBCLAN', 'PASSING_SUBCLAN'):
+                subclan = SubClan.objects.filter(
+                    clan=self.clan,
+                    node_type__in=['SUB_CLAN', 'COMMUNITY'],
+                    is_deleted=False
+                ).first()
+                if subclan and subclan.pk != self.pk:
+                    self.parent_road = subclan
         super().save(*args, **kwargs)
 
 

@@ -1,4 +1,4 @@
-<option>---- Select -----</option>
+<option value="">---- Select Clan -----</option>
 {% for clan in clans %}
-<option value="{{ clan.pk }}">{{ clan.name }}</option>
+<option value="{{ clan.pk }}" data-code="{{ clan.code|default:'' }}" data-node-id="{{ clan.display_node_id }}" data-state-id="{{ clan.state_id|default:'' }}" data-city-id="{{ clan.city_id|default:'' }}" data-geo-zone-id="{{ clan.geo_political_zone_id|default:'' }}">{{ clan.name }} [{{ clan.display_node_id }}]</option>
 {% endfor %}

@@ -1,0 +1,1134 @@
+{% extends 'base-dashboard-new.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+  .pill-badge {
+    white-space: nowrap !important;
+    flex-shrink: 0;
+  }
+  .node-id-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: -0.2px;
+    white-space: nowrap !important;
+  }
+  .table-modern td {
+    vertical-align: middle;
+  }
+  .table-modern {
+    overflow: visible !important;
+  }
+  .table-responsive {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+  .road-stat-card {
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    padding: 18px 20px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+  .road-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  }
+  .road-type-tab-btn {
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #334155;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none !important;
+  }
+  .road-type-tab-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #cbd5e1;
+  }
+  .road-type-tab-btn.active {
+    background: #0f172a;
+    color: #ffffff !important;
+    border-color: #0f172a;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+  }
+  .road-type-tab-btn.active.tab-street {
+    background: #059669;
+    color: #ffffff !important;
+    border-color: #059669;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+  }
+  .road-type-tab-btn.active.tab-mr {
+    background: #0e7490;
+    color: #ffffff !important;
+    border-color: #0e7490;
+    box-shadow: 0 2px 8px rgba(14, 116, 144, 0.25);
+  }
+  .road-type-tab-btn.active.tab-sr {
+    background: #2563eb;
+    color: #ffffff !important;
+    border-color: #2563eb;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  }
+  .road-type-tab-btn.active.tab-close {
+    background: #d97706;
+    color: #ffffff !important;
+    border-color: #d97706;
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25);
+  }
+
+  /* High-Contrast Badges */
+  .road-badge-mr {
+    background-color: #ecfeff;
+    color: #0e7490;
+    border: 1px solid #67e8f9;
+    font-weight: 700;
+  }
+  .road-badge-sr {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #93c5fd;
+    font-weight: 700;
+  }
+  .road-badge-street {
+    background-color: #ecfdf5;
+    color: #047857;
+    border: 1px solid #6ee7b7;
+    font-weight: 700;
+  }
+  .road-badge-close {
+    background-color: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+    font-weight: 700;
+  }
+  .road-node-id-badge {
+    background-color: #0f172a;
+    color: #38bdf8;
+    border: 1px solid #334155;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .road-alignment-badge {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 6px;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .road-parent-mono {
+    background-color: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 5px;
+    display: inline-block;
+    white-space: nowrap;
+  }
+  .dropdown-menu {
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  }
+</style>
+
+<div class="container-fluid px-3 px-md-4 py-4">
+
+  <!-- Header Banner -->
+  <div class="en-card p-4 mb-4" style="background: linear-gradient(135deg, #091E22 0%, #0d3840 50%, #0284c7 100%); border-radius: 20px; color: #ffffff; position: relative; overflow: hidden; border: none;">
+    <div style="position: absolute; right: -40px; top: -40px; width: 220px; height: 220px; background: radial-gradient(circle, rgba(196,242,244,0.15) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; pointer-events: none;"></div>
+    
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        <div class="d-flex align-items-center mb-2" style="gap: 8px;">
+          <span class="pill-badge" style="font-size: 10px; font-weight: 700; background: rgba(196, 242, 244, 0.22); color: #C4F2F4; border: 1px solid rgba(196, 242, 244, 0.45); padding: 3px 10px; letter-spacing: 0.5px;">TERRITORIAL ROAD NETWORK</span>
+          <span style="font-size: 13px; color: #cbd5e1; font-weight: 500;">&bull; Major Roads, Sub Roads, Streets & Closes</span>
+        </div>
+        <h2 class="font-weight-700 text-white mb-2" style="font-size: 26px; letter-spacing: -0.5px;">
+          🛣️ Roads Directory & Network
+        </h2>
+        <p class="mb-3 mb-lg-0" style="max-width: 680px; font-size: 14px; line-height: 1.5; color: #cbd5e1;">
+          Structured territorial hierarchy covering arterial Major Roads, connecting Sub Roads, neighborhood Streets, and residential Closes mapped to Clans across Nigeria.
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-right">
+        <div class="d-flex flex-wrap justify-content-lg-end" style="gap: 10px;">
+          <a href="{% url 'platform_admin:clan-list' %}" class="btn font-weight-600" style="color: #ffffff; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.35); border-radius: 10px; padding: 8px 16px;">
+            🏛️ Clans Directory
+          </a>
+          <button type="button" class="btn btn-en-cyan font-weight-700" data-toggle="modal" data-target="#createRoadModal">
+            + Add New Road
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Summary Cards Row -->
+  <div class="row mb-4">
+    <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+      <div class="road-stat-card border-top" style="border-top: 3px solid #0284c7 !important;">
+        <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Total Roads</p>
+        <h3 class="mb-0 font-weight-700" style="color: #0284c7;">{{ total_roads_count }}</h3>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">All Network Nodes</small>
+      </div>
+    </div>
+    <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+      <a href="{% url 'platform_admin:road-list' %}?node_type=MAJOR_ROAD" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #0e7490 !important;">
+        <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Major Roads</p>
+        <h3 class="mb-0 font-weight-700" style="color: #0e7490;">{{ major_roads_count }}</h3>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Primary Trunks (MR)</small>
+      </a>
+    </div>
+    <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+      <a href="{% url 'platform_admin:road-list' %}?node_type=SUB_ROAD" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #3b82f6 !important;">
+        <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Sub Roads</p>
+        <h3 class="mb-0 font-weight-700" style="color: #2563eb;">{{ sub_roads_count }}</h3>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Connectors (SR)</small>
+      </a>
+    </div>
+    <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+      <a href="{% url 'platform_admin:road-list' %}?node_type=STREET" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #10b981 !important;">
+        <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Streets</p>
+        <h3 class="mb-0 font-weight-700" style="color: #059669;">{{ streets_count }}</h3>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Urban Streets (STR)</small>
+      </a>
+    </div>
+    <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+      <a href="{% url 'platform_admin:road-list' %}?node_type=CLOSE" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #f59e0b !important;">
+        <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Closes / Crescents</p>
+        <h3 class="mb-0 font-weight-700" style="color: #d97706;">{{ closes_count }}</h3>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Terminal Nodes (CLS)</small>
+      </a>
+    </div>
+    <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+      <a href="{% url 'platform_admin:clan-list' %}?view_mode=subclans" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #7c3aed !important;">
+        <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Sub-Clans</p>
+        <h3 class="mb-0 font-weight-700" style="color: #7c3aed;">{{ total_subclans_count }}</h3>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Communities &rarr;</small>
+      </a>
+    </div>
+  </div>
+
+  <!-- Main Roads Card with Tabs & Filters -->
+  <div class="en-card mb-4" style="border-radius: 18px;">
+    
+    <!-- Top Filter & Type Tabs Header -->
+    <div class="p-3 border-bottom d-flex flex-column" style="border-color: var(--border-color) !important; gap: 12px; background: #fafbfc; border-radius: 18px 18px 0 0;">
+      
+      <!-- Type Tabs -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 8px;">
+        <div class="d-flex flex-wrap align-items-center" style="gap: 6px;">
+          <a href="{% url 'platform_admin:road-list' %}{% if query %}?q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
+             class="road-type-tab-btn {% if not node_type_filter %}active{% endif %}">
+            All Roads ({{ total_roads_count }})
+          </a>
+          <a href="{% url 'platform_admin:road-list' %}?node_type=MAJOR_ROAD{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
+             class="road-type-tab-btn {% if node_type_filter == 'MAJOR_ROAD' %}active tab-mr{% endif %}">
+            🛣️ Major Roads ({{ major_roads_count }})
+          </a>
+          <a href="{% url 'platform_admin:road-list' %}?node_type=SUB_ROAD{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
+             class="road-type-tab-btn {% if node_type_filter == 'SUB_ROAD' %}active tab-sr{% endif %}">
+            🛣️ Sub Roads ({{ sub_roads_count }})
+          </a>
+          <a href="{% url 'platform_admin:road-list' %}?node_type=STREET{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
+             class="road-type-tab-btn {% if node_type_filter == 'STREET' %}active tab-street{% endif %}">
+            🛣️ Streets ({{ streets_count }})
+          </a>
+          <a href="{% url 'platform_admin:road-list' %}?node_type=CLOSE{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
+             class="road-type-tab-btn {% if node_type_filter == 'CLOSE' %}active tab-close{% endif %}">
+            🚪 Closes / Crescents ({{ closes_count }})
+          </a>
+        </div>
+
+        <div>
+          <span class="text-muted" style="font-size: 13px;">
+            Showing <strong>{{ page_obj.start_index|default:0 }} - {{ page_obj.end_index|default:0 }}</strong> of <strong>{{ filtered_roads_count }}</strong> roads
+          </span>
+        </div>
+      </div>
+
+      <!-- Advanced Filter Controls Form -->
+      <form method="get" action="{% url 'platform_admin:road-list' %}" id="roadFilterForm" class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+        {% if node_type_filter %}
+          <input type="hidden" name="node_type" value="{{ node_type_filter }}">
+        {% endif %}
+
+        <!-- Keyword Search -->
+        <div class="input-group" style="width: 280px;">
+          <input type="text" name="q" value="{{ query }}" class="form-control form-control-modern" placeholder="Search road, ID, clan, or state..." style="font-size: 13px;">
+          <div class="input-group-append">
+            <button class="btn btn-en-outline" type="submit" style="border-radius: 0 10px 10px 0; border-left: none;">
+              🔍
+            </button>
+          </div>
+        </div>
+
+        <!-- State Filter -->
+        <div style="min-width: 170px;">
+          <select name="state" class="form-control form-control-modern" onchange="this.form.submit()" style="font-size: 13px;">
+            <option value="">-- All States --</option>
+            {% for st in all_states %}
+              <option value="{{ st.id }}" {% if state_id == st.id|stringformat:"s" %}selected{% endif %}>
+                {{ st.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Clan Filter -->
+        <div style="min-width: 200px;">
+          <select name="clan" class="form-control form-control-modern" onchange="this.form.submit()" style="font-size: 13px;">
+            <option value="">-- All Parent Clans --</option>
+            {% for cl in all_clans %}
+              <option value="{{ cl.id }}" {% if clan_id == cl.id|stringformat:"s" %}selected{% endif %}>
+                🏛️ {{ cl.name }}{% if cl.state %} ({{ cl.state.name }}){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Road Surface Filter -->
+        <div style="min-width: 160px;">
+          <select name="road_surface" class="form-control form-control-modern" onchange="this.form.submit()" style="font-size: 13px;">
+            <option value="">-- Any Surface --</option>
+            {% for val, label in road_surface_choices %}
+              <option value="{{ val }}" {% if road_surface_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Road Condition Filter -->
+        <div style="min-width: 160px;">
+          <select name="road_condition" class="form-control form-control-modern" onchange="this.form.submit()" style="font-size: 13px;">
+            <option value="">-- Any Condition --</option>
+            {% for val, label in road_condition_choices %}
+              <option value="{{ val }}" {% if road_condition_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Alignment / Relation Filter -->
+        <div style="min-width: 180px;">
+          <select name="road_relation" class="form-control form-control-modern" onchange="this.form.submit()" style="font-size: 13px;">
+            <option value="">-- Any Alignment --</option>
+            {% for val, label in road_relation_choices %}
+              <option value="{{ val }}" {% if road_relation_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {% if query or state_id or clan_id or node_type_filter or road_surface_filter or road_condition_filter or road_relation_filter %}
+          <a href="{% url 'platform_admin:road-list' %}" class="btn btn-link text-muted p-0 ml-1" style="font-size: 13px; text-decoration: underline;">
+            Reset Filters
+          </a>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Roads Table -->
+    <div class="table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th>Road Name & Classification</th>
+            <th>Parent Clan</th>
+            <th>Territorial Alignment</th>
+            <th>Hierarchy (Parent Road)</th>
+            <th>Surface & Condition</th>
+            <th>Location</th>
+            <th>Sub-Nodes</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rd in roads %}
+          <tr>
+            <!-- Road Name & Code -->
+            <td>
+              <div class="d-flex align-items-center">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: {% if rd.node_type == 'MAJOR_ROAD' or rd.node_type == 'META_ROAD' %}rgba(14, 116, 144, 0.12){% elif rd.node_type == 'SUB_ROAD' or rd.node_type == 'LINK_ROAD' %}rgba(37, 99, 235, 0.12){% elif rd.node_type == 'STREET' %}rgba(16, 185, 129, 0.12){% else %}rgba(245, 158, 11, 0.12){% endif %}; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 16px;">
+                  {% if rd.node_type == 'MAJOR_ROAD' or rd.node_type == 'META_ROAD' %}🛣️{% elif rd.node_type == 'SUB_ROAD' or rd.node_type == 'LINK_ROAD' %}🛣️{% elif rd.node_type == 'STREET' %}🛣️{% else %}🚪{% endif %}
+                </div>
+                <div>
+                  <span class="font-weight-700 d-block" style="color: var(--brand-dark); font-size: 14px;">
+                    {{ rd.name }}
+                  </span>
+                  <div class="d-flex align-items-center mt-1" style="gap: 6px;">
+                    <span class="road-node-id-badge">{{ rd.display_node_id }}</span>
+                    {% if rd.node_type == 'MAJOR_ROAD' or rd.node_type == 'META_ROAD' %}
+                      <span class="pill-badge road-badge-mr" style="font-size: 10px;">{{ rd.get_node_type_display|default:rd.node_type }}</span>
+                    {% elif rd.node_type == 'SUB_ROAD' or rd.node_type == 'LINK_ROAD' %}
+                      <span class="pill-badge road-badge-sr" style="font-size: 10px;">{{ rd.get_node_type_display|default:rd.node_type }}</span>
+                    {% elif rd.node_type == 'STREET' %}
+                      <span class="pill-badge road-badge-street" style="font-size: 10px;">{{ rd.get_node_type_display|default:rd.node_type }}</span>
+                    {% else %}
+                      <span class="pill-badge road-badge-close" style="font-size: 10px;">{{ rd.get_node_type_display|default:rd.node_type }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Parent Clan -->
+            <td>
+              {% if rd.clan %}
+                <a href="{% url 'platform_admin:clan-detail' pk=rd.clan.pk %}" class="font-weight-600" style="color: var(--brand-dark); text-decoration: none;">
+                  🏛️ {{ rd.clan.name }}
+                </a>
+                <div class="text-muted" style="font-size: 11px;">
+                  {{ rd.clan.city.name|default:"" }}
+                </div>
+              {% else %}
+                <span class="text-muted" style="font-size: 12px;">Unassigned</span>
+              {% endif %}
+            </td>
+
+            <!-- Territorial Alignment -->
+            <td>
+              {% if rd.road_relation_display %}
+                <span class="road-alignment-badge">
+                  {{ rd.road_relation_display }}
+                </span>
+              {% elif rd.road_relation %}
+                <span class="road-alignment-badge">
+                  {{ rd.get_road_relation_display|default:rd.road_relation }}
+                </span>
+              {% else %}
+                <span class="text-muted" style="font-size: 11px;">Direct Clan Scope</span>
+              {% endif %}
+            </td>
+
+            <!-- Hierarchy Connection (Parent Road) -->
+            <td>
+              {% if rd.parent_road %}
+                <div>
+                  <span class="font-weight-600" style="color: var(--brand-dark); font-size: 12px;">
+                    ↳ {{ rd.parent_road.name }}
+                  </span>
+                  <div class="mt-1">
+                    <span class="road-parent-mono">
+                      {{ rd.parent_road.display_node_id }}
+                    </span>
+                    <span class="text-muted" style="font-size: 11px; margin-left: 3px;">
+                      &bull; {{ rd.parent_road.get_node_type_display|default:rd.parent_road.node_type }}
+                    </span>
+                  </div>
+                </div>
+              {% else %}
+                <span class="text-muted" style="font-size: 12px;">
+                  {% if rd.node_type == 'MAJOR_ROAD' %}
+                    Primary Arterial Trunk
+                  {% else %}
+                    Direct Clan Connection
+                  {% endif %}
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Surface & Condition -->
+            <td>
+              <div>
+                <span class="font-weight-600 d-block" style="font-size: 12px; color: var(--brand-dark);">
+                  {{ rd.get_road_surface_display|default:"Paved / Asphalt" }}
+                </span>
+                <span class="pill-badge {% if rd.road_condition == 'EXCELLENT' or rd.road_condition == 'GOOD' %}pill-badge-success{% elif rd.road_condition == 'FAIR' %}pill-badge-warning{% else %}pill-badge-danger{% endif %} mt-1" style="font-size: 10px;">
+                  {{ rd.get_road_condition_display|default:"Good" }}
+                </span>
+              </div>
+            </td>
+
+            <!-- Location (City / State) -->
+            <td>
+              <div>
+                {% if rd.city %}
+                  <span class="font-weight-600" style="color: var(--brand-dark); font-size: 12px;">{{ rd.city.name }}</span>
+                {% elif rd.clan and rd.clan.city %}
+                  <span class="font-weight-600" style="color: var(--brand-dark); font-size: 12px;">{{ rd.clan.city.name }}</span>
+                {% else %}
+                  <span class="text-muted" style="font-size: 12px;">-</span>
+                {% endif %}
+                
+                {% if rd.state %}
+                  <div class="text-muted" style="font-size: 11px;">{{ rd.state.name }}</div>
+                {% elif rd.clan and rd.clan.state %}
+                  <div class="text-muted" style="font-size: 11px;">{{ rd.clan.state.name }}</div>
+                {% else %}
+                  <div class="text-muted" style="font-size: 11px;">-</div>
+                {% endif %}
+              </div>
+            </td>
+
+            <!-- Sub-Nodes / Connected elements -->
+            <td>
+              <div class="d-flex align-items-center" style="gap: 6px;">
+                <span class="pill-badge" style="background: #f1f5f9; color: #334155; font-size: 11px; font-weight: 600;" title="Connected Child Roads / Streets">
+                  🛣️ {{ rd.connected_count }} connected
+                </span>
+                {% if rd.infra_count > 0 %}
+                  <span class="pill-badge" style="background: rgba(124,58,237,0.1); color: #7c3aed; font-size: 10px; font-weight: 600;" title="Territorial Infrastructures">
+                    🏗️ {{ rd.infra_count }}
+                  </span>
+                {% endif %}
+              </div>
+            </td>
+
+            <!-- Actions -->
+            <td class="text-right">
+              <div class="d-inline-flex align-items-center" style="gap: 4px;">
+                <button type="button" 
+                        class="btn btn-sm btn-en-outline js-edit-road-btn" 
+                        data-id="{{ rd.id }}"
+                        data-name="{{ rd.name }}"
+                        data-node-id="{{ rd.display_node_id }}"
+                        data-node-type="{{ rd.node_type }}"
+                        data-road-relation="{{ rd.road_relation|default:'CONTAINED_CLAN' }}"
+                        data-parent-road="{{ rd.parent_road_id|default:'' }}"
+                        data-surface="{{ rd.road_surface|default:'ASPHALT' }}"
+                        data-condition="{{ rd.road_condition|default:'GOOD' }}"
+                        data-clan-id="{{ rd.clan_id|default:'' }}"
+                        data-toggle="modal" 
+                        data-target="#editRoadModal"
+                        title="Edit Road Details"
+                        style="border-radius: 8px; padding: 4px 10px; font-size: 12px;">
+                  ✏️ Edit
+                </button>
+                {% if rd.clan %}
+                  <a href="{% url 'platform_admin:clan-detail' pk=rd.clan.pk %}" 
+                     class="btn btn-sm btn-en-outline" 
+                     title="View Clan Workspace"
+                     style="border-radius: 8px; padding: 4px 10px; font-size: 12px;">
+                    🏛️ Clan
+                  </a>
+                {% endif %}
+                <button type="button" 
+                        class="btn btn-sm btn-outline-danger js-delete-road-btn" 
+                        data-id="{{ rd.id }}"
+                        data-name="{{ rd.name }}"
+                        data-toggle="modal" 
+                        data-target="#deleteRoadModal"
+                        title="Archive Road"
+                        style="border-radius: 8px; padding: 4px 8px; font-size: 12px;">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5">
+              <div style="max-width: 420px; margin: 0 auto;">
+                <div style="font-size: 42px; margin-bottom: 12px;">🛣️</div>
+                <h5 class="font-weight-700 mb-1" style="color: var(--brand-dark);">No Roads Found</h5>
+                <p class="text-muted mb-3" style="font-size: 13px;">No road networks match your current filter or search criteria. Try resetting filters or register a new road.</p>
+                <button type="button" class="btn btn-en-cyan font-weight-700" data-toggle="modal" data-target="#createRoadModal">
+                  + Create New Road
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    {% if page_obj.has_other_pages %}
+    <div class="p-3 border-top d-flex flex-wrap align-items-center justify-content-between" style="border-color: var(--border-color) !important; background: #fafbfc; border-radius: 0 0 18px 18px;">
+      <span class="text-muted" style="font-size: 13px;">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+      <ul class="pagination pagination-sm mb-0" style="gap: 4px;">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if node_type_filter %}&node_type={{ node_type_filter }}{% endif %}{% if road_surface_filter %}&road_surface={{ road_surface_filter }}{% endif %}{% if road_condition_filter %}&road_condition={{ road_condition_filter }}{% endif %}{% if road_relation_filter %}&road_relation={{ road_relation_filter }}{% endif %}" style="border-radius: 8px;">&laquo; First</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if node_type_filter %}&node_type={{ node_type_filter }}{% endif %}{% if road_surface_filter %}&road_surface={{ road_surface_filter }}{% endif %}{% if road_condition_filter %}&road_condition={{ road_condition_filter }}{% endif %}{% if road_relation_filter %}&road_relation={{ road_relation_filter }}{% endif %}" style="border-radius: 8px;">Prev</a>
+          </li>
+        {% endif %}
+
+        <li class="page-item active">
+          <span class="page-link bg-dark text-white border-dark" style="border-radius: 8px;">{{ page_obj.number }}</span>
+        </li>
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if node_type_filter %}&node_type={{ node_type_filter }}{% endif %}{% if road_surface_filter %}&road_surface={{ road_surface_filter }}{% endif %}{% if road_condition_filter %}&road_condition={{ road_condition_filter }}{% endif %}{% if road_relation_filter %}&road_relation={{ road_relation_filter }}{% endif %}" style="border-radius: 8px;">Next</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if node_type_filter %}&node_type={{ node_type_filter }}{% endif %}{% if road_surface_filter %}&road_surface={{ road_surface_filter }}{% endif %}{% if road_condition_filter %}&road_condition={{ road_condition_filter }}{% endif %}{% if road_relation_filter %}&road_relation={{ road_relation_filter }}{% endif %}" style="border-radius: 8px;">Last &raquo;</a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- CREATE ROAD MODAL (WITH COMPLETE CASCADE) -->
+<!-- ============================================== -->
+<div class="modal fade" id="createRoadModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge mb-1" id="createRoadModalBadge" style="font-size: 10px; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 2px 8px;">TERRITORIAL ROAD NETWORK</span>
+          <h4 class="modal-title font-weight-700" id="createRoadModalTitle" style="color: var(--brand-dark);">
+            🛣️ Add New Road Network
+          </h4>
+          <p class="text-muted mb-0" id="createRoadModalDesc" style="font-size: 13px;">
+            Register a road node adhering to the territorial road containment and alignment architecture.
+          </p>
+        </div>
+        <button type="button" class="close btn-close js-modal-close-btn" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" onclick="$(this).closest('.modal').modal('hide');" style="font-size: 24px; cursor: pointer; background: transparent; border: none; line-height: 1;">
+          <span aria-hidden="true" style="pointer-events: none;">&times;</span>
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'platform_admin:subclan-create' %}" id="createRoadForm" 
+            data-cities-url="{% url 'utility:ajax-load-cities' %}"
+            data-clans-url="{% url 'platform_admin:api-load-clans' %}"
+            data-subclans-url="{% url 'platform_admin:api-load-subclans' %}"
+            data-generate-node-id-url="{% url 'platform_admin:api-generate-node-id' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <input type="hidden" name="geo_political_zone" id="roadModalGeoZoneInput" value="">
+
+        <div class="modal-body pt-3">
+
+          <!-- Road Classification Type -->
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              Road Classification *
+            </label>
+            <select name="node_type" id="roadNodeTypeSelect" class="form-control form-control-modern" required>
+              <option value="MAJOR_ROAD" {% if node_type_filter == 'MAJOR_ROAD' or not node_type_filter %}selected{% endif %}>🛣️ Major Road (MR)</option>
+              <option value="SUB_ROAD" {% if node_type_filter == 'SUB_ROAD' %}selected{% endif %}>🛣️ Sub Road (SR)</option>
+              <option value="STREET" {% if node_type_filter == 'STREET' %}selected{% endif %}>🛣️ Street (STR)</option>
+              <option value="CLOSE" {% if node_type_filter == 'CLOSE' %}selected{% endif %}>🚪 Close / Crescent (CLS)</option>
+            </select>
+          </div>
+
+          <!-- Cascade Row: State & Parent Clan -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">State *</label>
+              <select name="state" id="roadModalStateSelect" class="form-control form-control-modern" required>
+                <option value="">-- Select State --</option>
+                {% for st in all_states %}
+                  <option value="{{ st.id }}" {% if selected_state and selected_state.id == st.id %}selected{% endif %}>
+                    {{ st.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Clan *</label>
+              <select name="clan" id="roadModalClanSelect" class="form-control form-control-modern" required>
+                <option value="">-- Select State first --</option>
+                {% for cl in all_clans %}
+                  <option value="{{ cl.id }}" {% if selected_clan and selected_clan.id == cl.id %}selected{% endif %}>
+                    🏛️ {{ cl.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- Major Road Territorial Scope & Alignment -->
+          <div class="form-group mb-3" id="roadRelationGroup">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              Major Road Territorial Scope & Alignment *
+            </label>
+            <select name="road_relation" id="roadRelationSelect" class="form-control form-control-modern">
+              <option value="CONTAINED_CLAN">📌 Contained inside Clan</option>
+              <option value="PASSING_CLAN">🚗 Passing through Clan</option>
+              <option value="CONTAINED_SUBCLAN">📌 Contained inside Sub-Clan / Community</option>
+              <option value="PASSING_SUBCLAN">🚗 Passing through Sub-Clan / Community</option>
+            </select>
+            <small class="text-muted" style="font-size: 11px;">Specify whether this road is contained within or passing through the clan or community.</small>
+          </div>
+
+          <!-- Hierarchy Connection / Parent Road Selector -->
+          <div class="form-group mb-3" id="roadParentGroup" style="display: none;">
+            <label class="font-weight-600 mb-1" id="roadParentLabel" style="font-size: 13px; color: var(--brand-dark);">
+              Parent Road / Node *
+            </label>
+            <select name="parent_road" id="roadParentSelect" class="form-control form-control-modern">
+              <option value="">-- Choose Connection --</option>
+            </select>
+            <small class="text-muted" id="roadParentHelpText" style="font-size: 11px;">
+              Sub Roads connect to Major Roads; Streets connect to Sub Roads; Closes connect to Streets.
+            </small>
+          </div>
+
+          <!-- Road Name -->
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" id="roadNameLabel" style="font-size: 13px; color: var(--brand-dark);">
+              Road Name *
+            </label>
+            <input type="text" name="name" id="roadNameInput" class="form-control form-control-modern" placeholder="e.g. East-West Road, Port Harcourt Expressway" required>
+          </div>
+
+          <!-- Road Surface & Condition -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Surface</label>
+              <select name="road_surface" class="form-control form-control-modern">
+                {% for val, label in road_surface_choices %}
+                  <option value="{{ val }}" {% if val == 'ASPHALT' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Condition</label>
+              <select name="road_condition" class="form-control form-control-modern">
+                {% for val, label in road_condition_choices %}
+                  <option value="{{ val }}" {% if val == 'GOOD' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- Auto-generated Territorial Node ID -->
+          <div class="form-group mb-2">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              Territorial Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated &bull; Non-editable</span>
+            </label>
+            <input type="text" name="node_id" id="roadNodeIdPreview" class="form-control form-control-modern" placeholder="Auto-generated on save" readonly tabindex="-1" style="font-family: monospace; font-weight: 600; color: #0284c7; background-color: #f8fafc; cursor: not-allowed;">
+            <small class="text-muted" style="font-size: 11px;">Automatically generated sequentially matching PRD territorial node architecture.</small>
+          </div>
+
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal" onclick="$(this).closest('.modal').modal('hide');">Cancel</button>
+          <button type="submit" class="btn btn-en-cyan font-weight-700" id="roadSubmitBtn">
+            Confirm & Save Road
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- EDIT ROAD MODAL -->
+<!-- ============================================== -->
+<div class="modal fade" id="editRoadModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge mb-1" style="font-size: 10px; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 2px 8px;">EDIT ROAD</span>
+          <h4 class="modal-title font-weight-700" style="color: var(--brand-dark);">
+            ✏️ Modify Road Details
+          </h4>
+        </div>
+        <button type="button" class="close btn-close js-modal-close-btn" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" onclick="$(this).closest('.modal').modal('hide');" style="font-size: 24px; cursor: pointer; background: transparent; border: none; line-height: 1;">
+          <span aria-hidden="true" style="pointer-events: none;">&times;</span>
+        </button>
+      </div>
+
+      <form method="post" id="editRoadForm" action="">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+        <div class="modal-body pt-3">
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Name *</label>
+            <input type="text" name="name" id="editRoadNameInput" class="form-control form-control-modern" required>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Classification *</label>
+            <select name="node_type" id="editRoadNodeTypeSelect" class="form-control form-control-modern">
+              <option value="MAJOR_ROAD">Major Road (MR)</option>
+              <option value="SUB_ROAD">Sub Road (SR)</option>
+              <option value="STREET">Street (STR)</option>
+              <option value="CLOSE">Close / Crescent (CLS)</option>
+            </select>
+          </div>
+
+          <div class="form-group mb-3" id="editRoadRelationGroup">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Alignment & Scope</label>
+            <select name="road_relation" id="editRoadRelationSelect" class="form-control form-control-modern">
+              {% for val, label in road_relation_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Road / Connection</label>
+            <select name="parent_road" id="editRoadParentSelect" class="form-control form-control-modern">
+              <option value="">-- Connected Directly to Clan (Primary Trunk) --</option>
+              {% for psc in all_subclans_for_parent %}
+                <option value="{{ psc.id }}">{{ psc.name }} ({{ psc.get_node_type_display|default:psc.node_type }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Surface</label>
+              <select name="road_surface" id="editRoadSurfaceSelect" class="form-control form-control-modern">
+                {% for val, label in road_surface_choices %}
+                  <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Condition</label>
+              <select name="road_condition" id="editRoadConditionSelect" class="form-control form-control-modern">
+                {% for val, label in road_condition_choices %}
+                  <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group mb-2">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territorial Node ID</label>
+            <input type="text" id="editRoadNodeIdInput" class="form-control form-control-modern" readonly style="font-family: monospace; background: #f8fafc;">
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal" onclick="$(this).closest('.modal').modal('hide');">Cancel</button>
+          <button type="submit" class="btn btn-en-primary font-weight-700">
+            Save Road Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- DELETE ROAD MODAL -->
+<!-- ============================================== -->
+<div class="modal fade" id="deleteRoadModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge pill-badge-danger mb-1" style="font-size: 11px;">ARCHIVE ROAD</span>
+          <h4 class="modal-title font-weight-700 text-danger">
+            Archive Road Network?
+          </h4>
+        </div>
+        <button type="button" class="close btn-close js-modal-close-btn" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" onclick="$(this).closest('.modal').modal('hide');" style="font-size: 24px; cursor: pointer; background: transparent; border: none; line-height: 1;">
+          <span aria-hidden="true" style="pointer-events: none;">&times;</span>
+        </button>
+      </div>
+
+      <form method="post" id="deleteRoadForm" action="">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+        <div class="modal-body pt-3">
+          <p class="text-muted mb-3" style="font-size: 14px; line-height: 1.5;">
+            Are you sure you want to archive road <strong id="deleteRoadName" class="text-dark"></strong>? 
+            Connected street and territorial nodes will retain historical integrity.
+          </p>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal" onclick="$(this).closest('.modal').modal('hide');">Cancel</button>
+          <button type="submit" class="btn btn-danger font-weight-700">
+            Confirm & Archive Road
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function () {
+    var rawSubClansData = [
+      {% for sc in all_subclans_for_parent %}
+      {
+        id: {{ sc.id }},
+        name: "{{ sc.name|escapejs }}",
+        node_id: "{{ sc.node_id|default:''|escapejs }}",
+        node_type: "{{ sc.node_type|default:''|escapejs }}",
+        clan_id: {{ sc.clan_id|default:'null' }}
+      }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    // Node Type Configuration Map
+    var roadTypeConfigs = {
+      'MAJOR_ROAD': {
+        title: '🛣️ Add New Major Road',
+        badge: 'MAJOR ROAD (MR)',
+        nameLabel: 'Major Road Name *',
+        placeholder: 'e.g. East-West Road, Port Harcourt Expressway',
+        desc: 'Register a primary arterial trunk road.',
+        hasRelation: true,
+        parentLabel: 'Parent Sub-Clan / Community (Optional)',
+        parentRequired: false,
+        submitText: 'Confirm & Create Major Road'
+      },
+      'SUB_ROAD': {
+        title: '🛣️ Add New Sub Road',
+        badge: 'SUB ROAD (SR)',
+        nameLabel: 'Sub Road Name *',
+        placeholder: 'e.g. Agip Link Road, NTA Sub Road',
+        desc: 'Register a sub road connecting to a Major Road.',
+        hasRelation: false,
+        parentLabel: 'Parent Major Road *',
+        parentRequired: true,
+        submitText: 'Confirm & Create Sub Road'
+      },
+      'STREET': {
+        title: '🛣️ Add New Street',
+        badge: 'STREET (STR)',
+        nameLabel: 'Street Name *',
+        placeholder: 'e.g. Circular Road Street, Church Street',
+        desc: 'Register an urban street connecting to a Sub Road.',
+        hasRelation: false,
+        parentLabel: 'Parent Sub Road *',
+        parentRequired: true,
+        submitText: 'Confirm & Create Street'
+      },
+      'CLOSE': {
+        title: '🚪 Add New Close / Crescent',
+        badge: 'CLOSE (CLS)',
+        nameLabel: 'Close Name *',
+        placeholder: 'e.g. Palm View Close, Royal Crescent',
+        desc: 'Register a terminal close connecting to a Street.',
+        hasRelation: false,
+        parentLabel: 'Parent Street *',
+        parentRequired: true,
+        submitText: 'Confirm & Create Close'
+      }
+    };
+
+    function updateRoadModalUI() {
+      var nodeType = $("#roadNodeTypeSelect").val() || 'MAJOR_ROAD';
+      var cfg = roadTypeConfigs[nodeType] || roadTypeConfigs['MAJOR_ROAD'];
+
+      $("#createRoadModalTitle").text(cfg.title);
+      $("#createRoadModalBadge").text(cfg.badge);
+      $("#createRoadModalDesc").text(cfg.desc);
+      $("#roadNameLabel").text(cfg.nameLabel);
+      $("#roadNameInput").attr("placeholder", cfg.placeholder);
+      $("#roadSubmitBtn").text(cfg.submitText);
+
+      var relation = $("#roadRelationSelect").val() || 'CONTAINED_CLAN';
+
+      if (nodeType === 'MAJOR_ROAD') {
+        $("#roadRelationGroup").show();
+        if (relation === 'CONTAINED_SUBCLAN' || relation === 'PASSING_SUBCLAN') {
+          $("#roadParentGroup").show();
+          $("#roadParentLabel").text("Parent Sub-Clan / Community *");
+          $("#roadParentHelpText").text("Major Road aligned with a Sub-Clan must connect to that community.");
+          $("#roadParentSelect").attr("required", "required");
+        } else {
+          $("#roadParentGroup").hide();
+          $("#roadParentSelect").removeAttr("required").val("");
+        }
+      } else {
+        $("#roadRelationGroup").hide();
+        $("#roadParentGroup").show();
+        $("#roadParentLabel").text(cfg.parentLabel);
+        if (cfg.parentRequired) {
+          $("#roadParentSelect").attr("required", "required");
+        } else {
+          $("#roadParentSelect").removeAttr("required");
+        }
+      }
+
+      refreshParentRoadOptions();
+      refreshRoadNodeIdPreview();
+    }
+
+    function refreshParentRoadOptions() {
+      var clanId = $("#roadModalClanSelect").val();
+      var nodeType = $("#roadNodeTypeSelect").val();
+      var relation = $("#roadRelationSelect").val();
+      var $select = $("#roadParentSelect");
+      var currentVal = $select.val();
+
+      $select.empty();
+
+      if (!clanId) {
+        $select.append('<option value="">-- Choose Clan first --</option>');
+        return;
+      }
+
+      var filtered = rawSubClansData.filter(function (sc) {
+        return String(sc.clan_id) === String(clanId);
+      });
+
+      if (nodeType === 'MAJOR_ROAD') {
+        if (relation === 'CONTAINED_SUBCLAN' || relation === 'PASSING_SUBCLAN') {
+          $select.append('<option value="">-- Select Sub-Clan / Community * --</option>');
+          filtered.filter(function(sc) {
+            return sc.node_type === 'SUB_CLAN' || sc.node_type === 'COMMUNITY';
+          }).forEach(function (sc) {
+            $select.append('<option value="' + sc.id + '">🏘️ ' + sc.name + ' (' + (sc.node_id || 'SB') + ')</option>');
+          });
+        }
+      } else if (nodeType === 'SUB_ROAD') {
+        $select.append('<option value="">-- Select Parent Major Road * --</option>');
+        filtered.filter(function (sc) {
+          return sc.node_type === 'MAJOR_ROAD' || sc.node_type === 'META_ROAD';
+        }).forEach(function (sc) {
+          $select.append('<option value="' + sc.id + '">🛣️ ' + sc.name + ' (' + (sc.node_id || 'MR') + ')</option>');
+        });
+      } else if (nodeType === 'STREET') {
+        $select.append('<option value="">-- Select Parent Sub Road * --</option>');
+        filtered.filter(function (sc) {
+          return sc.node_type === 'SUB_ROAD' || sc.node_type === 'LINK_ROAD';
+        }).forEach(function (sc) {
+          $select.append('<option value="' + sc.id + '">🛣️ ' + sc.name + ' (' + (sc.node_id || 'SR') + ')</option>');
+        });
+      } else if (nodeType === 'CLOSE') {
+        $select.append('<option value="">-- Select Parent Street * --</option>');
+        filtered.filter(function (sc) {
+          return sc.node_type === 'STREET';
+        }).forEach(function (sc) {
+          $select.append('<option value="' + sc.id + '">🛣️ ' + sc.name + ' (' + (sc.node_id || 'STR') + ')</option>');
+        });
+      }
+
+      if (currentVal && $select.find('option[value="' + currentVal + '"]').length) {
+        $select.val(currentVal);
+      }
+    }
+
+    function refreshRoadNodeIdPreview() {
+      var clanId = $("#roadModalClanSelect").val();
+      var nodeType = $("#roadNodeTypeSelect").val();
+      var parentRoadId = $("#roadParentSelect").val();
+      var url = $("#createRoadForm").attr("data-generate-node-id-url");
+
+      if (clanId && nodeType && url) {
+        $.ajax({
+          url: url,
+          data: {
+            'clan_id': clanId,
+            'node_type': nodeType,
+            'parent_road_id': parentRoadId || ''
+          },
+          success: function (data) {
+            if (data && data.node_id) {
+              $("#roadNodeIdPreview").val(data.node_id);
+            }
+          }
+        });
+      }
+    }
+
+    // Cascade State -> Clan
+    $("#roadModalStateSelect").change(function () {
+      var stateId = $(this).val();
+      var url = $("#createRoadForm").attr("data-clans-url");
+      if (stateId && url) {
+        $.ajax({
+          url: url,
+          data: { 'state_id': stateId },
+          success: function (data) {
+            var $clanSelect = $("#roadModalClanSelect");
+            $clanSelect.empty().append('<option value="">-- Select Clan --</option>');
+            if (data.clans && data.clans.length > 0) {
+              data.clans.forEach(function (c) {
+                $clanSelect.append('<option value="' + c.id + '">🏛️ ' + c.name + '</option>');
+              });
+            } else {
+              $clanSelect.append('<option value="">No clans found in this state</option>');
+            }
+            refreshParentRoadOptions();
+            refreshRoadNodeIdPreview();
+          }
+        });
+      }
+    });
+
+    $("#roadModalClanSelect").change(function () {
+      refreshParentRoadOptions();
+      refreshRoadNodeIdPreview();
+    });
+
+    $("#roadNodeTypeSelect").change(function () {
+      updateRoadModalUI();
+    });
+
+    $("#roadRelationSelect").change(function () {
+      updateRoadModalUI();
+    });
+
+    $("#roadParentSelect").change(function () {
+      refreshRoadNodeIdPreview();
+    });
+
+    // Populate Edit Modal
+    $(".js-edit-road-btn").click(function () {
+      var id = $(this).data("id");
+      var name = $(this).data("name");
+      var nodeId = $(this).data("node-id");
+      var nodeType = $(this).data("node-type");
+      var roadRelation = $(this).data("road-relation");
+      var parentRoad = $(this).data("parent-road");
+      var surface = $(this).data("surface");
+      var condition = $(this).data("condition");
+
+      $("#editRoadForm").attr("action", "/platform-admin/subclans/" + id + "/edit/");
+      $("#editRoadNameInput").val(name);
+      $("#editRoadNodeIdInput").val(nodeId);
+      $("#editRoadNodeTypeSelect").val(nodeType);
+      $("#editRoadRelationSelect").val(roadRelation);
+      $("#editRoadParentSelect").val(parentRoad);
+      $("#editRoadSurfaceSelect").val(surface);
+      $("#editRoadConditionSelect").val(condition);
+
+      if (nodeType === 'MAJOR_ROAD' || nodeType === 'META_ROAD') {
+        $("#editRoadRelationGroup").show();
+      } else {
+        $("#editRoadRelationGroup").hide();
+      }
+    });
+
+    // Populate Delete Modal
+    $(".js-delete-road-btn").click(function () {
+      var id = $(this).data("id");
+      var name = $(this).data("name");
+      $("#deleteRoadForm").attr("action", "/platform-admin/subclans/" + id + "/delete/");
+      $("#deleteRoadName").text(name);
+    });
+
+    // Initialize Modal State
+    updateRoadModalUI();
+  });
+</script>
+
+{% endblock %}

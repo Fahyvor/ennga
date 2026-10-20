@@ -95,9 +95,11 @@ For production deployments on a server/VPS:
 
 ## Cloud Platform Deployments (Render, AWS ECS, DigitalOcean App Platform, Fly.io)
 
-The `Dockerfile` is built to be cloud-native:
-- Automatically binds to `${PORT:-8000}`.
-- Includes container healthchecks for automated orchestrator failover.
-- Runs as an unprivileged user (`app`) with appropriate file and socket permissions.
-- Pre-compiles Python wheels in a multi-stage build for minimal image footprint.
-- Automatically handles database connection waiting and migration execution on boot.
+The `Dockerfile` is built to be cloud-native and deployable as a standalone container:
+- **Automatic Port Binding**: Uses `${PORT:-8000}`, dynamically adapting to Render or AWS ECS port assignment.
+- **Embedded Static Serving (WhiteNoise)**: With `whitenoise` integrated, CSS, JS, fonts, and images are served directly and efficiently by the container with compression and cache headers without needing a separate Nginx container.
+- **Healthcheck Endpoint**: Pre-configured `HEALTHCHECK` hitting `http://127.0.0.1:${PORT:-8000}/health/`. This same endpoint can be configured on Render Health Checks and UptimeRobot to keep the service warm.
+- **Security & Privileges**: Runs as an unprivileged user (`app`) with appropriate file and socket permissions.
+- **Fast Startup**: Pre-compiles Python wheels in a multi-stage build and pre-collects static assets during image creation.
+- **Remote DB & SSH Tunneling**: If using a remote MySQL/Postgres database (e.g., Namecheap cPanel), set `USE_SSH_TUNNEL=true`, `SSH_HOST`, `SSH_PORT=21098`, `SSH_USER`, and `SSH_PRIVATE_KEY` in environment variables; `entrypoint.sh` will automatically establish the secure tunnel before booting the web server.
+

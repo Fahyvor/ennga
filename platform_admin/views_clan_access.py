@@ -6,7 +6,10 @@ from django.http import JsonResponse, HttpResponseForbidden
 from django.core.cache import cache
 from django.db.models import Q
 from accounts.models import Account, Profile
-from utility.models import Clan, SubClan, State, City, GeoPoliticalZone, NODE_TYPE_CHOICES
+from utility.models import (
+    Clan, SubClan, State, City, GeoPoliticalZone,
+    NODE_TYPE_CHOICES, ROAD_RELATION_CHOICES, ROAD_SURFACE_CHOICES, ROAD_CONDITION_CHOICES
+)
 from platform_admin.forms_clan import ClanForm, SubClanForm
 
 
@@ -115,6 +118,9 @@ def clan_access_list_view(request):
         'all_states': all_states,
         'all_geo_zones': all_geo_zones,
         'node_type_choices': NODE_TYPE_CHOICES,
+        'road_relation_choices': ROAD_RELATION_CHOICES,
+        'road_surface_choices': ROAD_SURFACE_CHOICES,
+        'road_condition_choices': ROAD_CONDITION_CHOICES,
         'clan_create_form': None,
         'subclan_create_form': None,
         'query': query,
@@ -238,12 +244,56 @@ def revoke_subclan_access_view(request, subclan_id, profile_id):
 
 
 @login_required
+def api_load_clans_for_state_view(request):
+    """
+    API endpoint returning Clans belonging to a given State (and/or City/LGA).
+    """
+    state_id = request.GET.get('state_id') or request.GET.get('state')
+    city_id = request.GET.get('city_id') or request.GET.get('city')
+    query = request.GET.get('q', '').strip()
+    clans_qs = Clan.objects.filter(is_deleted=False)
+
+    if city_id:
+        try:
+            clans_qs = clans_qs.filter(city_id=int(city_id))
+        except (ValueError, TypeError):
+            pass
+    elif state_id:
+        try:
+            st_int = int(state_id)
+            clans_qs = clans_qs.filter(Q(state_id=st_int) | Q(city__state_id=st_int))
+        except (ValueError, TypeError):
+            pass
+
+    if query:
+        clans_qs = clans_qs.filter(
+            Q(name__icontains=query) |
+            Q(code__icontains=query) |
+            Q(node_id__icontains=query)
+        )
+
+    clans = clans_qs.select_related('state', 'city').order_by('name')[:100]
+    data = [{
+        'id': c.id,
+        'name': c.name,
+        'code': c.code or '',
+        'node_id': c.display_node_id,
+        'state_id': c.state_id or (c.city.state_id if c.city else None),
+        'state_name': c.state.name if c.state else (c.city.state.name if c.city and c.city.state else ''),
+        'city_id': c.city_id,
+        'city_name': c.city.name if c.city else '',
+        'geo_zone_id': c.geo_political_zone_id,
+    } for c in clans]
+    return JsonResponse({'clans': data})
+
+
+@login_required
 def api_load_subclans_for_clan_view(request):
     clan_id = request.GET.get('clan_id')
     if not clan_id:
         return JsonResponse({'subclans': []})
 
-    subclans = SubClan.objects.filter(clan_id=clan_id, is_deleted=False).order_by('name')
+    subclans = SubClan.objects.filter(clan_id=clan_id, is_deleted=False).select_related('parent_road').order_by('name')
     data = [{
         'id': sc.id,
         'name': sc.name,
@@ -252,6 +302,8 @@ def api_load_subclans_for_clan_view(request):
         'node_type_display': sc.get_node_type_display() if hasattr(sc, 'get_node_type_display') else sc.node_type,
         'parent_road_id': sc.parent_road_id,
         'parent_road_name': sc.parent_road.name if sc.parent_road else '',
+        'road_relation': sc.road_relation or '',
+        'road_relation_display': sc.road_relation_display,
     } for sc in subclans]
     return JsonResponse({'subclans': data})
 
@@ -270,8 +322,11 @@ def api_generate_node_id_view(request):
     clan_id = request.GET.get('clan_id')
     node_type = request.GET.get('node_type', 'MAJOR_ROAD').strip() or 'MAJOR_ROAD'
     parent_road_id = request.GET.get('parent_road_id') or request.GET.get('parent_road')
+    road_relation = request.GET.get('road_relation', 'CONTAINED_CLAN').strip() or 'CONTAINED_CLAN'
 
     if node_type in ('SUB_CLAN', 'COMMUNITY'):
+        parent_road = None
+    elif node_type in ('MAJOR_ROAD', 'META_ROAD') and road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
         parent_road = None
     else:
         parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
@@ -281,7 +336,7 @@ def api_generate_node_id_view(request):
     if not clan and not parent_road:
         return JsonResponse({'node_id': '', 'status': 'error', 'message': 'Missing clan_id or parent_road_id'})
 
-    mock_subclan = SubClan(clan=clan, node_type=node_type, parent_road=parent_road)
+    mock_subclan = SubClan(clan=clan, node_type=node_type, parent_road=parent_road, road_relation=road_relation)
     generated_id = mock_subclan.generate_next_node_id()
     return JsonResponse({
         'status': 'success',
@@ -292,6 +347,7 @@ def api_generate_node_id_view(request):
         'parent_road_id': parent_road.id if parent_road else None,
         'parent_road_node_id': parent_road.display_node_id if parent_road else '',
         'node_type': node_type,
+        'road_relation': road_relation,
     })
 
 

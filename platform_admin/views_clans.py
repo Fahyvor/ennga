@@ -10,7 +10,7 @@ from django.core.cache import cache
 from accounts.models import Account, Profile
 from utility.models import (
     Clan, SubClan, State, City, GeoPoliticalZone, Country,
-    NODE_TYPE_CHOICES, ROAD_SURFACE_CHOICES, ROAD_CONDITION_CHOICES,
+    NODE_TYPE_CHOICES, ROAD_RELATION_CHOICES, ROAD_SURFACE_CHOICES, ROAD_CONDITION_CHOICES,
     INFRASTRUCTURE_TYPE_CHOICES, INFRASTRUCTURE_STATUS_CHOICES, SIDE_OF_ROAD_CHOICES,
     TerritorialInfrastructure
 )
@@ -64,6 +64,11 @@ def invalidate_clan_caches():
     cache.delete_many([
         'kpi_total_clans',
         'kpi_total_subclans',
+        'kpi_total_roads',
+        'kpi_major_roads_count',
+        'kpi_sub_roads_count',
+        'kpi_streets_count',
+        'kpi_closes_count',
         'dropdown_all_clans',
         'dropdown_all_clans_simple',
         'dropdown_all_subclans_simple',
@@ -72,6 +77,7 @@ def invalidate_clan_caches():
         'all_states_simple',
         'all_geo_zones_list',
     ])
+
 
 
 @login_required
@@ -110,6 +116,8 @@ def clan_list_view(request):
     # Cached Counts (300s) to eliminate repetitive count round-trips
     total_clans_count = cache.get_or_set('kpi_total_clans', lambda: Clan.objects.filter(is_deleted=False).count(), 300)
     total_subclans_count = cache.get_or_set('kpi_total_subclans', lambda: SubClan.objects.filter(is_deleted=False).count(), 300)
+    ROAD_NODE_TYPES = ['MAJOR_ROAD', 'SUB_ROAD', 'STREET', 'CLOSE', 'LINK_ROAD', 'META_ROAD']
+    total_roads_count = cache.get_or_set('kpi_total_roads', lambda: SubClan.objects.filter(node_type__in=ROAD_NODE_TYPES, is_deleted=False).count(), 300)
     
     my_clans_count = 0
     if user_profile:
@@ -262,13 +270,205 @@ def clan_list_view(request):
         'all_geo_zones': all_geo_zones,
         'all_clans_dropdown': all_clans_dropdown,
         'node_type_choices': NODE_TYPE_CHOICES,
+        'road_relation_choices': ROAD_RELATION_CHOICES,
         'road_surface_choices': ROAD_SURFACE_CHOICES,
         'road_condition_choices': ROAD_CONDITION_CHOICES,
+        'total_roads_count': total_roads_count,
         'clan_create_form': clan_create_form,
         'subclan_create_form': subclan_create_form,
         'is_admin': admin_user,
     }
     return render(request, 'platform_admin/clans/clan_list.html', context)
+
+
+@login_required
+def road_list_view(request):
+    """
+    Dedicated Directory & listing of all Roads (Major Roads, Sub Roads, Streets, Closes)
+    with search, type filtering, state & clan filtering, road condition/surface filters,
+    and hierarchical connectivity.
+    """
+    query = request.GET.get('q', '').strip()
+    state_id = request.GET.get('state', '').strip()
+    clan_id = request.GET.get('clan', '').strip()
+    node_type_filter = request.GET.get('node_type', '').strip()
+    road_surface_filter = request.GET.get('road_surface', '').strip()
+    road_condition_filter = request.GET.get('road_condition', '').strip()
+    road_relation_filter = request.GET.get('road_relation', '').strip()
+    page = request.GET.get('page', 1)
+
+    user_profile = getattr(request.user, 'account_profile', None)
+    admin_user = is_platform_admin(request.user)
+
+    ROAD_NODE_TYPES = ['MAJOR_ROAD', 'SUB_ROAD', 'STREET', 'CLOSE', 'LINK_ROAD', 'META_ROAD']
+
+    # Base query for all roads
+    roads_qs = SubClan.objects.filter(
+        node_type__in=ROAD_NODE_TYPES,
+        is_deleted=False
+    ).select_related(
+        'clan', 'city', 'state', 'geo_political_zone', 'parent_road'
+    ).prefetch_related(
+        'managers__user', 'infrastructures', 'connected_streets'
+    ).annotate(
+        connected_count=Count('connected_streets', distinct=True),
+        infra_count=Count('infrastructures', distinct=True)
+    )
+
+    # KPI counts across all active roads (cached 300s)
+    total_roads_count = cache.get_or_set(
+        'kpi_total_roads',
+        lambda: SubClan.objects.filter(node_type__in=ROAD_NODE_TYPES, is_deleted=False).count(),
+        300
+    )
+    major_roads_count = cache.get_or_set(
+        'kpi_major_roads_count',
+        lambda: SubClan.objects.filter(node_type__in=['MAJOR_ROAD', 'META_ROAD'], is_deleted=False).count(),
+        300
+    )
+    sub_roads_count = cache.get_or_set(
+        'kpi_sub_roads_count',
+        lambda: SubClan.objects.filter(node_type__in=['SUB_ROAD', 'LINK_ROAD'], is_deleted=False).count(),
+        300
+    )
+    streets_count = cache.get_or_set(
+        'kpi_streets_count',
+        lambda: SubClan.objects.filter(node_type='STREET', is_deleted=False).count(),
+        300
+    )
+    closes_count = cache.get_or_set(
+        'kpi_closes_count',
+        lambda: SubClan.objects.filter(node_type='CLOSE', is_deleted=False).count(),
+        300
+    )
+
+    # Filter by node_type
+    if node_type_filter:
+        if node_type_filter == 'MAJOR_ROAD':
+            roads_qs = roads_qs.filter(node_type__in=['MAJOR_ROAD', 'META_ROAD'])
+        elif node_type_filter == 'SUB_ROAD':
+            roads_qs = roads_qs.filter(node_type__in=['SUB_ROAD', 'LINK_ROAD'])
+        else:
+            roads_qs = roads_qs.filter(node_type=node_type_filter)
+
+    # Filter by state
+    selected_state = None
+    if state_id:
+        try:
+            state_id_int = int(state_id)
+            selected_state = State.objects.filter(id=state_id_int, is_deleted=False).first()
+            roads_qs = roads_qs.filter(
+                Q(state_id=state_id_int) | Q(clan__state_id=state_id_int) | Q(city__state_id=state_id_int)
+            )
+        except (ValueError, TypeError):
+            selected_state = State.objects.filter(name__iexact=state_id, is_deleted=False).first()
+            roads_qs = roads_qs.filter(
+                Q(state__name__iexact=state_id) | Q(clan__state__name__iexact=state_id) | Q(city__state__name__iexact=state_id)
+            )
+
+    # Filter by clan
+    selected_clan = None
+    if clan_id:
+        try:
+            clan_id_int = int(clan_id)
+            selected_clan = Clan.objects.filter(id=clan_id_int, is_deleted=False).first()
+            roads_qs = roads_qs.filter(clan_id=clan_id_int)
+        except (ValueError, TypeError):
+            pass
+
+    # Filter by surface
+    if road_surface_filter:
+        roads_qs = roads_qs.filter(road_surface=road_surface_filter)
+
+    # Filter by condition
+    if road_condition_filter:
+        roads_qs = roads_qs.filter(road_condition=road_condition_filter)
+
+    # Filter by relation / alignment
+    if road_relation_filter:
+        roads_qs = roads_qs.filter(road_relation=road_relation_filter)
+
+    # Search query
+    if query:
+        roads_qs = roads_qs.filter(
+            Q(name__icontains=query) |
+            Q(node_id__icontains=query) |
+            Q(clan__name__icontains=query) |
+            Q(state__name__icontains=query) |
+            Q(city__name__icontains=query) |
+            Q(parent_road__name__icontains=query)
+        )
+
+    roads_qs = roads_qs.order_by('node_type', 'name')
+
+    # Pagination
+    paginator = Paginator(roads_qs, 25)
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    # Filter dropdown lists
+    all_states = cache.get_or_set(
+        'all_states_list',
+        lambda: list(State.objects.filter(is_deleted=False).order_by('name')),
+        3600
+    )
+    all_clans = cache.get_or_set(
+        'dropdown_all_clans_simple',
+        lambda: list(Clan.objects.filter(is_deleted=False).select_related('state').only('id', 'name', 'code', 'state__name').order_by('name')),
+        1800
+    )
+    all_subclans_for_parent = cache.get_or_set(
+        'dropdown_all_subclans_simple',
+        lambda: list(SubClan.objects.filter(is_deleted=False).select_related('clan').only('id', 'name', 'node_id', 'node_type', 'clan_id').order_by('node_type', 'name')),
+        600
+    )
+    all_geo_zones = cache.get_or_set(
+        'all_geo_zones_list',
+        lambda: list(GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')),
+        3600
+    )
+
+    road_node_choices = (
+        ('MAJOR_ROAD', 'Major Road (MR)'),
+        ('SUB_ROAD', 'Sub Road (SR)'),
+        ('STREET', 'Street (STR)'),
+        ('CLOSE', 'Close / Crescent (CLS)'),
+    )
+
+    context = {
+        'page_obj': page_obj,
+        'roads': page_obj.object_list,
+        'query': query,
+        'state_id': state_id,
+        'clan_id': clan_id,
+        'selected_state': selected_state,
+        'selected_clan': selected_clan,
+        'node_type_filter': node_type_filter,
+        'road_surface_filter': road_surface_filter,
+        'road_condition_filter': road_condition_filter,
+        'road_relation_filter': road_relation_filter,
+        'total_roads_count': total_roads_count,
+        'major_roads_count': major_roads_count,
+        'sub_roads_count': sub_roads_count,
+        'streets_count': streets_count,
+        'closes_count': closes_count,
+        'filtered_roads_count': paginator.count,
+        'all_states': all_states,
+        'all_clans': all_clans,
+        'all_subclans_for_parent': all_subclans_for_parent,
+        'all_geo_zones': all_geo_zones,
+        'road_node_choices': road_node_choices,
+        'node_type_choices': NODE_TYPE_CHOICES,
+        'road_surface_choices': ROAD_SURFACE_CHOICES,
+        'road_condition_choices': ROAD_CONDITION_CHOICES,
+        'road_relation_choices': ROAD_RELATION_CHOICES,
+        'is_admin': admin_user,
+    }
+    return render(request, 'platform_admin/roads/road_list.html', context)
 
 
 @login_required
@@ -357,6 +557,7 @@ def clan_detail_view(request, pk):
         'subclan_create_form': subclan_create_form,
         'infrastructure_create_form': infrastructure_create_form,
         'node_type_choices': NODE_TYPE_CHOICES,
+        'road_relation_choices': ROAD_RELATION_CHOICES,
         'road_surface_choices': ROAD_SURFACE_CHOICES,
         'road_condition_choices': ROAD_CONDITION_CHOICES,
         'infrastructure_type_choices': INFRASTRUCTURE_TYPE_CHOICES,
@@ -462,6 +663,7 @@ def subclan_create_for_clan_view(request, clan_id):
     if request.method == "POST":
         name = request.POST.get('name', '').strip()
         node_type = request.POST.get('node_type', 'MAJOR_ROAD').strip() or 'MAJOR_ROAD'
+        road_relation = request.POST.get('road_relation', 'CONTAINED_CLAN').strip() or 'CONTAINED_CLAN'
         node_id = request.POST.get('node_id', '').strip()
         parent_road_id = request.POST.get('parent_road')
         road_surface = request.POST.get('road_surface', 'ASPHALT').strip() or 'ASPHALT'
@@ -481,14 +683,17 @@ def subclan_create_for_clan_view(request, clan_id):
         parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
 
         # Enforce territorial architecture hierarchy:
-        # Sub-Clans -> Clan; Major Roads -> Sub-Clan or Clan; Sub Roads -> Major Road; Streets -> Sub Road; Closes -> Street
+        # Sub-Clans -> Clan; Major Roads -> Sub-Clan or Clan (Contained or Passing); Sub Roads -> Major Road; Streets -> Sub Road; Closes -> Street
         if node_type in ('SUB_CLAN', 'COMMUNITY'):
             parent_road = None
-        elif node_type == 'MAJOR_ROAD':
-            if parent_road and parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
-                messages.error(request, "Major Roads can only belong to a Sub-Clan / Community or directly to a Clan.")
-                return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
-        elif node_type == 'SUB_ROAD':
+        elif node_type in ('MAJOR_ROAD', 'META_ROAD'):
+            if road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
+                parent_road = None
+            elif road_relation in ('CONTAINED_SUBCLAN', 'PASSING_SUBCLAN'):
+                if parent_road and parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
+                    messages.error(request, "Major Roads aligned with a Sub-Clan must have a Sub-Clan / Community as parent.")
+                    return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
+        elif node_type in ('SUB_ROAD', 'LINK_ROAD'):
             if not parent_road:
                 messages.error(request, "Sub Roads must belong to a Major Road.")
                 return redirect(next_url or reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk}))
@@ -514,6 +719,7 @@ def subclan_create_for_clan_view(request, clan_id):
             name=name,
             clan=clan,
             node_type=node_type,
+            road_relation=road_relation,
             parent_road=parent_road,
             road_surface=road_surface,
             road_condition=road_condition,
@@ -559,6 +765,7 @@ def subclan_create_general_view(request):
 
         name = request.POST.get('name', '').strip()
         node_type = request.POST.get('node_type', 'MAJOR_ROAD').strip() or 'MAJOR_ROAD'
+        road_relation = request.POST.get('road_relation', 'CONTAINED_CLAN').strip() or 'CONTAINED_CLAN'
         node_id = request.POST.get('node_id', '').strip()
         parent_road_id = request.POST.get('parent_road')
         road_surface = request.POST.get('road_surface', 'ASPHALT').strip() or 'ASPHALT'
@@ -579,14 +786,17 @@ def subclan_create_general_view(request):
         parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
 
         # Enforce territorial architecture hierarchy:
-        # Sub-Clans -> Clan; Major Roads -> Sub-Clan or Clan; Sub Roads -> Major Road; Streets -> Sub Road; Closes -> Street
+        # Sub-Clans -> Clan; Major Roads -> Sub-Clan or Clan (Contained or Passing); Sub Roads -> Major Road; Streets -> Sub Road; Closes -> Street
         if node_type in ('SUB_CLAN', 'COMMUNITY'):
             parent_road = None
-        elif node_type == 'MAJOR_ROAD':
-            if parent_road and parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
-                messages.error(request, "Major Roads can only belong to a Sub-Clan / Community or directly to a Clan.")
-                return redirect(next_url or 'platform_admin:dashboard')
-        elif node_type == 'SUB_ROAD':
+        elif node_type in ('MAJOR_ROAD', 'META_ROAD'):
+            if road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
+                parent_road = None
+            elif road_relation in ('CONTAINED_SUBCLAN', 'PASSING_SUBCLAN'):
+                if parent_road and parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
+                    messages.error(request, "Major Roads aligned with a Sub-Clan must have a Sub-Clan / Community as parent.")
+                    return redirect(next_url or 'platform_admin:dashboard')
+        elif node_type in ('SUB_ROAD', 'LINK_ROAD'):
             if not parent_road:
                 messages.error(request, "Sub Roads must belong to a Major Road.")
                 return redirect(next_url or 'platform_admin:dashboard')
@@ -612,6 +822,7 @@ def subclan_create_general_view(request):
             name=name,
             clan=clan,
             node_type=node_type,
+            road_relation=road_relation,
             parent_road=parent_road,
             road_surface=road_surface,
             road_condition=road_condition,
@@ -658,6 +869,10 @@ def subclan_edit_view(request, pk):
             node_type = request.POST.get('node_type')
             if node_type:
                 subclan.node_type = node_type
+
+            road_relation = request.POST.get('road_relation')
+            if road_relation:
+                subclan.road_relation = road_relation
 
             parent_road_id = request.POST.get('parent_road')
             if parent_road_id is not None:

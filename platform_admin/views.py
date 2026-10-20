@@ -13,7 +13,10 @@ from django.conf import settings
 from .forms import MarketSectorForm, MarketSectorBulkDataForm
 from .models import MarketSectorBulkData, MarketSector, Historical, GeoPhysicalData
 from .tasks import create_new_customers
-from utility.models import Country, Clan, SubClan, State, City, GeoPoliticalZone, NODE_TYPE_CHOICES
+from utility.models import (
+    Country, Clan, SubClan, State, City, GeoPoliticalZone,
+    NODE_TYPE_CHOICES, ROAD_RELATION_CHOICES, ROAD_SURFACE_CHOICES, ROAD_CONDITION_CHOICES
+)
 from .forms_clan import ClanForm, SubClanForm
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.views.generic import ( ListView, DetailView, CreateView, 
@@ -33,6 +36,8 @@ def dashboard(request):
     # Cached KPIs & counts (300s) to eliminate repeated DB round-trips
     total_clans_count = cache.get_or_set('kpi_total_clans', lambda: Clan.objects.filter(is_deleted=False).count(), 300)
     total_subclans_count = cache.get_or_set('kpi_total_subclans', lambda: SubClan.objects.filter(is_deleted=False).count(), 300)
+    ROAD_NODE_TYPES = ['MAJOR_ROAD', 'SUB_ROAD', 'STREET', 'CLOSE', 'LINK_ROAD', 'META_ROAD']
+    total_roads_count = cache.get_or_set('kpi_total_roads', lambda: SubClan.objects.filter(node_type__in=ROAD_NODE_TYPES, is_deleted=False).count(), 300)
     market_sectors = cache.get_or_set('kpi_market_sectors', lambda: MarketSector.my_objects.count(), 300)
     historicals = cache.get_or_set('kpi_historicals', lambda: Historical.my_objects.count(), 300)
     geo_physicals = cache.get_or_set('kpi_geo_physicals', lambda: GeoPhysicalData.my_objects.count(), 300)
@@ -67,6 +72,7 @@ def dashboard(request):
         'admin_recent_clans': admin_recent_clans,
         'total_clans_count': total_clans_count,
         'total_subclans_count': total_subclans_count,
+        'total_roads_count': total_roads_count,
         'is_admin': is_admin,
         'all_clans_dropdown': all_clans_dropdown,
         'all_users': all_users,
@@ -75,6 +81,9 @@ def dashboard(request):
         'clan_create_form': None,
         'subclan_create_form': None,
         'node_type_choices': NODE_TYPE_CHOICES,
+        'road_relation_choices': ROAD_RELATION_CHOICES,
+        'road_surface_choices': ROAD_SURFACE_CHOICES,
+        'road_condition_choices': ROAD_CONDITION_CHOICES,
     }
     return render(request, 'platform_admin/dashboard.html', context)
 

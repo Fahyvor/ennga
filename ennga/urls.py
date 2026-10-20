@@ -38,7 +38,14 @@ schema_view = get_schema_view(
 )
 
 
+from .views import health_check_view
+
 urlpatterns = [
+    # Health check endpoints for UptimeRobot / Render keep-alive
+    path('health/', health_check_view, name='health-check'),
+    path('healthz/', health_check_view, name='healthz'),
+    path('ping/', health_check_view, name='ping'),
+
     path('admin/', admin.site.urls),
     path('ckeditor/', include('ckeditor_uploader.urls')),
     path('accounts/', include('accounts.urls', namespace='accounts')),

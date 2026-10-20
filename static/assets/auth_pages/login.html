@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../auth_pages_css/login.css">
+    <title>Log in</title>
+</head>
+<body>
+    <div class="signInScreen">
+        <header class="header__img">
+          <a href='/index.html'>
+            <img src='../assets/logo.png' alt='company-logo'/>
+          </a>
+        </header>
+        <section class="section">
+          <form
+            class="form">
+            <h1>Sign in</h1>
+            
+            <div class="forEmail">
+              <label
+                for='email'
+                class="active__label">
+                Email Address
+              </label>
+              <input
+                type='email'
+                name='email'
+                id='email'
+                class="email__phone"
+                required
+               
+              />
+            </div>
+            <div class="forPassword">
+              <input
+                type='password'
+                name='password'
+                id='password'
+                class="password"
+                
+                required
+                
+              />
+              <label
+                for='password'
+                class=
+                 "active__label"
+                >
+                Password
+              </label>
+              <!-- {/* <span onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? 'Hide' : 'Show'}
+              </span> */} -->
+            </div>
+            <a href="/auth_pages/resetPassword.html" class="forgot">
+              Forgot password?
+            </a>
+            <button
+              type='submit'
+              class= "signInBtn"
+              
+        >
+           Sign In
+            </button>
+         
+          </form>
+          <p class="register">
+            New to Ennga 
+            <span>
+              <a href="/auth_pages/signUp.html">Join Now</a>
+            </span>
+          </p>
+        </section>
+      
+      </div>
+</body>
+</html>

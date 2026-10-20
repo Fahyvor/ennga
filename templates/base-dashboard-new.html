@@ -440,6 +440,23 @@
         </a>
       </li>
 
+      <li class="{% if '/roads/' in request.path %}mm-active{% endif %}">
+        <a href="{% url 'platform_admin:road-list' %}" aria-expanded="false">
+          <div class="nav_icon_small">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19L8 5"></path>
+              <path d="M16 5l4 14"></path>
+              <path d="M12 3v4"></path>
+              <path d="M12 11v4"></path>
+              <path d="M12 19v2"></path>
+            </svg>
+          </div>
+          <div class="nav_title">
+            <span>Roads</span>
+          </div>
+        </a>
+      </li>
+
       {% if request.user.is_admin or request.user.is_superuser %}
       <li class="{% if 'clan-access' in request.path %}mm-active{% endif %}">
         <a href="{% url 'platform_admin:clan-access-management' %}" aria-expanded="false">

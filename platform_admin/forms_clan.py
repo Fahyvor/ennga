@@ -1,7 +1,7 @@
 from django import forms
 from utility.models import (
     Country, State, City, Clan, SubClan, GeoPoliticalZone,
-    NODE_TYPE_CHOICES, ROAD_SURFACE_CHOICES, ROAD_CONDITION_CHOICES,
+    NODE_TYPE_CHOICES, ROAD_RELATION_CHOICES, ROAD_SURFACE_CHOICES, ROAD_CONDITION_CHOICES,
     INFRASTRUCTURE_TYPE_CHOICES, INFRASTRUCTURE_STATUS_CHOICES, SIDE_OF_ROAD_CHOICES,
     TerritorialInfrastructure
 )
@@ -141,6 +141,16 @@ class SubClanForm(forms.ModelForm):
             'id': 'id_subclan_node_type'
         })
     )
+    road_relation = forms.ChoiceField(
+        label='Road Relationship / Alignment (for Major Roads)',
+        choices=ROAD_RELATION_CHOICES,
+        initial='CONTAINED_CLAN',
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control form-control-modern',
+            'id': 'id_subclan_road_relation'
+        })
+    )
     node_id = forms.CharField(
         label='Territorial Node ID (Auto-generated)',
         required=False,
@@ -155,7 +165,7 @@ class SubClanForm(forms.ModelForm):
         })
     )
     parent_road = forms.ModelChoiceField(
-        label='Connected Major / Sub Road / Street (Territorial Parent)',
+        label='Connected Major / Sub Road / Street / Sub-Clan (Territorial Parent)',
         empty_label='-- Standalone Road / Direct Trunk (No Parent) --',
         required=False,
         widget=forms.Select(attrs={
@@ -207,7 +217,7 @@ class SubClanForm(forms.ModelForm):
 
     class Meta:
         model = SubClan
-        fields = ('name', 'clan', 'node_type', 'node_id', 'parent_road', 'road_surface', 'road_condition', 'state', 'city')
+        fields = ('name', 'clan', 'node_type', 'road_relation', 'node_id', 'parent_road', 'road_surface', 'road_condition', 'state', 'city')
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control form-control-modern',
@@ -240,11 +250,19 @@ class SubClanForm(forms.ModelForm):
                 self.fields['parent_road'].queryset = SubClan.objects.none()
                 self.fields['clan'].queryset = Clan.objects.filter(is_deleted=False).only('id', 'name', 'code', 'node_id')
         else:
-            self.fields['parent_road'].queryset = SubClan.objects.none()
-            if self.is_bound:
-                self.fields['clan'].queryset = Clan.objects.filter(is_deleted=False).only('id', 'name', 'code', 'node_id')
+            state_val = self.data.get('state') or self.initial.get('state')
+            if state_val:
+                try:
+                    s_id = int(state_val.id if hasattr(state_val, 'id') else state_val)
+                    self.fields['clan'].queryset = Clan.objects.filter(
+                        Q(state_id=s_id) | Q(city__state_id=s_id),
+                        is_deleted=False
+                    ).only('id', 'name', 'code', 'node_id').order_by('name')
+                except (ValueError, TypeError):
+                    self.fields['clan'].queryset = Clan.objects.filter(is_deleted=False).only('id', 'name', 'code', 'node_id')
             else:
-                self.fields['clan'].queryset = Clan.objects.none()
+                self.fields['clan'].queryset = Clan.objects.filter(is_deleted=False).only('id', 'name', 'code', 'node_id')
+            self.fields['parent_road'].queryset = SubClan.objects.none()
 
         # Handle city field population
         if 'state' in self.data:
@@ -279,6 +297,7 @@ class SubClanForm(forms.ModelForm):
         node_type = cleaned_data.get('node_type')
         clan = cleaned_data.get('clan')
         parent_road = cleaned_data.get('parent_road')
+        road_relation = cleaned_data.get('road_relation') or 'CONTAINED_CLAN'
 
         # Architectural rules:
         # 1. SUB_CLAN / COMMUNITY must belong to a Clan and cannot have a parent road
@@ -288,21 +307,26 @@ class SubClanForm(forms.ModelForm):
             if parent_road:
                 cleaned_data['parent_road'] = None
 
-        # 2. MAJOR_ROAD can belong to a SubClan or directly to a Clan
+        # 2. MAJOR_ROAD can be contained in or pass through Clan or Sub-Clan
         elif node_type == 'MAJOR_ROAD':
-            if parent_road:
-                if parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
-                    self.add_error('parent_road', 'Major Roads can only be placed under a Sub-Clan / Community or directly under a Clan.')
-                elif not clan and parent_road.clan:
-                    cleaned_data['clan'] = parent_road.clan
-            elif not clan:
-                self.add_error('clan', 'Major Roads must belong to either a Clan or a Sub-Clan.')
+            if road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
+                cleaned_data['parent_road'] = None
+                if not clan:
+                    self.add_error('clan', 'Major Roads must belong to a Clan.')
+            elif road_relation in ('CONTAINED_SUBCLAN', 'PASSING_SUBCLAN'):
+                if parent_road:
+                    if parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
+                        self.add_error('parent_road', 'For Sub-Clan alignment, the parent node must be a Sub-Clan / Community.')
+                    elif not clan and parent_road.clan:
+                        cleaned_data['clan'] = parent_road.clan
+                elif not clan:
+                    self.add_error('clan', 'Major Roads must belong to either a Clan or a Sub-Clan.')
 
         # 3. SUB_ROAD must belong to a Major Road
         elif node_type == 'SUB_ROAD':
             if not parent_road:
                 self.add_error('parent_road', 'Sub Roads must have a parent Major Road.')
-            elif parent_road.node_type != 'MAJOR_ROAD':
+            elif parent_road.node_type not in ('MAJOR_ROAD', 'META_ROAD'):
                 self.add_error('parent_road', f'Sub Roads must belong to a Major Road (selected parent is {parent_road.get_node_type_display()}).')
             elif not clan and parent_road.clan:
                 cleaned_data['clan'] = parent_road.clan
@@ -311,7 +335,7 @@ class SubClanForm(forms.ModelForm):
         elif node_type == 'STREET':
             if not parent_road:
                 self.add_error('parent_road', 'Streets must have a parent Sub Road.')
-            elif parent_road.node_type != 'SUB_ROAD':
+            elif parent_road.node_type not in ('SUB_ROAD', 'LINK_ROAD'):
                 self.add_error('parent_road', f'Streets must belong to a Sub Road (selected parent is {parent_road.get_node_type_display()}).')
             elif not clan and parent_road.clan:
                 cleaned_data['clan'] = parent_road.clan
