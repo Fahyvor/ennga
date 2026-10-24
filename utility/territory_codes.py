@@ -95,12 +95,50 @@ def get_geo_zone_code(geo_zone):
     return 'SS'
 
 
+def resolve_state(val):
+    """
+    Robustly resolves a State model instance from an ID (int/str),
+    or state name (with spaces, hyphens, optional 'State' suffix, case-insensitive).
+    Prevents Cross-River and Rivers from ever cross-matching.
+    """
+    if not val:
+        return None
+    from utility.models import State
+    from django.db.models import Q
+
+    if isinstance(val, State):
+        return val
+
+    val_str = str(val).strip()
+    if not val_str:
+        return None
+
+    if val_str.isdigit():
+        return State.objects.filter(id=int(val_str), is_deleted=False).first()
+
+    val_clean = val_str
+    if val_clean.lower().endswith(' state'):
+        val_clean = val_clean[:-6].strip()
+
+    clean = val_clean.replace('_', ' ')
+    with_hyphen = clean.replace(' ', '-')
+    with_space = clean.replace('-', ' ')
+    return State.objects.filter(
+        Q(name__iexact=val_str) |
+        Q(name__iexact=val_clean) |
+        Q(name__iexact=clean) |
+        Q(name__iexact=with_hyphen) |
+        Q(name__iexact=with_space),
+        is_deleted=False
+    ).first()
+
+
 def get_state_code(state):
     """
-    Returns 3-letter uppercase State code (e.g. 'RIV' for Rivers, 'LAG' for Lagos).
+    Returns 3-letter uppercase State code (e.g. 'CRO' for Cross-River, 'RIV' for Rivers, 'LAG' for Lagos).
     """
     if not state:
-        return 'RIV'
+        return 'STA'
     name = state.name if hasattr(state, 'name') else str(state)
     name_clean = name.strip().upper()
     if name_clean in NIGERIAN_STATE_CODES:

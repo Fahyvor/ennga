@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, reverse
+from django.shortcuts import render, redirect, reverse, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from accounts.models import Account, Profile
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
@@ -85,20 +85,24 @@ def geo_physical_detail_view(request, pk):
 
 @login_required
 def geo_physical_delete_data(request, pk):
-    geo_physical_object = GeoPhysicalData.my_objects.get(id=pk)
+    geo_physical_object = get_object_or_404(GeoPhysicalData, id=pk)
     form = GeoPhysicalDeleteDataForm(request.POST or None, request.FILES or None, instance=geo_physical_object)
-        
+
     if request.method == 'POST':
         form = GeoPhysicalDeleteDataForm(request.POST or None, request.FILES or None, instance=geo_physical_object)
         if form.is_valid():
             geo_physical_object.is_deleted = True
-            form.save()
+            geo_physical_object.save(update_fields=['is_deleted'])
+            messages.info(request, "Geo-Physical record has been archived.")
+            next_url = request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
             return redirect("platform_admin:geo-physical-data-list-view")
-            print("COMPLETED!!!")
     else:
         form = GeoPhysicalDeleteDataForm(request.POST or None, request.FILES or None, instance=geo_physical_object)
     context = {
-        "form": form
+        "form": form,
+        "object": geo_physical_object,
     }
     return render(request, 'platform_admin/geo_physical/geo-physical-delete.html', context)
 

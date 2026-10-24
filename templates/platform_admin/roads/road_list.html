@@ -163,20 +163,23 @@
     <div class="row align-items-center">
       <div class="col-lg-8">
         <div class="d-flex align-items-center mb-2" style="gap: 8px;">
-          <span class="pill-badge" style="font-size: 10px; font-weight: 700; background: rgba(196, 242, 244, 0.22); color: #C4F2F4; border: 1px solid rgba(196, 242, 244, 0.45); padding: 3px 10px; letter-spacing: 0.5px;">TERRITORIAL ROAD NETWORK</span>
-          <span style="font-size: 13px; color: #cbd5e1; font-weight: 500;">&bull; Major Roads, Sub Roads, Streets & Closes</span>
+          <span class="pill-badge" style="font-size: 10px; font-weight: 700; background: rgba(196, 242, 244, 0.22); color: #C4F2F4; border: 1px solid rgba(196, 242, 244, 0.45); padding: 3px 10px; letter-spacing: 0.5px;">ROAD HIERARCHY &bull; {{ tier_title|default:"All Roads"|upper }}</span>
+          <span style="font-size: 13px; color: #cbd5e1; font-weight: 500;">&bull; Major Roads &bull; Sub Roads &bull; Streets &bull; Closes</span>
         </div>
         <h2 class="font-weight-700 text-white mb-2" style="font-size: 26px; letter-spacing: -0.5px;">
-          🛣️ Roads Directory & Network
+          🛣️ {{ tier_title|default:"Roads Directory & Network" }}
         </h2>
         <p class="mb-3 mb-lg-0" style="max-width: 680px; font-size: 14px; line-height: 1.5; color: #cbd5e1;">
-          Structured territorial hierarchy covering arterial Major Roads, connecting Sub Roads, neighborhood Streets, and residential Closes mapped to Clans across Nigeria.
+          {{ tier_desc|default:"Structured territorial hierarchy covering arterial Major Roads, connecting Sub Roads, neighborhood Streets, and residential Closes mapped to Clans across Nigeria." }}
         </p>
       </div>
       <div class="col-lg-4 text-lg-right">
         <div class="d-flex flex-wrap justify-content-lg-end" style="gap: 10px;">
           <a href="{% url 'platform_admin:clan-list' %}" class="btn font-weight-600" style="color: #ffffff; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.35); border-radius: 10px; padding: 8px 16px;">
-            🏛️ Clans Directory
+            🏛️ Clans
+          </a>
+          <a href="{% url 'platform_admin:subclan-list' %}" class="btn font-weight-600" style="color: #ffffff; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.35); border-radius: 10px; padding: 8px 16px;">
+            🏘️ Sub-Clans
           </a>
           <button type="button" class="btn btn-en-cyan font-weight-700" data-toggle="modal" data-target="#createRoadModal">
             + Add New Road
@@ -189,42 +192,42 @@
   <!-- KPI Summary Cards Row -->
   <div class="row mb-4">
     <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-      <div class="road-stat-card border-top" style="border-top: 3px solid #0284c7 !important;">
+      <a href="{% url 'platform_admin:road-list' %}" class="road-stat-card d-block text-decoration-none border-top {% if not tier and not node_type_filter or tier == 'all' %}shadow-sm{% endif %}" style="border-top: 3px solid #0284c7 !important;">
         <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Total Roads</p>
         <h3 class="mb-0 font-weight-700" style="color: #0284c7;">{{ total_roads_count }}</h3>
-        <small class="text-muted mt-1 d-block" style="font-size: 11px;">All Network Nodes</small>
-      </div>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">All Network Nodes &rarr;</small>
+      </a>
     </div>
     <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-      <a href="{% url 'platform_admin:road-list' %}?node_type=MAJOR_ROAD" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #0e7490 !important;">
+      <a href="{% url 'platform_admin:major-road-list' %}" class="road-stat-card d-block text-decoration-none border-top {% if tier == 'major' %}shadow-sm{% endif %}" style="border-top: 3px solid #0e7490 !important;">
         <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Major Roads</p>
         <h3 class="mb-0 font-weight-700" style="color: #0e7490;">{{ major_roads_count }}</h3>
-        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Primary Trunks (MR)</small>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Primary Trunks (MR) &rarr;</small>
       </a>
     </div>
     <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-      <a href="{% url 'platform_admin:road-list' %}?node_type=SUB_ROAD" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #3b82f6 !important;">
+      <a href="{% url 'platform_admin:sub-road-list' %}" class="road-stat-card d-block text-decoration-none border-top {% if tier == 'sub' %}shadow-sm{% endif %}" style="border-top: 3px solid #3b82f6 !important;">
         <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Sub Roads</p>
         <h3 class="mb-0 font-weight-700" style="color: #2563eb;">{{ sub_roads_count }}</h3>
-        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Connectors (SR)</small>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Connectors (SR) &rarr;</small>
       </a>
     </div>
     <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-      <a href="{% url 'platform_admin:road-list' %}?node_type=STREET" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #10b981 !important;">
+      <a href="{% url 'platform_admin:street-list' %}" class="road-stat-card d-block text-decoration-none border-top {% if tier == 'street' %}shadow-sm{% endif %}" style="border-top: 3px solid #10b981 !important;">
         <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Streets</p>
         <h3 class="mb-0 font-weight-700" style="color: #059669;">{{ streets_count }}</h3>
-        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Urban Streets (STR)</small>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Urban Streets (STR) &rarr;</small>
       </a>
     </div>
     <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-      <a href="{% url 'platform_admin:road-list' %}?node_type=CLOSE" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #f59e0b !important;">
+      <a href="{% url 'platform_admin:close-list' %}" class="road-stat-card d-block text-decoration-none border-top {% if tier == 'close' %}shadow-sm{% endif %}" style="border-top: 3px solid #f59e0b !important;">
         <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Closes / Crescents</p>
         <h3 class="mb-0 font-weight-700" style="color: #d97706;">{{ closes_count }}</h3>
-        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Terminal Nodes (CLS)</small>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Terminal Nodes (CLS) &rarr;</small>
       </a>
     </div>
     <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-      <a href="{% url 'platform_admin:clan-list' %}?view_mode=subclans" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #7c3aed !important;">
+      <a href="{% url 'platform_admin:subclan-list' %}" class="road-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #7c3aed !important;">
         <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Sub-Clans</p>
         <h3 class="mb-0 font-weight-700" style="color: #7c3aed;">{{ total_subclans_count }}</h3>
         <small class="text-muted mt-1 d-block" style="font-size: 11px;">Communities &rarr;</small>
@@ -241,24 +244,24 @@
       <!-- Type Tabs -->
       <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 8px;">
         <div class="d-flex flex-wrap align-items-center" style="gap: 6px;">
-          <a href="{% url 'platform_admin:road-list' %}{% if query %}?q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
-             class="road-type-tab-btn {% if not node_type_filter %}active{% endif %}">
+          <a href="{% url 'platform_admin:road-list' %}{% if query %}?q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if subclan_id %}&subclan={{ subclan_id }}{% endif %}" 
+             class="road-type-tab-btn {% if not tier and not node_type_filter or tier == 'all' %}active{% endif %}">
             All Roads ({{ total_roads_count }})
           </a>
-          <a href="{% url 'platform_admin:road-list' %}?node_type=MAJOR_ROAD{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
-             class="road-type-tab-btn {% if node_type_filter == 'MAJOR_ROAD' %}active tab-mr{% endif %}">
+          <a href="{% url 'platform_admin:major-road-list' %}{% if query %}?q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if subclan_id %}&subclan={{ subclan_id }}{% endif %}" 
+             class="road-type-tab-btn {% if tier == 'major' or node_type_filter == 'MAJOR_ROAD' %}active tab-mr{% endif %}">
             🛣️ Major Roads ({{ major_roads_count }})
           </a>
-          <a href="{% url 'platform_admin:road-list' %}?node_type=SUB_ROAD{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
-             class="road-type-tab-btn {% if node_type_filter == 'SUB_ROAD' %}active tab-sr{% endif %}">
+          <a href="{% url 'platform_admin:sub-road-list' %}{% if query %}?q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if subclan_id %}&subclan={{ subclan_id }}{% endif %}" 
+             class="road-type-tab-btn {% if tier == 'sub' or node_type_filter == 'SUB_ROAD' %}active tab-sr{% endif %}">
             🛣️ Sub Roads ({{ sub_roads_count }})
           </a>
-          <a href="{% url 'platform_admin:road-list' %}?node_type=STREET{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
-             class="road-type-tab-btn {% if node_type_filter == 'STREET' %}active tab-street{% endif %}">
+          <a href="{% url 'platform_admin:street-list' %}{% if query %}?q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if subclan_id %}&subclan={{ subclan_id }}{% endif %}" 
+             class="road-type-tab-btn {% if tier == 'street' or node_type_filter == 'STREET' %}active tab-street{% endif %}">
             🛣️ Streets ({{ streets_count }})
           </a>
-          <a href="{% url 'platform_admin:road-list' %}?node_type=CLOSE{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
-             class="road-type-tab-btn {% if node_type_filter == 'CLOSE' %}active tab-close{% endif %}">
+          <a href="{% url 'platform_admin:close-list' %}{% if query %}?q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if subclan_id %}&subclan={{ subclan_id }}{% endif %}" 
+             class="road-type-tab-btn {% if tier == 'close' or node_type_filter == 'CLOSE' %}active tab-close{% endif %}">
             🚪 Closes / Crescents ({{ closes_count }})
           </a>
         </div>
@@ -271,13 +274,13 @@
       </div>
 
       <!-- Advanced Filter Controls Form -->
-      <form method="get" action="{% url 'platform_admin:road-list' %}" id="roadFilterForm" class="d-flex flex-wrap align-items-center" style="gap: 8px;">
-        {% if node_type_filter %}
+      <form method="get" action="{{ request.path }}" id="roadFilterForm" class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+        {% if not tier and node_type_filter %}
           <input type="hidden" name="node_type" value="{{ node_type_filter }}">
         {% endif %}
 
         <!-- Keyword Search -->
-        <div class="input-group" style="width: 280px;">
+        <div class="input-group" style="width: 240px;">
           <input type="text" name="q" value="{{ query }}" class="form-control form-control-modern" placeholder="Search road, ID, clan, or state..." style="font-size: 13px;">
           <div class="input-group-append">
             <button class="btn btn-en-outline" type="submit" style="border-radius: 0 10px 10px 0; border-left: none;">
@@ -287,31 +290,53 @@
         </div>
 
         <!-- State Filter -->
-        <div style="min-width: 170px;">
-          <select name="state" class="form-control form-control-modern" onchange="this.form.submit()" style="font-size: 13px;">
-            <option value="">-- All States --</option>
+        <div style="min-width: 150px;">
+          <select name="state" id="filterRoadStateSelect" class="form-control form-control-modern" style="font-size: 13px;">
+            <option value="">🌐 All States</option>
             {% for st in all_states %}
-              <option value="{{ st.id }}" {% if state_id == st.id|stringformat:"s" %}selected{% endif %}>
+              <option value="{{ st.id }}" {% if selected_state and selected_state.id == st.id %}selected{% elif not selected_state and state_id == st.id|stringformat:"s" %}selected{% endif %}>
                 {{ st.name }}
               </option>
             {% endfor %}
           </select>
         </div>
 
-        <!-- Clan Filter -->
-        <div style="min-width: 200px;">
-          <select name="clan" class="form-control form-control-modern" onchange="this.form.submit()" style="font-size: 13px;">
-            <option value="">-- All Parent Clans --</option>
-            {% for cl in all_clans %}
-              <option value="{{ cl.id }}" {% if clan_id == cl.id|stringformat:"s" %}selected{% endif %}>
-                🏛️ {{ cl.name }}{% if cl.state %} ({{ cl.state.name }}){% endif %}
+        <!-- Clan Filter (with respect to State) -->
+        <div style="min-width: 180px;">
+          <select name="clan" id="filterRoadClanSelect" class="form-control form-control-modern" style="font-size: 13px;">
+            <option value="">
+              {% if selected_state %}🏛️ All Clans in {{ selected_state.name }}{% else %}🏛️ All Parent Clans{% endif %}
+            </option>
+            {% for cl in available_clans %}
+              <option value="{{ cl.id }}" data-state-id="{{ cl.state_id|default:'' }}" {% if selected_clan and selected_clan.id == cl.id %}selected{% elif not selected_clan and clan_id == cl.id|stringformat:"s" %}selected{% endif %}>
+                🏛️ {{ cl.name }}{% if not selected_state and cl.state %} ({{ cl.state.name }}){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Sub-Clan Filter (with respect to Parent Clan) -->
+        <div style="min-width: 190px;">
+          <select name="subclan" id="filterRoadSubclanSelect" class="form-control form-control-modern" style="font-size: 13px;">
+            <option value="">
+              {% if selected_clan %}
+                🏘️ All Sub-Clans in {{ selected_clan.name }}
+              {% elif selected_state %}
+                🏘️ All Sub-Clans in {{ selected_state.name }}
+              {% else %}
+                🏘️ -- Choose Clan first --
+              {% endif %}
+            </option>
+            {% for sc in available_subclans %}
+              <option value="{{ sc.id }}" data-clan-id="{{ sc.clan_id|default:'' }}" {% if selected_subclan and selected_subclan.id == sc.id %}selected{% elif not selected_subclan and subclan_id == sc.id|stringformat:"s" %}selected{% endif %}>
+                🏘️ {{ sc.name }}{% if not selected_clan and sc.clan %} ({{ sc.clan.name }}){% endif %}
               </option>
             {% endfor %}
           </select>
         </div>
 
         <!-- Road Surface Filter -->
-        <div style="min-width: 160px;">
+        <div style="min-width: 140px;">
           <select name="road_surface" class="form-control form-control-modern" onchange="this.form.submit()" style="font-size: 13px;">
             <option value="">-- Any Surface --</option>
             {% for val, label in road_surface_choices %}
@@ -321,7 +346,7 @@
         </div>
 
         <!-- Road Condition Filter -->
-        <div style="min-width: 160px;">
+        <div style="min-width: 140px;">
           <select name="road_condition" class="form-control form-control-modern" onchange="this.form.submit()" style="font-size: 13px;">
             <option value="">-- Any Condition --</option>
             {% for val, label in road_condition_choices %}
@@ -331,7 +356,7 @@
         </div>
 
         <!-- Alignment / Relation Filter -->
-        <div style="min-width: 180px;">
+        <div style="min-width: 150px;">
           <select name="road_relation" class="form-control form-control-modern" onchange="this.form.submit()" style="font-size: 13px;">
             <option value="">-- Any Alignment --</option>
             {% for val, label in road_relation_choices %}
@@ -340,8 +365,8 @@
           </select>
         </div>
 
-        {% if query or state_id or clan_id or node_type_filter or road_surface_filter or road_condition_filter or road_relation_filter %}
-          <a href="{% url 'platform_admin:road-list' %}" class="btn btn-link text-muted p-0 ml-1" style="font-size: 13px; text-decoration: underline;">
+        {% if query or state_id or clan_id or subclan_id or node_type_filter or road_surface_filter or road_condition_filter or road_relation_filter %}
+          <a href="{{ request.path }}" class="btn btn-link text-muted p-0 ml-1" style="font-size: 13px; text-decoration: underline;">
             Reset Filters
           </a>
         {% endif %}
@@ -511,6 +536,8 @@
                         data-clan-id="{{ rd.clan_id|default:'' }}"
                         data-toggle="modal" 
                         data-target="#editRoadModal"
+                        data-bs-toggle="modal" 
+                        data-bs-target="#editRoadModal"
                         title="Edit Road Details"
                         style="border-radius: 8px; padding: 4px 10px; font-size: 12px;">
                   ✏️ Edit
@@ -529,6 +556,8 @@
                         data-name="{{ rd.name }}"
                         data-toggle="modal" 
                         data-target="#deleteRoadModal"
+                        data-bs-toggle="modal" 
+                        data-bs-target="#deleteRoadModal"
                         title="Archive Road"
                         style="border-radius: 8px; padding: 4px 8px; font-size: 12px;">
                   🗑️
@@ -650,14 +679,25 @@
             <div class="col-md-6 mb-3">
               <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Parent Clan *</label>
               <select name="clan" id="roadModalClanSelect" class="form-control form-control-modern" required>
-                <option value="">-- Select State first --</option>
-                {% for cl in all_clans %}
-                  <option value="{{ cl.id }}" {% if selected_clan and selected_clan.id == cl.id %}selected{% endif %}>
-                    🏛️ {{ cl.name }}
+                <option value="">{% if selected_state %}-- Select Clan in {{ selected_state.name }} --{% else %}-- Select State first --{% endif %}</option>
+                {% for cl in available_clans %}
+                  <option value="{{ cl.id }}" data-node-id="{{ cl.node_id|default:'CLN' }}" data-state-id="{{ cl.state_id|default:'' }}" data-city-id="{{ cl.city_id|default:'' }}" {% if selected_clan and selected_clan.id == cl.id %}selected{% endif %}>
+                    🏛️ {{ cl.name }} [{{ cl.node_id|default:'CLN' }}]{% if cl.city %} - {{ cl.city.name }}{% endif %}
                   </option>
                 {% endfor %}
               </select>
             </div>
+          </div>
+
+          <!-- LGA / City tied to Road & Clan -->
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              Local Government Area (LGA) / City <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Tied to Road & Clan</span>
+            </label>
+            <select name="city" id="roadModalCitySelect" class="form-control form-control-modern">
+              <option value="">-- Select LGA / City (optional - auto-tied to Clan) --</option>
+            </select>
+            <small class="text-muted" style="font-size: 11px;">Selecting an LGA ties both this road and its parent Clan to the LGA.</small>
           </div>
 
           <!-- Major Road Territorial Scope & Alignment -->
@@ -872,17 +912,7 @@
 
 <script>
   $(document).ready(function () {
-    var rawSubClansData = [
-      {% for sc in all_subclans_for_parent %}
-      {
-        id: {{ sc.id }},
-        name: "{{ sc.name|escapejs }}",
-        node_id: "{{ sc.node_id|default:''|escapejs }}",
-        node_type: "{{ sc.node_type|default:''|escapejs }}",
-        clan_id: {{ sc.clan_id|default:'null' }}
-      }{% if not forloop.last %},{% endif %}
-      {% endfor %}
-    ];
+    var rawSubClansData = {{ raw_subclans_json|default:'[]'|safe }};
 
     // Node Type Configuration Map
     var roadTypeConfigs = {
@@ -947,15 +977,10 @@
 
       if (nodeType === 'MAJOR_ROAD') {
         $("#roadRelationGroup").show();
-        if (relation === 'CONTAINED_SUBCLAN' || relation === 'PASSING_SUBCLAN') {
-          $("#roadParentGroup").show();
-          $("#roadParentLabel").text("Parent Sub-Clan / Community *");
-          $("#roadParentHelpText").text("Major Road aligned with a Sub-Clan must connect to that community.");
-          $("#roadParentSelect").attr("required", "required");
-        } else {
-          $("#roadParentGroup").hide();
-          $("#roadParentSelect").removeAttr("required").val("");
-        }
+        $("#roadParentGroup").show();
+        $("#roadParentLabel").html("Parent Sub-Clan / Primary Connection <span class='badge badge-light text-muted font-weight-normal' style='font-size: 10px;'>Select Sub-Clan or Direct Clan Trunk</span>");
+        $("#roadParentHelpText").text("Select a Sub-Clan if this Major Road is inside a Sub-Clan, or choose Direct Trunk to connect directly to the Clan.");
+        $("#roadParentSelect").removeAttr("required");
       } else {
         $("#roadRelationGroup").hide();
         $("#roadParentGroup").show();
@@ -990,14 +1015,12 @@
       });
 
       if (nodeType === 'MAJOR_ROAD') {
-        if (relation === 'CONTAINED_SUBCLAN' || relation === 'PASSING_SUBCLAN') {
-          $select.append('<option value="">-- Select Sub-Clan / Community * --</option>');
-          filtered.filter(function(sc) {
-            return sc.node_type === 'SUB_CLAN' || sc.node_type === 'COMMUNITY';
-          }).forEach(function (sc) {
-            $select.append('<option value="' + sc.id + '">🏘️ ' + sc.name + ' (' + (sc.node_id || 'SB') + ')</option>');
-          });
-        }
+        $select.append('<option value="">-- Connected Directly to Clan (Primary Arterial Trunk) --</option>');
+        filtered.filter(function(sc) {
+          return sc.node_type === 'SUB_CLAN' || sc.node_type === 'COMMUNITY';
+        }).forEach(function (sc) {
+          $select.append('<option value="' + sc.id + '">🏘️ ' + sc.name + ' (' + (sc.node_id || 'SB') + ')</option>');
+        });
       } else if (nodeType === 'SUB_ROAD') {
         $select.append('<option value="">-- Select Parent Major Road * --</option>');
         filtered.filter(function (sc) {
@@ -1033,12 +1056,14 @@
       var url = $("#createRoadForm").attr("data-generate-node-id-url");
 
       if (clanId && nodeType && url) {
+        var relation = $("#roadRelationSelect").val();
         $.ajax({
           url: url,
           data: {
             'clan_id': clanId,
             'node_type': nodeType,
-            'parent_road_id': parentRoadId || ''
+            'parent_road_id': parentRoadId || '',
+            'road_relation': relation || 'CONTAINED_CLAN'
           },
           success: function (data) {
             if (data && data.node_id) {
@@ -1049,32 +1074,75 @@
       }
     }
 
-    // Cascade State -> Clan
+    // Cascade State -> Clan & LGA
     $("#roadModalStateSelect").change(function () {
       var stateId = $(this).val();
-      var url = $("#createRoadForm").attr("data-clans-url");
-      if (stateId && url) {
-        $.ajax({
-          url: url,
-          data: { 'state_id': stateId },
-          success: function (data) {
-            var $clanSelect = $("#roadModalClanSelect");
-            $clanSelect.empty().append('<option value="">-- Select Clan --</option>');
-            if (data.clans && data.clans.length > 0) {
-              data.clans.forEach(function (c) {
-                $clanSelect.append('<option value="' + c.id + '">🏛️ ' + c.name + '</option>');
-              });
-            } else {
-              $clanSelect.append('<option value="">No clans found in this state</option>');
+      var clansUrl = $("#createRoadForm").attr("data-clans-url");
+      var citiesUrl = $("#createRoadForm").attr("data-cities-url");
+
+      if (stateId) {
+        if (citiesUrl) {
+          $.ajax({
+            url: citiesUrl,
+            data: { 'state': stateId },
+            success: function(data) {
+              $("#roadModalCitySelect").html(data);
+              var opt = $("#roadModalClanSelect option:selected");
+              var cityId = opt.data("city-id");
+              if (cityId) {
+                $("#roadModalCitySelect").val(cityId);
+              }
             }
-            refreshParentRoadOptions();
-            refreshRoadNodeIdPreview();
-          }
-        });
+          });
+        }
+        if (clansUrl) {
+          $.ajax({
+            url: clansUrl,
+            data: { 'state_id': stateId },
+            success: function (data) {
+              var $clanSelect = $("#roadModalClanSelect");
+              $clanSelect.empty().append('<option value="">-- Select Clan --</option>');
+              if (data.clans && data.clans.length > 0) {
+                data.clans.forEach(function (c) {
+                  $clanSelect.append('<option value="' + c.id + '" data-node-id="' + c.node_id + '" data-state-id="' + (c.state_id || stateId) + '" data-city-id="' + (c.city_id || '') + '">🏛️ ' + c.name + ' [' + c.node_id + ']' + (c.city_name ? ' - ' + c.city_name : '') + '</option>');
+                });
+              } else {
+                $clanSelect.append('<option value="">No clans found in this state</option>');
+              }
+              refreshParentRoadOptions();
+              refreshRoadNodeIdPreview();
+            }
+          });
+        }
+      } else {
+        $("#roadModalCitySelect").html('<option value="">-- Select LGA / City (optional - auto-tied to Clan) --</option>');
       }
     });
 
     $("#roadModalClanSelect").change(function () {
+      var opt = $(this).find("option:selected");
+      var stateId = opt.data("state-id");
+      var cityId = opt.data("city-id");
+      if (stateId && !$("#roadModalStateSelect").val()) {
+        $("#roadModalStateSelect").val(stateId);
+      }
+      if (stateId) {
+        var citiesUrl = $("#createRoadForm").attr("data-cities-url");
+        if (citiesUrl) {
+          $.ajax({
+            url: citiesUrl,
+            data: { 'state': stateId },
+            success: function(data) {
+              $("#roadModalCitySelect").html(data);
+              if (cityId) {
+                $("#roadModalCitySelect").val(cityId);
+              }
+            }
+          });
+        }
+      } else if (cityId) {
+        $("#roadModalCitySelect").val(cityId);
+      }
       refreshParentRoadOptions();
       refreshRoadNodeIdPreview();
     });
@@ -1084,11 +1152,49 @@
     });
 
     $("#roadRelationSelect").change(function () {
-      updateRoadModalUI();
+      var rel = $(this).val();
+      var nodeType = $("#roadNodeTypeSelect").val();
+      if (nodeType === 'MAJOR_ROAD') {
+        if (rel === 'CONTAINED_CLAN' || rel === 'PASSING_CLAN') {
+          $("#roadParentSelect").val('');
+        }
+      }
+      refreshRoadNodeIdPreview();
     });
 
     $("#roadParentSelect").change(function () {
+      var nodeType = $("#roadNodeTypeSelect").val();
+      var parentVal = $(this).val();
+      if (nodeType === 'MAJOR_ROAD') {
+        if (parentVal) {
+          if ($("#roadRelationSelect").val() === 'CONTAINED_CLAN' || $("#roadRelationSelect").val() === 'PASSING_CLAN') {
+            $("#roadRelationSelect").val('CONTAINED_SUBCLAN');
+          }
+        } else {
+          if ($("#roadRelationSelect").val() === 'CONTAINED_SUBCLAN') {
+            $("#roadRelationSelect").val('CONTAINED_CLAN');
+          }
+        }
+      }
       refreshRoadNodeIdPreview();
+    });
+
+    // Filter Bar Dynamic Cascading & Submission
+    $('#filterRoadStateSelect').on('change', function() {
+      // Clear Clan and Sub-Clan when State changes so stale parameters are not sent
+      $('#filterRoadClanSelect').val('');
+      $('#filterRoadSubclanSelect').val('');
+      $('#roadFilterForm').submit();
+    });
+
+    $('#filterRoadClanSelect').on('change', function() {
+      // Clear Sub-Clan when Clan changes so stale subclan is not sent
+      $('#filterRoadSubclanSelect').val('');
+      $('#roadFilterForm').submit();
+    });
+
+    $('#filterRoadSubclanSelect').on('change', function() {
+      $('#roadFilterForm').submit();
     });
 
     // Populate Edit Modal
@@ -1102,7 +1208,8 @@
       var surface = $(this).data("surface");
       var condition = $(this).data("condition");
 
-      $("#editRoadForm").attr("action", "/platform-admin/subclans/" + id + "/edit/");
+      var editUrl = "{% url 'platform_admin:subclan-edit' pk=0 %}".replace("/0/", "/" + id + "/");
+      $("#editRoadForm").attr("action", editUrl);
       $("#editRoadNameInput").val(name);
       $("#editRoadNodeIdInput").val(nodeId);
       $("#editRoadNodeTypeSelect").val(nodeType);
@@ -1119,10 +1226,11 @@
     });
 
     // Populate Delete Modal
-    $(".js-delete-road-btn").click(function () {
+    $(document).on("click", ".js-delete-road-btn", function () {
       var id = $(this).data("id");
       var name = $(this).data("name");
-      $("#deleteRoadForm").attr("action", "/platform-admin/subclans/" + id + "/delete/");
+      var deleteUrl = "{% url 'platform_admin:subclan-delete' pk=0 %}".replace("/0/", "/" + id + "/");
+      $("#deleteRoadForm").attr("action", deleteUrl);
       $("#deleteRoadName").text(name);
     });
 

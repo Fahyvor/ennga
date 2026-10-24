@@ -17,8 +17,15 @@
     </div>
   </div>
   <div class="col-lg-2">
-    <p>{{ object.category }}</p>
-    <p>{{ object.sub_category }}</p>
+    <p class="mb-1 font-weight-600">{{ object.category }}</p>
+    {% if object.sub_category %}<p class="mb-2 text-muted" style="font-size: 12px;">{{ object.sub_category }}</p>{% endif %}
+    <form method="post" action="{% url 'platform_admin:market-sector-delete-data-view' pk=object.id %}" onsubmit="return confirm('Archive this record?');" style="margin: 0; display: inline;">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Record">
+        🗑️ Delete
+      </button>
+    </form>
   </div>
 </div>
 <hr>

@@ -33,9 +33,18 @@
             <small class="text-muted">{{ object.date_created|date:"M d, Y" }}</small>
           </td>
           <td class="text-right">
-            <a href="{{ object.get_absolute_url }}" class="btn btn-en-outline btn-en-sm font-weight-600">
-              View &rarr;
-            </a>
+            <div class="d-inline-flex align-items-center" style="gap: 4px;">
+              <a href="{{ object.get_absolute_url }}" class="btn btn-en-outline btn-en-sm font-weight-600">
+                View &rarr;
+              </a>
+              <form method="post" action="{% url 'platform_admin:historical-delete-data-view' pk=object.id %}" onsubmit="return confirm('Archive this record?');" style="margin: 0; display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Record">
+                  🗑️
+                </button>
+              </form>
+            </div>
           </td>
         </tr>
         {% endfor %}

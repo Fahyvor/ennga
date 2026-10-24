@@ -257,11 +257,11 @@
           </button>
         {% endif %}
 
-        {% if is_admin %}
+        {% if is_admin or can_manage %}
           <form method="post" action="{% url 'platform_admin:clan-delete' pk=clan.id %}" onsubmit="return confirm('Are you sure you want to archive/delete {{ clan.name }} Clan?');" style="display: inline; margin: 0;">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-danger btn-en-sm font-weight-600" style="border-radius: 10px;" title="Archive Clan">
-              Archive Clan
+              🗑️ Delete Clan
             </button>
           </form>
         {% endif %}
@@ -498,9 +498,13 @@
                       {% endif %}
                     {% endwith %}
                   </td>
-                  {% if can_manage %}
+                  {% if is_admin or can_manage %}
                   <td class="text-right">
-                    <div class="d-inline-flex align-items-center" style="gap: 6px;">
+                      {% if sc.node_type == 'SUB_CLAN' or sc.node_type == 'COMMUNITY' %}
+                        <button type="button" class="btn btn-en-cyan btn-en-sm py-1 px-2 js-add-road-for-subclan text-nowrap" data-subclan-id="{{ sc.id }}" data-subclan-name="{{ sc.name }}" data-subclan-node-id="{{ sc.display_node_id }}" title="Add Major Road in this Sub-Clan" style="font-weight: 600;">
+                          + Major Road
+                        </button>
+                      {% endif %}
                       <button type="button" class="btn btn-en-outline btn-en-sm py-1 px-2 js-add-infra-for-subclan text-nowrap" data-subclan-id="{{ sc.id }}" data-subclan-name="{{ sc.name }}" title="Add Infrastructure on this Road">
                         + Infra
                       </button>
@@ -658,8 +662,13 @@
                 {% endwith %}
 
                 <!-- Mobile Action Buttons -->
-                {% if can_manage %}
+                {% if is_admin or can_manage %}
                   <div class="d-flex align-items-center" style="gap: 8px;">
+                    {% if sc.node_type == 'SUB_CLAN' or sc.node_type == 'COMMUNITY' %}
+                      <button type="button" class="btn btn-en-cyan btn-en-sm flex-fill py-2 js-add-road-for-subclan font-weight-600" data-subclan-id="{{ sc.id }}" data-subclan-name="{{ sc.name }}" data-subclan-node-id="{{ sc.display_node_id }}" style="font-size: 12px; white-space: nowrap;">
+                        + Major Road
+                      </button>
+                    {% endif %}
                     <button type="button" class="btn btn-en-outline btn-en-sm flex-fill py-2 js-add-infra-for-subclan font-weight-600" data-subclan-id="{{ sc.id }}" data-subclan-name="{{ sc.name }}" style="font-size: 12px; white-space: nowrap;">
                       + Infra
                     </button>
@@ -1238,9 +1247,20 @@
                           </a>
                           <div class="text-muted" style="font-size: 12px;">Added on {{ h.date_created|date:"M d, Y" }} &bull; By {{ h.user.user.username|default:"Admin" }}</div>
                         </div>
-                        <a href="{% url 'platform_admin:historical-detail-view' pk=h.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2 text-nowrap">
-                          View / Edit &rarr;
-                        </a>
+                        <div class="d-inline-flex align-items-center" style="gap: 6px;">
+                          <a href="{% url 'platform_admin:historical-detail-view' pk=h.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2 text-nowrap">
+                            View / Edit &rarr;
+                          </a>
+                          {% if is_admin or can_manage %}
+                            <form method="post" action="{% url 'platform_admin:historical-delete-data-view' pk=h.id %}" onsubmit="return confirm('Archive this Historical record?');" style="margin: 0; display: inline;">
+                              {% csrf_token %}
+                              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                              <button type="submit" class="btn btn-outline-danger btn-en-sm py-1 px-2 text-nowrap" title="Delete Historical Record">
+                                🗑️
+                              </button>
+                            </form>
+                          {% endif %}
+                        </div>
                       </div>
                     {% endfor %}
                   </div>
@@ -1261,9 +1281,20 @@
                           </a>
                           <div class="text-muted" style="font-size: 12px;">Added on {{ m.date_created|date:"M d, Y" }}</div>
                         </div>
-                        <a href="{% url 'platform_admin:market-sector-detail-view' pk=m.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2 text-nowrap">
-                          View / Edit &rarr;
-                        </a>
+                        <div class="d-inline-flex align-items-center" style="gap: 6px;">
+                          <a href="{% url 'platform_admin:market-sector-detail-view' pk=m.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2 text-nowrap">
+                            View / Edit &rarr;
+                          </a>
+                          {% if is_admin or can_manage %}
+                            <form method="post" action="{% url 'platform_admin:market-sector-delete-data-view' pk=m.id %}" onsubmit="return confirm('Archive this Market Sector record?');" style="margin: 0; display: inline;">
+                              {% csrf_token %}
+                              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                              <button type="submit" class="btn btn-outline-danger btn-en-sm py-1 px-2 text-nowrap" title="Delete Market Record">
+                                🗑️
+                              </button>
+                            </form>
+                          {% endif %}
+                        </div>
                       </div>
                     {% endfor %}
                   </div>
@@ -1284,9 +1315,20 @@
                           </a>
                           <div class="text-muted" style="font-size: 12px;">Added on {{ g.date_created|date:"M d, Y" }}</div>
                         </div>
-                        <a href="{% url 'platform_admin:geo-physical-detail-view' pk=g.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2 text-nowrap">
-                          View / Edit &rarr;
-                        </a>
+                        <div class="d-inline-flex align-items-center" style="gap: 6px;">
+                          <a href="{% url 'platform_admin:geo-physical-detail-view' pk=g.id %}" class="btn btn-en-outline btn-en-sm py-1 px-2 text-nowrap">
+                            View / Edit &rarr;
+                          </a>
+                          {% if is_admin or can_manage %}
+                            <form method="post" action="{% url 'platform_admin:geo-physical-delete-data-view' pk=g.id %}" onsubmit="return confirm('Archive this Geo-Physical record?');" style="margin: 0; display: inline;">
+                              {% csrf_token %}
+                              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                              <button type="submit" class="btn btn-outline-danger btn-en-sm py-1 px-2 text-nowrap" title="Delete Geo Record">
+                                🗑️
+                              </button>
+                            </form>
+                          {% endif %}
+                        </div>
                       </div>
                     {% endfor %}
                   </div>
@@ -1513,7 +1555,7 @@
               <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Node Type (PRD) *</label>
               <select name="node_type" id="detailSubclanTypeSelect" class="form-control form-control-modern" required>
                 {% for val, label in node_type_choices %}
-                  <option value="{{ val }}" {% if val == 'MAJOR_ROAD' %}selected{% endif %}>{{ label }}</option>
+                  <option value="{{ val }}" {% if val == 'SUB_CLAN' %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -1525,6 +1567,24 @@
               <small class="text-muted" style="font-size: 11px;">Automatically generated sequentially as an addition to existing nodes.</small>
             </div>
           </div>
+
+          <!-- LGA / City tied to Sub-Clan & Clan -->
+          {% if clan.city %}
+            <div class="form-group mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Local Government Area (LGA) / City</label>
+              <input type="text" class="form-control form-control-modern" value="{{ clan.city.name }} (inherited from {{ clan.name }})" readonly style="background: #f8fafc; color: #334155;">
+              <input type="hidden" name="city" value="{{ clan.city.id }}">
+            </div>
+          {% else %}
+            <div class="form-group mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+                Local Government Area (LGA) / City <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Will be tied to {{ clan.name }} & Node</span>
+              </label>
+              <select name="city" id="detailSubclanCitySelect" class="form-control form-control-modern">
+                <option value="">-- Select LGA / City (optional - ties Clan to LGA) --</option>
+              </select>
+            </div>
+          {% endif %}
 
           <div class="form-group mb-3">
             <label class="font-weight-600 mb-1" id="detailSubclanNameLabel" style="font-size: 13px; color: var(--brand-dark);">Road / Node Name *</label>
@@ -1862,25 +1922,36 @@
         $('#detailMajorRoadRelationGroup').show();
         $('#detailSubclanNameLabel').text('Major Road Name *');
         $('#detailSubclanNameInput').attr('placeholder', 'e.g. East-West Major Road, Aba-Port Harcourt Expressway');
+        $('#detailSubclanParentRoadLabel').html('Parent Sub-Clan / Primary Connection <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Select Sub-Clan or Direct Clan Trunk</span>');
+        $('#detailSubclanParentRoadHelp').text('Select a Sub-Clan if this Major Road is inside a Sub-Clan, or leave as Direct Trunk to connect directly to {{ clan.name }}.');
       } else if (nodeType === 'SUB_CLAN' || nodeType === 'COMMUNITY') {
         $('#detailMajorRoadRelationGroup').hide();
         $('#detailSubclanNameLabel').text('Sub-Clan / Community Name *');
         $('#detailSubclanNameInput').attr('placeholder', 'e.g. Rumueme Community, Obio Sub-Clan');
+        $('#detailSubclanParentRoadLabel').text('Parent Connection');
+        $('#detailSubclanParentRoadHelp').text('Sub-clans belong directly to {{ clan.name }}.');
       } else if (nodeType === 'SUB_ROAD') {
         $('#detailMajorRoadRelationGroup').hide();
         $('#detailSubclanNameLabel').text('Sub Road Name *');
         $('#detailSubclanNameInput').attr('placeholder', 'e.g. Chief Wike Link Road, Market Bypass Road');
+        $('#detailSubclanParentRoadLabel').text('Parent Major Road *');
+        $('#detailSubclanParentRoadHelp').text('Sub Roads connect into a Major Road.');
       } else if (nodeType === 'STREET') {
         $('#detailMajorRoadRelationGroup').hide();
         $('#detailSubclanNameLabel').text('Street Name *');
         $('#detailSubclanNameInput').attr('placeholder', 'e.g. Chikwe Orlu Street, Commercial Avenue');
+        $('#detailSubclanParentRoadLabel').text('Parent Sub Road *');
+        $('#detailSubclanParentRoadHelp').text('Streets connect into a Sub Road or Major Road.');
       } else if (nodeType === 'CLOSE') {
         $('#detailMajorRoadRelationGroup').hide();
         $('#detailSubclanNameLabel').text('Close / Crescent Name *');
         $('#detailSubclanNameInput').attr('placeholder', 'e.g. Close 2, Sunrise Crescent');
+        $('#detailSubclanParentRoadLabel').text('Parent Street *');
+        $('#detailSubclanParentRoadHelp').text('Closes connect into a Street.');
       } else {
         $('#detailMajorRoadRelationGroup').hide();
         $('#detailSubclanNameLabel').text('Territorial Node Name *');
+        $('#detailSubclanParentRoadLabel').text('Parent Road / Primary Connection');
       }
 
       $('#detailSubclanParentRoadSelect option').each(function() {
@@ -1888,11 +1959,7 @@
         var optType = $(this).data('node-type');
         if (!optVal) {
           if (nodeType === 'MAJOR_ROAD') {
-            if (roadRelation === 'CONTAINED_SUBCLAN' || roadRelation === 'PASSING_SUBCLAN') {
-              $(this).text('-- Select Parent Sub-Clan below --');
-            } else {
-              $(this).text('-- Connected Directly to {{ clan.name }} [{{ clan.display_node_id }}] (Primary Trunk) --');
-            }
+            $(this).text('-- Connected Directly to {{ clan.name }} [{{ clan.display_node_id }}] (Primary Trunk) --');
           } else if (nodeType === 'SUB_CLAN') {
             $(this).text('-- Belongs directly to {{ clan.name }} --');
           } else if (nodeType === 'SUB_ROAD') {
@@ -1913,12 +1980,9 @@
         // STREET: connects to Sub Road (or Major Road)
         // CLOSE: connects to Street
         if (nodeType === 'MAJOR_ROAD') {
-          if (roadRelation === 'CONTAINED_SUBCLAN' || roadRelation === 'PASSING_SUBCLAN') {
-            if (optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
-              $(this).show();
-            } else {
-              $(this).hide();
-            }
+          // Major roads can belong directly to Clan or to any Sub-Clan!
+          if (optType === 'SUB_CLAN' || optType === 'COMMUNITY') {
+            $(this).show();
           } else {
             $(this).hide();
           }
@@ -1956,10 +2020,65 @@
     }
 
     $('#detailSubclanTypeSelect').on('change', filterDetailParentRoads);
-    $('#detailSubclanRoadRelationSelect').on('change', filterDetailParentRoads);
-    $('#detailSubclanParentRoadSelect').on('change', updateDetailNodeId);
+    $('#detailSubclanRoadRelationSelect').on('change', function() {
+      var rel = $(this).val();
+      var nodeType = $('#detailSubclanTypeSelect').val() || 'MAJOR_ROAD';
+      if (nodeType === 'MAJOR_ROAD') {
+        if (rel === 'CONTAINED_CLAN' || rel === 'PASSING_CLAN') {
+          var selType = $('#detailSubclanParentRoadSelect option:selected').data('node-type');
+          if (selType === 'SUB_CLAN' || selType === 'COMMUNITY') {
+            $('#detailSubclanParentRoadSelect').val('');
+          }
+        }
+      }
+      updateDetailNodeId();
+    });
+    $('#detailSubclanParentRoadSelect').on('change', function() {
+      var nodeType = $('#detailSubclanTypeSelect').val() || 'MAJOR_ROAD';
+      var selectedVal = $(this).val();
+      var selectedType = $(this).find('option:selected').data('node-type');
+
+      if (nodeType === 'MAJOR_ROAD') {
+        if (selectedVal && (selectedType === 'SUB_CLAN' || selectedType === 'COMMUNITY')) {
+          if ($('#detailSubclanRoadRelationSelect').val() === 'CONTAINED_CLAN' || $('#detailSubclanRoadRelationSelect').val() === 'PASSING_CLAN') {
+            $('#detailSubclanRoadRelationSelect').val('CONTAINED_SUBCLAN');
+          }
+        } else if (!selectedVal) {
+          if ($('#detailSubclanRoadRelationSelect').val() === 'CONTAINED_SUBCLAN') {
+            $('#detailSubclanRoadRelationSelect').val('CONTAINED_CLAN');
+          }
+        }
+      }
+      updateDetailNodeId();
+    });
+
+    $(document).on('click', '.js-add-road-for-subclan', function(e) {
+      e.preventDefault();
+      var scId = $(this).data('subclan-id');
+      var scName = $(this).data('subclan-name');
+
+      $('#detailSubclanTypeSelect').val('MAJOR_ROAD');
+      $('#detailSubclanRoadRelationSelect').val('CONTAINED_SUBCLAN');
+      filterDetailParentRoads();
+      $('#detailSubclanParentRoadSelect').val(scId);
+      $('#detailSubclanNameInput').val('').attr('placeholder', 'e.g. Major Road in ' + scName).focus();
+      updateDetailNodeId();
+      $('#addSubClanModal').modal('show');
+    });
     $('#addSubClanModal').on('shown.bs.modal', function() {
       filterDetailParentRoads();
+      if ($('#detailSubclanCitySelect').length && !$('#detailSubclanCitySelect option[value!=""]').length) {
+        var clanStateId = '{{ clan.state.id|default:"" }}';
+        if (clanStateId) {
+          $.ajax({
+            url: '{% url "utility:ajax-load-cities" %}',
+            data: { 'state': clanStateId },
+            success: function(data) {
+              $('#detailSubclanCitySelect').html(data);
+            }
+          });
+        }
+      }
     });
 
     // 5. Dynamic City AJAX loading for Edit Clan + Auto-set Geopolitical Zone

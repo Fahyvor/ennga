@@ -135,7 +135,7 @@ class SubClanForm(forms.ModelForm):
     node_type = forms.ChoiceField(
         label='Territorial Node Type (PRD)',
         choices=NODE_TYPE_CHOICES,
-        initial='MAJOR_ROAD',
+        initial='SUB_CLAN',
         widget=forms.Select(attrs={
             'class': 'form-control form-control-modern',
             'id': 'id_subclan_node_type'

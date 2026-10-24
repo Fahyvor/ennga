@@ -11,9 +11,22 @@ def load_states(request):
                         
 
 def load_cities(request):
-    state_id = request.GET.get('state')
-    state = State.objects.filter(id=state_id).first() if state_id else None
-    cities = City.my_objects.filter(state_id=state_id).order_by('name') if state_id else City.objects.none()
+    state_id = request.GET.get('state') or request.GET.get('state_id')
+    clan_id = request.GET.get('clan') or request.GET.get('clan_id')
+    state = None
+    if state_id:
+        try:
+            state = State.objects.filter(id=int(state_id)).first()
+        except (ValueError, TypeError):
+            state = State.objects.filter(name__iexact=str(state_id).strip()).first()
+    elif clan_id:
+        try:
+            clan = Clan.objects.filter(id=int(clan_id)).first()
+            if clan:
+                state = clan.state or (clan.city.state if clan.city else None)
+        except (ValueError, TypeError):
+            pass
+    cities = City.my_objects.filter(state=state).order_by('name') if state else City.objects.none()
     return render(request, 'utility/city_dropdown_list_options.html', {'cities': cities, 'state': state})
 
 
@@ -26,7 +39,12 @@ def load_clans(request):
     if city_id:
         clans = Clan.my_objects.filter(city_id=city_id).order_by('name')
     elif state_id:
-        clans = Clan.my_objects.filter(Q(state_id=state_id) | Q(city__state_id=state_id)).distinct().order_by('name')
+        from utility.territory_codes import resolve_state
+        st_obj = resolve_state(state_id)
+        if st_obj:
+            clans = Clan.my_objects.filter(Q(state_id=st_obj.id) | Q(city__state_id=st_obj.id)).distinct().order_by('name')
+        else:
+            clans = Clan.my_objects.none()
     else:
         clans = Clan.my_objects.all().order_by('name')
     return render(request, 'utility/clan_dropdown_list_options.html', {'clans': clans})

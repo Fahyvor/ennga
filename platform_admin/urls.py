@@ -17,6 +17,7 @@ from .views_clan_access import (
 )
 from .views_clans import (
     clan_list_view,
+    subclan_list_view,
     road_list_view,
     clan_detail_view,
     clan_create_view,
@@ -91,9 +92,14 @@ urlpatterns = [
     path('api/generate-clan-node-id/', api_generate_clan_node_id_view, name='api-generate-clan-node-id'),
     path('api/state-details/', api_state_details_view, name='api-state-details'),
 
-    # Clans & Roads Directory & Management
+    # Clans, Sub-Clans & Roads Directory & Management
     path('clans/', clan_list_view, name='clan-list'),
+    path('subclans/', subclan_list_view, name='subclan-list'),
     path('roads/', road_list_view, name='road-list'),
+    path('roads/major/', road_list_view, {'tier': 'major'}, name='major-road-list'),
+    path('roads/sub-roads/', road_list_view, {'tier': 'sub'}, name='sub-road-list'),
+    path('roads/streets/', road_list_view, {'tier': 'street'}, name='street-list'),
+    path('roads/closes/', road_list_view, {'tier': 'close'}, name='close-list'),
     path('clans/create/', clan_create_view, name='clan-create'),
     path('clans/<int:pk>/', clan_detail_view, name='clan-detail'),
     path('clans/<int:pk>/edit/', clan_edit_view, name='clan-edit'),

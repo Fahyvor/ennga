@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, reverse
+from django.shortcuts import render, redirect, reverse, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from accounts.models import Account, Profile
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
@@ -85,21 +85,24 @@ def market_sector_detail_view(request, pk):
 
 @login_required
 def market_sector_delete_data(request, pk):
-    market_sector_object = MarketSector.my_objects.get(id=pk)
+    market_sector_object = get_object_or_404(MarketSector, id=pk)
     form = MarketSectorDeleteDataForm(request.POST or None, request.FILES or None, instance=market_sector_object)
 
-        
     if request.method == 'POST':
         form = MarketSectorDeleteDataForm(request.POST or None, request.FILES or None, instance=market_sector_object)
         if form.is_valid():
             market_sector_object.is_deleted = True
-            form.save()
+            market_sector_object.save(update_fields=['is_deleted'])
+            messages.info(request, "Market Sector record has been archived.")
+            next_url = request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
             return redirect("platform_admin:market-sector-data-list-view")
-            print("COMPLETED!!!")
     else:
         form = MarketSectorDeleteDataForm(request.POST or None, request.FILES or None, instance=market_sector_object)
     context = {
-        "form": form
+        "form": form,
+        "object": market_sector_object,
     }
     return render(request, 'platform_admin/market_sector/market-sector-delete.html', context)
 

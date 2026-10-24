@@ -10,6 +10,7 @@ from utility.models import (
     Clan, SubClan, State, City, GeoPoliticalZone,
     NODE_TYPE_CHOICES, ROAD_RELATION_CHOICES, ROAD_SURFACE_CHOICES, ROAD_CONDITION_CHOICES
 )
+from utility.territory_codes import resolve_state
 from platform_admin.forms_clan import ClanForm, SubClanForm
 
 
@@ -259,11 +260,11 @@ def api_load_clans_for_state_view(request):
         except (ValueError, TypeError):
             pass
     elif state_id:
-        try:
-            st_int = int(state_id)
-            clans_qs = clans_qs.filter(Q(state_id=st_int) | Q(city__state_id=st_int))
-        except (ValueError, TypeError):
-            pass
+        st_obj = resolve_state(state_id)
+        if st_obj:
+            clans_qs = clans_qs.filter(Q(state_id=st_obj.id) | Q(city__state_id=st_obj.id))
+        else:
+            clans_qs = clans_qs.none()
 
     if query:
         clans_qs = clans_qs.filter(
@@ -272,7 +273,7 @@ def api_load_clans_for_state_view(request):
             Q(node_id__icontains=query)
         )
 
-    clans = clans_qs.select_related('state', 'city').order_by('name')[:100]
+    clans = clans_qs.select_related('state', 'city').order_by('name')[:1000]
     data = [{
         'id': c.id,
         'name': c.name,
@@ -290,13 +291,32 @@ def api_load_clans_for_state_view(request):
 @login_required
 def api_load_subclans_for_clan_view(request):
     clan_id = request.GET.get('clan_id')
-    if not clan_id:
+    state_id = request.GET.get('state_id') or request.GET.get('state')
+    only_pure_subclans = request.GET.get('only_subclans') == 'true'
+
+    subclans_qs = SubClan.objects.filter(is_deleted=False)
+    if clan_id:
+        subclans_qs = subclans_qs.filter(clan_id=clan_id)
+    elif state_id:
+        st_obj = resolve_state(state_id)
+        if st_obj:
+            subclans_qs = subclans_qs.filter(
+                Q(state_id=st_obj.id) | Q(clan__state_id=st_obj.id) | Q(city__state_id=st_obj.id)
+            )
+        else:
+            return JsonResponse({'subclans': []})
+    else:
         return JsonResponse({'subclans': []})
 
-    subclans = SubClan.objects.filter(clan_id=clan_id, is_deleted=False).select_related('parent_road').order_by('name')
+    if only_pure_subclans:
+        subclans_qs = subclans_qs.filter(node_type__in=['SUB_CLAN', 'COMMUNITY'])
+
+    subclans = subclans_qs.select_related('parent_road', 'clan').order_by('name')[:500]
     data = [{
         'id': sc.id,
         'name': sc.name,
+        'clan_id': sc.clan_id,
+        'clan_name': sc.clan.name if sc.clan else '',
         'node_id': sc.display_node_id,
         'node_type': sc.node_type,
         'node_type_display': sc.get_node_type_display() if hasattr(sc, 'get_node_type_display') else sc.node_type,
@@ -324,12 +344,16 @@ def api_generate_node_id_view(request):
     parent_road_id = request.GET.get('parent_road_id') or request.GET.get('parent_road')
     road_relation = request.GET.get('road_relation', 'CONTAINED_CLAN').strip() or 'CONTAINED_CLAN'
 
+    parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
+
     if node_type in ('SUB_CLAN', 'COMMUNITY'):
         parent_road = None
-    elif node_type in ('MAJOR_ROAD', 'META_ROAD') and road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
-        parent_road = None
-    else:
-        parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
+    elif node_type in ('MAJOR_ROAD', 'META_ROAD'):
+        if parent_road and parent_road.node_type in ('SUB_CLAN', 'COMMUNITY'):
+            if road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
+                road_relation = 'CONTAINED_SUBCLAN'
+        elif road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
+            parent_road = None
 
     clan = Clan.objects.filter(id=clan_id, is_deleted=False).first() if clan_id else (parent_road.clan if parent_road else None)
 
@@ -362,7 +386,7 @@ def api_generate_clan_node_id_view(request):
     city_id = request.GET.get('city_id') or request.GET.get('city')
     clan_name = request.GET.get('name', 'Clan')
 
-    state = State.objects.filter(id=state_id, is_deleted=False).first() if state_id else None
+    state = resolve_state(state_id) if state_id else None
     city = City.objects.filter(id=city_id, is_deleted=False).first() if city_id else None
 
     if city and not state and city.state:
@@ -395,7 +419,7 @@ def api_state_details_view(request):
     if not state_id:
         return JsonResponse({'status': 'error', 'message': 'Missing state_id'}, status=400)
 
-    state = State.objects.filter(id=state_id, is_deleted=False).select_related('geo_political_zone').first()
+    state = resolve_state(state_id)
     if not state:
         return JsonResponse({'status': 'error', 'message': 'State not found'}, status=404)
 

@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, reverse
+from django.shortcuts import render, redirect, reverse, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from accounts.models import Account, Profile
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
@@ -96,21 +96,24 @@ def historical_detail_view(request, pk):
 
 @login_required
 def historical_delete_data(request, pk):
-    historical_object = Historical.my_objects.get(id=pk)
+    historical_object = get_object_or_404(Historical, id=pk)
     form = HistoricalDeleteDataForm(request.POST or None, request.FILES or None, instance=historical_object)
 
-        
     if request.method == 'POST':
         form = HistoricalDeleteDataForm(request.POST or None, request.FILES or None, instance=historical_object)
         if form.is_valid():
             historical_object.is_deleted = True
-            form.save()
+            historical_object.save(update_fields=['is_deleted'])
+            messages.info(request, "Historical record has been archived.")
+            next_url = request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
             return redirect("platform_admin:historical-data-list-view")
-            print("COMPLETED!!!")
     else:
         form = HistoricalDeleteDataForm(request.POST or None, request.FILES or None, instance=historical_object)
     context = {
-        "form": form
+        "form": form,
+        "object": historical_object,
     }
     return render(request, 'platform_admin/historical/historical-delete.html', context)
 

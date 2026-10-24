@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -15,6 +16,7 @@ from utility.models import (
     TerritorialInfrastructure
 )
 from platform_admin.models import Historical, MarketSector, GeoPhysicalData
+from utility.territory_codes import resolve_state
 from .forms_clan import ClanForm, SubClanForm, TerritorialInfrastructureForm
 
 
@@ -64,6 +66,9 @@ def invalidate_clan_caches():
     cache.delete_many([
         'kpi_total_clans',
         'kpi_total_subclans',
+        'kpi_total_pure_subclans',
+        'kpi_subclan_type_count',
+        'kpi_community_type_count',
         'kpi_total_roads',
         'kpi_major_roads_count',
         'kpi_sub_roads_count',
@@ -139,19 +144,15 @@ def clan_list_view(request):
     # Filter by State
     selected_state = None
     if state_id:
-        try:
-            state_id_int = int(state_id)
-            selected_state = State.objects.filter(id=state_id_int, is_deleted=False).first()
-            clans_qs = clans_qs.filter(Q(state_id=state_id_int) | Q(city__state_id=state_id_int)).distinct()
+        selected_state = resolve_state(state_id)
+        if selected_state:
+            clans_qs = clans_qs.filter(Q(state_id=selected_state.id) | Q(city__state_id=selected_state.id)).distinct()
             subclans_qs = subclans_qs.filter(
-                Q(state_id=state_id_int) | Q(city__state_id=state_id_int) | Q(clan__state_id=state_id_int)
+                Q(state_id=selected_state.id) | Q(city__state_id=selected_state.id) | Q(clan__state_id=selected_state.id)
             ).distinct()
-        except (ValueError, TypeError):
-            selected_state = State.objects.filter(name__iexact=state_id, is_deleted=False).first()
-            clans_qs = clans_qs.filter(Q(state__name__iexact=state_id) | Q(city__state__name__iexact=state_id)).distinct()
-            subclans_qs = subclans_qs.filter(
-                Q(state__name__iexact=state_id) | Q(city__state__name__iexact=state_id) | Q(clan__state__name__iexact=state_id)
-            ).distinct()
+        else:
+            clans_qs = clans_qs.none()
+            subclans_qs = subclans_qs.none()
 
     # Filter by node_type for Sub-Clans
     if node_type_filter:
@@ -159,19 +160,27 @@ def clan_list_view(request):
 
     # Search Filter
     if query:
+        st_match = resolve_state(query)
+        if st_match:
+            state_search_q = Q(state_id=st_match.id) | Q(city__state_id=st_match.id)
+            subclan_state_q = Q(state_id=st_match.id) | Q(city__state_id=st_match.id) | Q(clan__state_id=st_match.id)
+        else:
+            state_search_q = Q(state__name__iexact=query)
+            subclan_state_q = Q(state__name__iexact=query)
+
         clans_qs = clans_qs.filter(
             Q(name__icontains=query) |
             Q(code__icontains=query) |
             Q(node_id__icontains=query) |
             Q(city__name__icontains=query) |
-            Q(state__name__icontains=query) |
             Q(geo_political_zone__name__icontains=query) |
             Q(subclan__name__icontains=query) |
             Q(subclan__node_id__icontains=query) |
             Q(managers__user__first_name__icontains=query) |
             Q(managers__user__last_name__icontains=query) |
             Q(managers__user__username__icontains=query) |
-            Q(managers__user__email__icontains=query)
+            Q(managers__user__email__icontains=query) |
+            state_search_q
         ).distinct()
 
         subclans_qs = subclans_qs.filter(
@@ -179,9 +188,9 @@ def clan_list_view(request):
             Q(node_id__icontains=query) |
             Q(clan__name__icontains=query) |
             Q(city__name__icontains=query) |
-            Q(state__name__icontains=query) |
             Q(managers__user__username__icontains=query) |
-            Q(managers__user__email__icontains=query)
+            Q(managers__user__email__icontains=query) |
+            subclan_state_q
         ).distinct()
 
     # Filtered counts & smart paginator count bypass
@@ -282,10 +291,217 @@ def clan_list_view(request):
 
 
 @login_required
-def road_list_view(request):
+def subclan_list_view(request):
+    """
+    Dedicated Directory & listing of all Sub-Clans & Communities
+    with search, state filtering, clan filtering, and pagination.
+    """
+    query = request.GET.get('q', '').strip()
+    state_id = request.GET.get('state', '').strip()
+    city_id = request.GET.get('city', '').strip() or request.GET.get('lga', '').strip()
+    clan_id = request.GET.get('clan', '').strip()
+    node_type_filter = request.GET.get('node_type', '').strip()
+    page = request.GET.get('page', 1)
+
+    user_profile = getattr(request.user, 'account_profile', None)
+    admin_user = is_platform_admin(request.user)
+
+    SUBCLAN_NODE_TYPES = ['SUB_CLAN', 'COMMUNITY']
+
+    # Base query for Sub-Clans & Communities
+    subclans_qs = SubClan.objects.filter(
+        is_deleted=False
+    ).select_related(
+        'clan__city', 'clan__state', 'city__state', 'state', 'geo_political_zone'
+    ).prefetch_related(
+        'managers__user', 'infrastructures', 'connected_streets'
+    ).annotate(
+        roads_count=Count('connected_streets', filter=Q(connected_streets__is_deleted=False), distinct=True),
+        infra_count=Count('infrastructures', filter=Q(infrastructures__is_deleted=False), distinct=True)
+    )
+
+    total_subclans_count = cache.get_or_set(
+        'kpi_total_pure_subclans',
+        lambda: SubClan.objects.filter(node_type__in=SUBCLAN_NODE_TYPES, is_deleted=False).count(),
+        300
+    )
+    subclan_type_count = cache.get_or_set(
+        'kpi_subclan_type_count',
+        lambda: SubClan.objects.filter(node_type='SUB_CLAN', is_deleted=False).count(),
+        300
+    )
+    community_type_count = cache.get_or_set(
+        'kpi_community_type_count',
+        lambda: SubClan.objects.filter(node_type='COMMUNITY', is_deleted=False).count(),
+        300
+    )
+    all_nodes_count = cache.get_or_set(
+        'kpi_total_all_nodes',
+        lambda: SubClan.objects.filter(is_deleted=False).count(),
+        300
+    )
+
+    # Filter by node_type
+    if node_type_filter:
+        if node_type_filter in ('SUB_CLAN', 'COMMUNITY', 'STREET', 'MAJOR_ROAD', 'SUB_ROAD', 'CLOSE'):
+            subclans_qs = subclans_qs.filter(node_type=node_type_filter)
+        elif node_type_filter == 'ALL_NODES':
+            pass  # show all territorial nodes
+        elif node_type_filter == 'SUB_CLANS_ALL':
+            subclans_qs = subclans_qs.filter(node_type__in=SUBCLAN_NODE_TYPES)
+    else:
+        # Default view: show Sub-Clans & Communities
+        # Also include any top-level nodes not explicitly tagged as roads
+        subclans_qs = subclans_qs.filter(
+            Q(node_type__in=SUBCLAN_NODE_TYPES) | Q(parent_road__isnull=True, node_type__in=['SUB_CLAN', 'COMMUNITY', 'OTHER'])
+        )
+        if not subclans_qs.exists() and total_subclans_count == 0:
+            # Fallback if no records have been tagged yet: show all active records
+            subclans_qs = SubClan.objects.filter(is_deleted=False)
+
+    # Filter by state
+    selected_state = None
+    if state_id:
+        selected_state = resolve_state(state_id)
+        if selected_state:
+            subclans_qs = subclans_qs.filter(
+                Q(state_id=selected_state.id) | Q(clan__state_id=selected_state.id) | Q(city__state_id=selected_state.id)
+            )
+        else:
+            subclans_qs = subclans_qs.none()
+
+    # Filter by LGA / City
+    selected_city = None
+    if city_id:
+        try:
+            city_id_int = int(city_id)
+            selected_city = City.objects.filter(id=city_id_int).first()
+            if selected_city and selected_state and selected_city.state_id != selected_state.id:
+                selected_city = None
+                city_id = None
+            if selected_city:
+                subclans_qs = subclans_qs.filter(
+                    Q(city_id=selected_city.id) | Q(clan__city_id=selected_city.id)
+                )
+        except (ValueError, TypeError):
+            selected_city = City.objects.filter(name__iexact=city_id).first()
+            if selected_city and selected_state and selected_city.state_id != selected_state.id:
+                selected_city = None
+                city_id = None
+            if selected_city:
+                subclans_qs = subclans_qs.filter(
+                    Q(city__name__iexact=city_id) | Q(clan__city__name__iexact=city_id)
+                )
+
+    # Filter by clan
+    selected_clan = None
+    if clan_id:
+        try:
+            clan_id_int = int(clan_id)
+            selected_clan = Clan.objects.filter(id=clan_id_int, is_deleted=False).first()
+            if selected_clan and selected_state:
+                clan_state_id = getattr(selected_clan, 'state_id', None) or (selected_clan.city.state_id if selected_clan.city else None)
+                if clan_state_id != selected_state.id:
+                    selected_clan = None
+                    clan_id = None
+            if selected_clan:
+                subclans_qs = subclans_qs.filter(clan_id=clan_id_int)
+        except (ValueError, TypeError):
+            pass
+
+    # Search query
+    if query:
+        st_match = resolve_state(query)
+        if st_match:
+            state_search_q = Q(state_id=st_match.id) | Q(clan__state_id=st_match.id) | Q(city__state_id=st_match.id)
+        else:
+            state_search_q = Q(state__name__iexact=query)
+
+        subclans_qs = subclans_qs.filter(
+            Q(name__icontains=query) |
+            Q(node_id__icontains=query) |
+            Q(clan__name__icontains=query) |
+            Q(city__name__icontains=query) |
+            Q(managers__user__first_name__icontains=query) |
+            Q(managers__user__last_name__icontains=query) |
+            Q(managers__user__username__icontains=query) |
+            state_search_q
+        ).distinct()
+
+    filtered_subclans_count = subclans_qs.count()
+    subclans_qs = subclans_qs.order_by('state__name', 'name')
+
+    # Pagination
+    paginator = Paginator(subclans_qs, 25)
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    # Filter dropdown lists
+    all_states = cache.get_or_set(
+        'all_states_list',
+        lambda: list(State.objects.filter(is_deleted=False).order_by('name')),
+        3600
+    )
+    all_clans = cache.get_or_set(
+        'dropdown_all_clans',
+        lambda: list(Clan.objects.filter(is_deleted=False).select_related('city', 'state').only('id', 'name', 'code', 'node_id', 'city_id', 'city__name', 'state_id', 'state__name', 'geo_political_zone_id').order_by('name')),
+        3600
+    )
+    all_geo_zones = cache.get_or_set(
+        'all_geo_zones_list',
+        lambda: list(GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')),
+        3600
+    )
+
+    # Contextual dropdowns: if state is selected, filter available cities and clans
+    if selected_state:
+        available_cities = list(City.objects.filter(state=selected_state).order_by('name'))
+        available_clans = list(Clan.objects.filter(
+            Q(state_id=selected_state.id) | Q(city__state_id=selected_state.id),
+            is_deleted=False
+        ).select_related('city', 'state').only('id', 'name', 'code', 'node_id', 'city_id', 'city__name', 'state_id', 'state__name').order_by('name'))
+    else:
+        available_cities = []
+        available_clans = all_clans
+
+    context = {
+        'page_obj': page_obj,
+        'subclans': page_obj.object_list,
+        'query': query,
+        'state_id': state_id,
+        'city_id': city_id,
+        'clan_id': clan_id,
+        'selected_state': selected_state,
+        'selected_city': selected_city,
+        'selected_clan': selected_clan,
+        'node_type_filter': node_type_filter,
+        'total_subclans_count': total_subclans_count,
+        'subclan_type_count': subclan_type_count,
+        'community_type_count': community_type_count,
+        'all_nodes_count': all_nodes_count,
+        'filtered_subclans_count': filtered_subclans_count,
+        'all_states': all_states,
+        'all_clans': all_clans,
+        'available_cities': available_cities,
+        'available_clans': available_clans,
+        'all_geo_zones': all_geo_zones,
+        'road_surface_choices': ROAD_SURFACE_CHOICES,
+        'road_condition_choices': ROAD_CONDITION_CHOICES,
+        'road_relation_choices': ROAD_RELATION_CHOICES,
+        'is_admin': admin_user,
+    }
+    return render(request, 'platform_admin/subclans/subclan_list.html', context)
+
+
+@login_required
+def road_list_view(request, tier=None):
     """
     Dedicated Directory & listing of all Roads (Major Roads, Sub Roads, Streets, Closes)
-    with search, type filtering, state & clan filtering, road condition/surface filters,
+    with search, tier separation, state & clan filtering, road condition/surface filters,
     and hierarchical connectivity.
     """
     query = request.GET.get('q', '').strip()
@@ -297,6 +513,48 @@ def road_list_view(request):
     road_relation_filter = request.GET.get('road_relation', '').strip()
     page = request.GET.get('page', 1)
 
+    # Determine tier from kwargs or GET parameter
+    if not tier:
+        tier = request.GET.get('tier', '').strip().lower()
+
+    if tier == 'major':
+        node_type_filter = 'MAJOR_ROAD'
+        tier_title = 'Major Roads (MR)'
+        tier_desc = 'Primary arterial trunks connecting clans, cities, and regional transportation corridors.'
+    elif tier == 'sub':
+        node_type_filter = 'SUB_ROAD'
+        tier_title = 'Sub Roads (SR)'
+        tier_desc = 'Connector and feeder roads distributing vehicular traffic from Major Roads into local districts and neighborhoods.'
+    elif tier == 'street':
+        node_type_filter = 'STREET'
+        tier_title = 'Streets (STR)'
+        tier_desc = 'Urban and neighborhood residential and commercial access ways connected to Sub Roads.'
+    elif tier == 'close':
+        node_type_filter = 'CLOSE'
+        tier_title = 'Closes & Crescents (CLS)'
+        tier_desc = 'Terminal residential cul-de-sacs, lanes, and crescents connected to Streets.'
+    else:
+        tier = 'all'
+        if node_type_filter == 'MAJOR_ROAD':
+            tier = 'major'
+            tier_title = 'Major Roads (MR)'
+            tier_desc = 'Primary arterial trunks connecting clans, cities, and regional transportation corridors.'
+        elif node_type_filter == 'SUB_ROAD':
+            tier = 'sub'
+            tier_title = 'Sub Roads (SR)'
+            tier_desc = 'Connector and feeder roads distributing vehicular traffic from Major Roads into local districts and neighborhoods.'
+        elif node_type_filter == 'STREET':
+            tier = 'street'
+            tier_title = 'Streets (STR)'
+            tier_desc = 'Urban and neighborhood residential and commercial access ways connected to Sub Roads.'
+        elif node_type_filter == 'CLOSE':
+            tier = 'close'
+            tier_title = 'Closes & Crescents (CLS)'
+            tier_desc = 'Terminal residential cul-de-sacs, lanes, and crescents connected to Streets.'
+        else:
+            tier_title = 'All Roads'
+            tier_desc = 'Comprehensive directory of all territorial road networks across clans in Nigeria.'
+
     user_profile = getattr(request.user, 'account_profile', None)
     admin_user = is_platform_admin(request.user)
 
@@ -307,12 +565,12 @@ def road_list_view(request):
         node_type__in=ROAD_NODE_TYPES,
         is_deleted=False
     ).select_related(
-        'clan', 'city', 'state', 'geo_political_zone', 'parent_road'
+        'clan__city', 'clan__state', 'city__state', 'state', 'geo_political_zone', 'parent_road__clan'
     ).prefetch_related(
         'managers__user', 'infrastructures', 'connected_streets'
     ).annotate(
-        connected_count=Count('connected_streets', distinct=True),
-        infra_count=Count('infrastructures', distinct=True)
+        connected_count=Count('connected_streets', filter=Q(connected_streets__is_deleted=False), distinct=True),
+        infra_count=Count('infrastructures', filter=Q(infrastructures__is_deleted=False), distinct=True)
     )
 
     # KPI counts across all active roads (cached 300s)
@@ -341,6 +599,11 @@ def road_list_view(request):
         lambda: SubClan.objects.filter(node_type='CLOSE', is_deleted=False).count(),
         300
     )
+    total_subclans_count = cache.get_or_set(
+        'kpi_total_subclans_count',
+        lambda: SubClan.objects.filter(node_type__in=['SUB_CLAN', 'COMMUNITY'], is_deleted=False).count(),
+        300
+    )
 
     # Filter by node_type
     if node_type_filter:
@@ -354,17 +617,13 @@ def road_list_view(request):
     # Filter by state
     selected_state = None
     if state_id:
-        try:
-            state_id_int = int(state_id)
-            selected_state = State.objects.filter(id=state_id_int, is_deleted=False).first()
+        selected_state = resolve_state(state_id)
+        if selected_state:
             roads_qs = roads_qs.filter(
-                Q(state_id=state_id_int) | Q(clan__state_id=state_id_int) | Q(city__state_id=state_id_int)
+                Q(state_id=selected_state.id) | Q(clan__state_id=selected_state.id) | Q(city__state_id=selected_state.id)
             )
-        except (ValueError, TypeError):
-            selected_state = State.objects.filter(name__iexact=state_id, is_deleted=False).first()
-            roads_qs = roads_qs.filter(
-                Q(state__name__iexact=state_id) | Q(clan__state__name__iexact=state_id) | Q(city__state__name__iexact=state_id)
-            )
+        else:
+            roads_qs = roads_qs.none()
 
     # Filter by clan
     selected_clan = None
@@ -372,7 +631,13 @@ def road_list_view(request):
         try:
             clan_id_int = int(clan_id)
             selected_clan = Clan.objects.filter(id=clan_id_int, is_deleted=False).first()
-            roads_qs = roads_qs.filter(clan_id=clan_id_int)
+            if selected_clan and selected_state:
+                clan_state_id = getattr(selected_clan, 'state_id', None) or (selected_clan.city.state_id if selected_clan.city else None)
+                if clan_state_id != selected_state.id:
+                    selected_clan = None
+                    clan_id = None
+            if selected_clan:
+                roads_qs = roads_qs.filter(clan_id=clan_id_int)
         except (ValueError, TypeError):
             pass
 
@@ -388,15 +653,48 @@ def road_list_view(request):
     if road_relation_filter:
         roads_qs = roads_qs.filter(road_relation=road_relation_filter)
 
+    # Filter by parent subclan
+    subclan_id = request.GET.get('subclan')
+    selected_subclan = None
+    if subclan_id:
+        try:
+            subclan_id_int = int(subclan_id)
+            selected_subclan = SubClan.objects.filter(id=subclan_id_int, is_deleted=False).first()
+            if selected_subclan:
+                if selected_clan and selected_subclan.clan_id != selected_clan.id:
+                    selected_subclan = None
+                    subclan_id = None
+                elif selected_state:
+                    sc_state_id = selected_subclan.state_id or (selected_subclan.clan.state_id if selected_subclan.clan else None) or (selected_subclan.city.state_id if selected_subclan.city else None)
+                    if sc_state_id and sc_state_id != selected_state.id:
+                        selected_subclan = None
+                        subclan_id = None
+
+            if selected_subclan:
+                roads_qs = roads_qs.filter(
+                    Q(parent_road_id=subclan_id_int) |
+                    Q(parent_road__parent_road_id=subclan_id_int) |
+                    Q(parent_road__parent_road__parent_road_id=subclan_id_int) |
+                    (Q(node_id__startswith=f"{selected_subclan.node_id}/") if selected_subclan.node_id else Q(parent_road_id=subclan_id_int))
+                )
+        except (ValueError, TypeError):
+            pass
+
     # Search query
     if query:
+        st_match = resolve_state(query)
+        if st_match:
+            state_search_q = Q(state_id=st_match.id) | Q(clan__state_id=st_match.id) | Q(city__state_id=st_match.id)
+        else:
+            state_search_q = Q(state__name__iexact=query)
+
         roads_qs = roads_qs.filter(
             Q(name__icontains=query) |
             Q(node_id__icontains=query) |
             Q(clan__name__icontains=query) |
-            Q(state__name__icontains=query) |
             Q(city__name__icontains=query) |
-            Q(parent_road__name__icontains=query)
+            Q(parent_road__name__icontains=query) |
+            state_search_q
         )
 
     roads_qs = roads_qs.order_by('node_type', 'name')
@@ -417,20 +715,60 @@ def road_list_view(request):
         3600
     )
     all_clans = cache.get_or_set(
-        'dropdown_all_clans_simple',
-        lambda: list(Clan.objects.filter(is_deleted=False).select_related('state').only('id', 'name', 'code', 'state__name').order_by('name')),
-        1800
-    )
-    all_subclans_for_parent = cache.get_or_set(
-        'dropdown_all_subclans_simple',
-        lambda: list(SubClan.objects.filter(is_deleted=False).select_related('clan').only('id', 'name', 'node_id', 'node_type', 'clan_id').order_by('node_type', 'name')),
-        600
+        'dropdown_all_clans',
+        lambda: list(Clan.objects.filter(is_deleted=False).select_related('city', 'state').only('id', 'name', 'code', 'node_id', 'city_id', 'city__name', 'state_id', 'state__name', 'geo_political_zone_id').order_by('name')),
+        3600
     )
     all_geo_zones = cache.get_or_set(
         'all_geo_zones_list',
         lambda: list(GeoPoliticalZone.objects.filter(is_deleted=False).order_by('name')),
         3600
     )
+    # Available clans for dropdown (with respect to selected state)
+    if selected_state:
+        available_clans = list(Clan.objects.filter(
+            Q(state_id=selected_state.id) | Q(city__state_id=selected_state.id),
+            is_deleted=False
+        ).select_related('city', 'state').only('id', 'name', 'code', 'node_id', 'city_id', 'city__name', 'state_id', 'state__name').order_by('name'))
+    else:
+        available_clans = all_clans
+
+    # Available sub-clans for dropdown (with respect to selected parent clan)
+    if selected_clan:
+        available_subclans = list(SubClan.objects.filter(
+            clan_id=selected_clan.id,
+            node_type__in=['SUB_CLAN', 'COMMUNITY'],
+            is_deleted=False
+        ).select_related('clan').only('id', 'name', 'node_id', 'node_type', 'clan_id', 'clan__name').order_by('name'))
+        all_subclans_for_parent = list(SubClan.objects.filter(
+            clan_id=selected_clan.id,
+            is_deleted=False
+        ).select_related('clan').only('id', 'name', 'node_id', 'node_type', 'clan_id').order_by('node_type', 'name'))
+    elif selected_state:
+        available_subclans = list(SubClan.objects.filter(
+            Q(state_id=selected_state.id) | Q(clan__state_id=selected_state.id) | Q(city__state_id=selected_state.id),
+            node_type__in=['SUB_CLAN', 'COMMUNITY'],
+            is_deleted=False
+        ).select_related('clan').only('id', 'name', 'node_id', 'node_type', 'clan_id', 'clan__name').order_by('clan__name', 'name')[:300])
+        all_subclans_for_parent = list(SubClan.objects.filter(
+            Q(state_id=selected_state.id) | Q(clan__state_id=selected_state.id) | Q(city__state_id=selected_state.id),
+            node_type__in=['MAJOR_ROAD', 'SUB_ROAD', 'STREET', 'SUB_CLAN', 'COMMUNITY'],
+            is_deleted=False
+        ).select_related('clan').only('id', 'name', 'node_id', 'node_type', 'clan_id').order_by('node_type', 'name')[:250])
+    else:
+        available_subclans = []
+        all_subclans_for_parent = []
+
+    raw_subclans_json = json.dumps([
+        {
+            'id': sc.id,
+            'name': sc.name,
+            'node_id': sc.node_id or '',
+            'node_type': sc.node_type or '',
+            'clan_id': sc.clan_id
+        }
+        for sc in all_subclans_for_parent
+    ])
 
     road_node_choices = (
         ('MAJOR_ROAD', 'Major Road (MR)'),
@@ -445,8 +783,13 @@ def road_list_view(request):
         'query': query,
         'state_id': state_id,
         'clan_id': clan_id,
+        'subclan_id': subclan_id,
         'selected_state': selected_state,
         'selected_clan': selected_clan,
+        'selected_subclan': selected_subclan,
+        'tier': tier,
+        'tier_title': tier_title,
+        'tier_desc': tier_desc,
         'node_type_filter': node_type_filter,
         'road_surface_filter': road_surface_filter,
         'road_condition_filter': road_condition_filter,
@@ -456,10 +799,14 @@ def road_list_view(request):
         'sub_roads_count': sub_roads_count,
         'streets_count': streets_count,
         'closes_count': closes_count,
+        'total_subclans_count': total_subclans_count,
         'filtered_roads_count': paginator.count,
         'all_states': all_states,
         'all_clans': all_clans,
+        'available_clans': available_clans,
+        'available_subclans': available_subclans,
         'all_subclans_for_parent': all_subclans_for_parent,
+        'raw_subclans_json': raw_subclans_json,
         'all_geo_zones': all_geo_zones,
         'road_node_choices': road_node_choices,
         'node_type_choices': NODE_TYPE_CHOICES,
@@ -632,8 +979,8 @@ def clan_delete_view(request, pk):
     """
     clan = get_object_or_404(Clan, id=pk, is_deleted=False)
 
-    if not is_platform_admin(request.user):
-        messages.error(request, "Only platform administrators can delete clans.")
+    if not (is_platform_admin(request.user) or can_user_manage_clan(request.user, clan)):
+        messages.error(request, f"You do not have permission to delete '{clan.name}' Clan.")
         return redirect('platform_admin:clan-detail', pk=clan.pk)
 
     if request.method == "POST":
@@ -641,6 +988,10 @@ def clan_delete_view(request, pk):
         clan.save(update_fields=['is_deleted'])
         invalidate_clan_caches()
         messages.info(request, f"Clan '{clan.name}' has been archived/deleted.")
+        next_url = request.POST.get('next') or request.META.get('HTTP_REFERER')
+        clan_detail_url = reverse('platform_admin:clan-detail', kwargs={'pk': clan.pk})
+        if next_url and clan_detail_url not in next_url:
+            return redirect(next_url)
         return redirect('platform_admin:clan-list')
 
     return redirect('platform_admin:clan-detail', pk=clan.pk)
@@ -680,6 +1031,15 @@ def subclan_create_for_clan_view(request, clan_id):
         state = State.objects.filter(id=state_id).first() if state_id else (city.state if city else clan.state)
         geo_zone = (state.geo_political_zone if state else clan.geo_political_zone)
 
+        # Tie Clan to LGA (city) if clan lacked an LGA
+        if city and not clan.city:
+            clan.city = city
+            if not clan.state and state:
+                clan.state = state
+            if not clan.geo_political_zone and geo_zone:
+                clan.geo_political_zone = geo_zone
+            clan.save(update_fields=['city', 'state', 'geo_political_zone'])
+
         parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
 
         # Enforce territorial architecture hierarchy:
@@ -687,7 +1047,10 @@ def subclan_create_for_clan_view(request, clan_id):
         if node_type in ('SUB_CLAN', 'COMMUNITY'):
             parent_road = None
         elif node_type in ('MAJOR_ROAD', 'META_ROAD'):
-            if road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
+            if parent_road and parent_road.node_type in ('SUB_CLAN', 'COMMUNITY'):
+                if road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
+                    road_relation = 'CONTAINED_SUBCLAN'
+            elif road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
                 parent_road = None
             elif road_relation in ('CONTAINED_SUBCLAN', 'PASSING_SUBCLAN'):
                 if parent_road and parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
@@ -778,10 +1141,20 @@ def subclan_create_general_view(request):
         city_id = request.POST.get('city') or (clan.city.id if clan.city else None)
         state_id = request.POST.get('state') or (clan.state.id if clan.state else None)
         city = City.objects.filter(id=city_id).first() if city_id else clan.city
+        state = State.objects.filter(id=state_id).first() if state_id else (city.state if city else clan.state)
         geo_zone_id = request.POST.get('geo_political_zone')
         geo_zone = GeoPoliticalZone.objects.filter(id=geo_zone_id).first() if geo_zone_id else (
-            (state.geo_political_zone if state else None) or clan.geo_political_zone
+            (state.geo_political_zone if state else None) or (city.state.geo_political_zone if city and city.state else None) or clan.geo_political_zone
         )
+
+        # Tie Clan to LGA (city) if clan lacked an LGA
+        if city and not clan.city:
+            clan.city = city
+            if not clan.state and state:
+                clan.state = state
+            if not clan.geo_political_zone and geo_zone:
+                clan.geo_political_zone = geo_zone
+            clan.save(update_fields=['city', 'state', 'geo_political_zone'])
 
         parent_road = SubClan.objects.filter(id=parent_road_id, is_deleted=False).first() if parent_road_id else None
 
@@ -790,7 +1163,10 @@ def subclan_create_general_view(request):
         if node_type in ('SUB_CLAN', 'COMMUNITY'):
             parent_road = None
         elif node_type in ('MAJOR_ROAD', 'META_ROAD'):
-            if road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
+            if parent_road and parent_road.node_type in ('SUB_CLAN', 'COMMUNITY'):
+                if road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
+                    road_relation = 'CONTAINED_SUBCLAN'
+            elif road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):
                 parent_road = None
             elif road_relation in ('CONTAINED_SUBCLAN', 'PASSING_SUBCLAN'):
                 if parent_road and parent_road.node_type not in ('SUB_CLAN', 'COMMUNITY'):
@@ -923,9 +1299,10 @@ def subclan_delete_view(request, pk):
         subclan.is_deleted = True
         subclan.save(update_fields=['is_deleted'])
         invalidate_clan_caches()
-        messages.info(request, f"Sub-Clan '{subclan.name}' has been archived.")
+        node_label = subclan.get_node_type_display() if hasattr(subclan, 'get_node_type_display') else "Territorial Node"
+        messages.info(request, f"{node_label} '{subclan.name}' has been archived.")
 
-    next_url = request.POST.get('next') or (
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or (
         reverse('platform_admin:clan-detail', kwargs={'pk': subclan.clan.pk}) if subclan.clan else None
     )
     return redirect(next_url or 'platform_admin:clan-list')

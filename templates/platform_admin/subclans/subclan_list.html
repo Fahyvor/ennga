@@ -1,0 +1,893 @@
+{% extends 'base-dashboard-new.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+  .pill-badge {
+    white-space: nowrap !important;
+    flex-shrink: 0;
+  }
+  .node-id-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: -0.2px;
+    white-space: nowrap !important;
+  }
+  .subclan-stat-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .subclan-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+  }
+  .subclan-type-tab-btn {
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    color: #475569;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none !important;
+  }
+  .subclan-type-tab-btn:hover {
+    background: #f8fafc;
+    color: var(--brand-dark);
+    border-color: #cbd5e1;
+  }
+  .subclan-type-tab-btn.active {
+    background: #7c3aed;
+    color: #ffffff !important;
+    border-color: #7c3aed;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+  }
+  .table-modern td {
+    vertical-align: middle;
+  }
+</style>
+
+<div class="container-fluid px-3 px-md-4 py-4">
+
+  <!-- Header Banner -->
+  <div class="en-card p-4 mb-4" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #7c3aed 100%); border-radius: 20px; color: #ffffff; position: relative; overflow: hidden; border: none;">
+    <div style="position: absolute; right: -40px; top: -40px; width: 220px; height: 220px; background: radial-gradient(circle, rgba(196,242,244,0.15) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; pointer-events: none;"></div>
+    
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        <div class="d-flex align-items-center mb-2" style="gap: 8px;">
+          <span class="pill-badge" style="font-size: 10px; font-weight: 700; background: rgba(196, 242, 244, 0.22); color: #C4F2F4; border: 1px solid rgba(196, 242, 244, 0.45); padding: 3px 10px; letter-spacing: 0.5px;">TERRITORIAL SUB-UNITS</span>
+          <span style="font-size: 13px; color: #cbd5e1; font-weight: 500;">&bull; Sub-Clans, Communities & Villages</span>
+        </div>
+        <h2 class="font-weight-700 text-white mb-2" style="font-size: 26px; letter-spacing: -0.5px;">
+          🏘️ Sub-Clans & Communities Directory
+        </h2>
+        <p class="mb-3 mb-lg-0" style="max-width: 680px; font-size: 14px; line-height: 1.5; color: #cbd5e1;">
+          Structured territorial sub-units mapped directly under parent Clans across Nigeria. Sub-Clans serve as the bridge between Clans and internal road networks.
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-right">
+        <div class="d-flex flex-wrap justify-content-lg-end" style="gap: 10px;">
+          <a href="{% url 'platform_admin:clan-list' %}" class="btn font-weight-600" style="color: #ffffff; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.35); border-radius: 10px; padding: 8px 16px;">
+            🏛️ Clans Directory
+          </a>
+          <a href="{% url 'platform_admin:road-list' %}" class="btn font-weight-600" style="color: #ffffff; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.35); border-radius: 10px; padding: 8px 16px;">
+            🛣️ Roads Directory
+          </a>
+          <button type="button" class="btn btn-en-cyan font-weight-700 js-open-create-subclan" data-toggle="modal" data-target="#createSubClanModal" data-bs-toggle="modal" data-bs-target="#createSubClanModal">
+            + Add Sub-Clan
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Summary Cards Row -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="subclan-stat-card border-top" style="border-top: 3px solid #7c3aed !important;">
+        <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Total Sub-Clans & Communities</p>
+        <h3 class="mb-0 font-weight-700" style="color: #7c3aed;">{{ total_subclans_count }}</h3>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Active Territorial Nodes</small>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <a href="{% url 'platform_admin:subclan-list' %}?node_type=SUB_CLAN" class="subclan-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #6366f1 !important;">
+        <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Sub-Clans (SB)</p>
+        <h3 class="mb-0 font-weight-700" style="color: #6366f1;">{{ subclan_type_count }}</h3>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Autonomous Sub-Units</small>
+      </a>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <a href="{% url 'platform_admin:subclan-list' %}?node_type=COMMUNITY" class="subclan-stat-card d-block text-decoration-none border-top" style="border-top: 3px solid #06b6d4 !important;">
+        <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Communities & Villages</p>
+        <h3 class="mb-0 font-weight-700" style="color: #0891b2;">{{ community_type_count }}</h3>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Village Settlements</small>
+      </a>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="subclan-stat-card border-top" style="border-top: 3px solid #10b981 !important;">
+        <p class="text-muted text-uppercase mb-1" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">Filtered Results</p>
+        <h3 class="mb-0 font-weight-700" style="color: #059669;">{{ filtered_subclans_count }}</h3>
+        <small class="text-muted mt-1 d-block" style="font-size: 11px;">Matches Current Filters</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Sub-Clans Directory Card -->
+  <div class="en-card mb-4" style="border-radius: 18px;">
+    
+    <!-- Top Filter Header -->
+    <div class="p-3 border-bottom d-flex flex-column" style="border-color: var(--border-color) !important; gap: 12px; background: #fafbfc; border-radius: 18px 18px 0 0;">
+      
+      <!-- Type Filter Tabs -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 8px;">
+        <div class="d-flex flex-wrap align-items-center" style="gap: 6px;">
+          <a href="{% url 'platform_admin:subclan-list' %}{% if query %}?q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if city_id %}&city={{ city_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
+             class="subclan-type-tab-btn {% if not node_type_filter %}active{% endif %}">
+            All Sub-Clans ({{ total_subclans_count }})
+          </a>
+          <a href="{% url 'platform_admin:subclan-list' %}?node_type=SUB_CLAN{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if city_id %}&city={{ city_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
+             class="subclan-type-tab-btn {% if node_type_filter == 'SUB_CLAN' %}active{% endif %}">
+            🏘️ Sub-Clans ({{ subclan_type_count }})
+          </a>
+          <a href="{% url 'platform_admin:subclan-list' %}?node_type=COMMUNITY{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if city_id %}&city={{ city_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
+             class="subclan-type-tab-btn {% if node_type_filter == 'COMMUNITY' %}active{% endif %}">
+            🏡 Communities ({{ community_type_count }})
+          </a>
+          <a href="{% url 'platform_admin:subclan-list' %}?node_type=ALL_NODES{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if city_id %}&city={{ city_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}" 
+             class="subclan-type-tab-btn {% if node_type_filter == 'ALL_NODES' %}active{% endif %}" title="Includes all roads, streets and nodes under clans">
+            🌐 All Territorial Nodes ({{ all_nodes_count }})
+          </a>
+        </div>
+
+        <div>
+          <span class="text-muted" style="font-size: 13px;">
+            Showing <strong>{{ page_obj.start_index|default:0 }} - {{ page_obj.end_index|default:0 }}</strong> of <strong>{{ filtered_subclans_count }}</strong> Sub-Clans
+          </span>
+        </div>
+      </div>
+
+      <!-- Search & State/LGA/Clan Filter Form -->
+      <form method="get" action="{% url 'platform_admin:subclan-list' %}" id="subclanFilterForm" class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+        {% if node_type_filter %}
+          <input type="hidden" name="node_type" value="{{ node_type_filter }}">
+        {% endif %}
+
+        <!-- Keyword Search -->
+        <div class="input-group" style="width: 250px;">
+          <input type="text" name="q" value="{{ query }}" class="form-control form-control-modern" placeholder="Search name, ID, LGA, clan..." style="font-size: 13px;">
+          <div class="input-group-append">
+            <button class="btn btn-en-outline" type="submit" style="border-radius: 0 10px 10px 0; border-left: none;">
+              🔍
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter by State -->
+        <select name="state" id="filterSubclanStateSelect" class="form-control form-control-modern" style="width: 160px; font-size: 13px;">
+          <option value="">🌐 All States</option>
+          {% for st in all_states %}
+            <option value="{{ st.id }}" {% if selected_state and selected_state.id == st.id %}selected{% elif not selected_state and state_id == st.id|stringformat:"s" %}selected{% endif %}>
+              {{ st.name }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <!-- Filter by LGA / City -->
+        <select name="city" id="filterSubclanCitySelect" class="form-control form-control-modern" style="width: 180px; font-size: 13px;">
+          <option value="">
+            {% if selected_state %}🏙️ All LGAs in {{ selected_state.name }}{% else %}🏙️ All LGAs / Cities{% endif %}
+          </option>
+          {% for ct in available_cities %}
+            <option value="{{ ct.id }}" {% if selected_city and selected_city.id == ct.id %}selected{% elif not selected_city and city_id == ct.id|stringformat:"s" %}selected{% endif %}>
+              {{ ct.name }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <!-- Filter by Clan -->
+        <select name="clan" id="filterSubclanClanSelect" class="form-control form-control-modern" style="width: 210px; font-size: 13px;">
+          <option value="">
+            {% if selected_state %}🏛️ All Clans in {{ selected_state.name }}{% else %}🏛️ All Parent Clans{% endif %}
+          </option>
+          {% for cl in available_clans %}
+            <option value="{{ cl.id }}" {% if selected_clan and selected_clan.id == cl.id %}selected{% elif not selected_clan and clan_id == cl.id|stringformat:"s" %}selected{% endif %}>
+              {{ cl.name }}{% if not selected_state and cl.state %} ({{ cl.state.name }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+
+        {% if query or state_id or city_id or clan_id or node_type_filter %}
+          <a href="{% url 'platform_admin:subclan-list' %}" class="btn btn-link text-muted p-0 ml-1" style="font-size: 13px; text-decoration: underline;">
+            Clear filters
+          </a>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Sub-Clans Table View -->
+    <div class="table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th>Sub-Clan & Node ID</th>
+            <th>Parent Clan</th>
+            <th>Location</th>
+            <th>Connected Roads</th>
+            <th>Infrastructure Assets</th>
+            <th>Assigned Managers</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sc in subclans %}
+          <tr>
+            <!-- Name & PRD Node ID -->
+            <td>
+              <div class="d-flex align-items-center">
+                <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(124, 58, 237, 0.12); display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 16px; flex-shrink: 0;">
+                  {% if sc.node_type == 'COMMUNITY' %}🏡{% else %}🏘️{% endif %}
+                </div>
+                <div>
+                  <span class="font-weight-700 d-block" style="color: var(--brand-dark); font-size: 14px;">
+                    {{ sc.name }}
+                  </span>
+                  <div class="d-flex align-items-center mt-1" style="gap: 4px;">
+                    <span class="pill-badge pill-badge-subclan node-id-mono">{{ sc.display_node_id }}</span>
+                    <span class="pill-badge {% if sc.node_type == 'COMMUNITY' %}pill-badge-cyan{% else %}pill-badge-subclan{% endif %}" style="font-size: 10px;">
+                      {{ sc.get_node_type_display|default:sc.node_type }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Parent Clan -->
+            <td>
+              {% if sc.clan %}
+                <a href="{% url 'platform_admin:clan-detail' pk=sc.clan.id %}" class="font-weight-600" style="color: var(--brand-dark); text-decoration: none;">
+                  🏛️ {{ sc.clan.name }}
+                </a>
+                <div class="text-muted node-id-mono" style="font-size: 10px;">{{ sc.clan.display_node_id }}</div>
+              {% else %}
+                <span class="text-muted" style="font-size: 12px;">Unassigned</span>
+              {% endif %}
+            </td>
+
+            <!-- Location -->
+            <td>
+              <div class="font-weight-600" style="color: var(--brand-dark); font-size: 13px;">{{ sc.city.name|default:"-" }}</div>
+              <div class="text-muted" style="font-size: 12px;">{{ sc.state.name|default:"-" }}</div>
+            </td>
+
+            <!-- Connected Roads -->
+            <td>
+              {% if sc.roads_count > 0 %}
+                <a href="{% url 'platform_admin:road-list' %}?clan={{ sc.clan_id|default:'' }}&subclan={{ sc.id }}" class="pill-badge pill-badge-primary" style="font-size: 11px; text-decoration: none;" title="View all roads connected to this Sub-Clan">
+                  🛣️ {{ sc.roads_count }} Road{{ sc.roads_count|pluralize }}
+                </a>
+              {% else %}
+                <span class="text-muted" style="font-size: 12px;">0 Roads</span>
+              {% endif %}
+            </td>
+
+            <!-- Infrastructures -->
+            <td>
+              {% if sc.infra_count > 0 %}
+                <span class="pill-badge pill-badge-cyan" style="font-size: 11px;">
+                  🏗️ {{ sc.infra_count }} Asset{{ sc.infra_count|pluralize }}
+                </span>
+              {% else %}
+                <span class="text-muted" style="font-size: 12px;">0 Assets</span>
+              {% endif %}
+            </td>
+
+            <!-- Managers -->
+            <td>
+              {% with sc_mgrs=sc.managers.all %}
+                {% if sc_mgrs %}
+                  <div class="d-flex align-items-center" style="gap: 4px;">
+                    {% for mgr in sc_mgrs|slice:":2" %}
+                      <span class="pill-badge pill-badge-dark" style="font-size: 10px;">
+                        👤 {{ mgr.user.first_name|default:mgr.user.username }}
+                      </span>
+                    {% endfor %}
+                    {% if sc_mgrs|length > 2 %}
+                      <span class="text-muted font-weight-600" style="font-size: 11px;">+{{ sc_mgrs|length|add:"-2" }}</span>
+                    {% endif %}
+                  </div>
+                {% else %}
+                  <span class="text-muted" style="font-size: 12px; font-style: italic;">No manager</span>
+                {% endif %}
+              {% endwith %}
+            </td>
+
+            <!-- Actions -->
+            <td class="text-right">
+              <div class="d-inline-flex align-items-center" style="gap: 4px;">
+                {% if sc.node_type == 'SUB_CLAN' or sc.node_type == 'COMMUNITY' %}
+                  <button type="button" 
+                          class="btn btn-sm btn-en-cyan js-add-road-for-subclan-btn" 
+                          data-clan-id="{{ sc.clan_id|default:'' }}"
+                          data-clan-name="{{ sc.clan.name|default:'' }}"
+                          data-clan-node-id="{{ sc.clan.display_node_id }}"
+                          data-subclan-id="{{ sc.id }}"
+                          data-subclan-name="{{ sc.name }}"
+                          data-subclan-node-id="{{ sc.display_node_id }}"
+                          data-state-id="{{ sc.state_id|default:'' }}"
+                          data-city-id="{{ sc.city_id|default:'' }}"
+                          title="Add Major Road in this Sub-Clan" 
+                          style="border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600;">
+                    + Road
+                  </button>
+                {% endif %}
+                {% if sc.clan %}
+                  <a href="{% url 'platform_admin:clan-detail' pk=sc.clan.id %}" class="btn btn-sm btn-en-outline" title="View Parent Clan" style="border-radius: 8px; padding: 4px 10px; font-size: 12px;">
+                    🏛️ Clan
+                  </a>
+                {% endif %}
+                <button type="button" 
+                        class="btn btn-sm btn-en-outline js-edit-subclan-btn" 
+                        data-id="{{ sc.id }}"
+                        data-name="{{ sc.name }}"
+                        data-node-id="{{ sc.display_node_id }}"
+                        data-node-type="{{ sc.node_type }}"
+                        data-clan-id="{{ sc.clan_id|default:'' }}"
+                        data-city-id="{{ sc.city_id|default:'' }}"
+                        data-state-id="{{ sc.state_id|default:'' }}"
+                        data-toggle="modal" 
+                        data-target="#editSubClanModal"
+                        data-bs-toggle="modal" 
+                        data-bs-target="#editSubClanModal"
+                        title="Edit Sub-Clan"
+                        style="border-radius: 8px; padding: 4px 10px; font-size: 12px;">
+                  ✏️ Edit
+                </button>
+                <form method="post" action="{% url 'platform_admin:subclan-delete' pk=sc.id %}" onsubmit="return confirm('Are you sure you want to archive {{ sc.name }}?');" style="display: inline; margin: 0;">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Sub-Clan" style="border-radius: 8px; padding: 4px 8px; font-size: 12px;">
+                    🗑️
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5">
+              <div class="py-4">
+                <div style="font-size: 44px; margin-bottom: 12px;">🏘️</div>
+                <h5 class="font-weight-700 mb-1" style="color: var(--brand-dark);">No Sub-Clans Found</h5>
+                <p class="text-muted mb-3" style="font-size: 14px;">Try clearing filters or search query, or register a new Sub-Clan.</p>
+                <button type="button" class="btn btn-en-cyan font-weight-700" data-toggle="modal" data-target="#createSubClanModal" data-bs-toggle="modal" data-bs-target="#createSubClanModal">
+                  + Add First Sub-Clan
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="p-3 border-top d-flex flex-wrap justify-content-between align-items-center" style="border-color: var(--border-color) !important; gap: 8px;">
+      <span class="text-muted" style="font-size: 13px;">
+        Page <strong>{{ page_obj.number }}</strong> of <strong>{{ page_obj.paginator.num_pages }}</strong>
+      </span>
+      <ul class="pagination pagination-sm m-0" style="gap: 4px;">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if city_id %}&city={{ city_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if node_type_filter %}&node_type={{ node_type_filter }}{% endif %}" style="border-radius: 8px; color: var(--brand-dark);">&lsaquo; Prev</a>
+          </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active">
+              <span class="page-link" style="border-radius: 8px; background: #7c3aed; border-color: #7c3aed; font-weight: 700;">{{ num }}</span>
+            </li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if city_id %}&city={{ city_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if node_type_filter %}&node_type={{ node_type_filter }}{% endif %}" style="border-radius: 8px; color: var(--brand-dark);">{{ num }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if state_id %}&state={{ state_id }}{% endif %}{% if city_id %}&city={{ city_id }}{% endif %}{% if clan_id %}&clan={{ clan_id }}{% endif %}{% if node_type_filter %}&node_type={{ node_type_filter }}{% endif %}" style="border-radius: 8px; color: var(--brand-dark);">Next &rsaquo;</a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- CREATE SUB-CLAN MODAL -->
+<!-- ============================================== -->
+<div class="modal fade" id="createSubClanModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge pill-badge-subclan mb-1" style="font-size: 11px;">NEW TERRITORIAL SUB-NODE</span>
+          <h4 class="modal-title font-weight-700" style="color: var(--brand-dark);">
+            Create Sub-Clan / Community
+          </h4>
+        </div>
+        <button type="button" class="close btn-close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" onclick="$(this).closest('.modal').modal('hide');" style="font-size: 24px; cursor: pointer; background: transparent; border: none; line-height: 1;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'platform_admin:subclan-create' %}" id="createSubClanForm"
+            data-cities-url="{% url 'utility:ajax-load-cities' %}"
+            data-clans-url="{% url 'platform_admin:api-load-clans' %}"
+            data-generate-node-id-url="{% url 'platform_admin:api-generate-node-id' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+        <div class="modal-body pt-3">
+          <p class="text-muted" style="font-size: 13px;">
+            Create a territorial sub-clan or community node. Its <strong>Territorial Node ID</strong> is chained to the parent Clan and it will be tied to an LGA.
+          </p>
+
+          <!-- 1. State Location & Parent Clan -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">1. State Location</label>
+              <select name="state" id="modalCreateSubclanStateSelect" class="form-control form-control-modern">
+                <option value="">-- Filter by State --</option>
+                {% for s in all_states %}
+                  <option value="{{ s.id }}" {% if selected_state and selected_state.id == s.id %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+              </select>
+              <small class="text-muted" style="font-size: 11px;">Select state to filter available LGAs and Clans.</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">2. Parent Clan *</label>
+              <select name="clan" id="modalCreateSubclanClanSelect" class="form-control form-control-modern" required>
+                <option value="">{% if selected_state %}-- Select Clan in {{ selected_state.name }} --{% else %}-- Select Parent Clan --{% endif %}</option>
+                {% for cl in available_clans %}
+                  <option value="{{ cl.id }}" 
+                          data-node-id="{{ cl.node_id|default:'CLN' }}" 
+                          data-state-id="{{ cl.state_id|default:'' }}" 
+                          data-city-id="{{ cl.city_id|default:'' }}"
+                          data-city-name="{{ cl.city.name|default:'' }}"
+                          {% if clan_id == cl.id|stringformat:"s" %}selected{% endif %}>
+                    🏛️ {{ cl.name }} [{{ cl.node_id|default:'CLN' }}]{% if cl.city %} - {{ cl.city.name }}{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+              <small class="text-muted" style="font-size: 11px;">The sub-clan will be tied to this Clan.</small>
+            </div>
+          </div>
+
+          <!-- 3. Local Government Area (LGA) / City -->
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              3. Local Government Area (LGA) / City <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Tied to Sub-Clan & Clan</span>
+            </label>
+            <select name="city" id="modalCreateSubclanCitySelect" class="form-control form-control-modern">
+              <option value="">-- Select LGA / City (optional - auto-tied from clan) --</option>
+            </select>
+            <small class="text-muted" style="font-size: 11px;">Selecting an LGA ties both this Sub-Clan and its parent Clan to the LGA.</small>
+          </div>
+
+          <!-- Classification & Name -->
+          <div class="row">
+            <div class="col-md-5 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Classification *</label>
+              <select name="node_type" id="modalCreateSubclanNodeTypeSelect" class="form-control form-control-modern" required>
+                <option value="SUB_CLAN" selected>🏘️ Sub-Clan (SB)</option>
+                <option value="COMMUNITY">🏡 Community / Village (SB)</option>
+              </select>
+            </div>
+            <div class="col-md-7 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Sub-Clan Name *</label>
+              <input type="text" name="name" id="modalCreateSubclanNameInput" class="form-control form-control-modern" placeholder="e.g. Rumueme Autonomous Community, Mgbuoba Sub-Clan" required>
+            </div>
+          </div>
+
+          <!-- Auto-Generated Territorial Node ID -->
+          <div class="form-group mb-2">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              Territorial Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated with Clan Prefix</span>
+            </label>
+            <input type="text" name="node_id" id="modalCreateSubclanNodeIdInput" class="form-control form-control-modern node-id-mono" placeholder="e.g. CLN-082/SB/001" readonly style="background: #f8fafc; color: #7c3aed; font-weight: 700;">
+            <small class="text-muted" style="font-size: 11px;">Always includes the Territorial NodeID of the clan (can be long, full hierarchy is preserved).</small>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal" onclick="$(this).closest('.modal').modal('hide');">Cancel</button>
+          <button type="submit" class="btn btn-en-primary font-weight-700">
+            Create Sub-Clan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- EDIT SUB-CLAN MODAL -->
+<!-- ============================================== -->
+<div class="modal fade" id="editSubClanModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge pill-badge-subclan mb-1" style="font-size: 11px;">EDIT TERRITORIAL NODE</span>
+          <h4 class="modal-title font-weight-700" style="color: var(--brand-dark);">
+            Edit Sub-Clan / Community
+          </h4>
+        </div>
+        <button type="button" class="close btn-close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" onclick="$(this).closest('.modal').modal('hide');" style="font-size: 24px; cursor: pointer; background: transparent; border: none; line-height: 1;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <form method="post" id="editSubClanForm" action="" data-cities-url="{% url 'utility:ajax-load-cities' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+        <div class="modal-body pt-3">
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territorial Node ID</label>
+            <input type="text" id="editSubclanNodeIdInput" class="form-control form-control-modern node-id-mono" readonly style="background: #f8fafc; color: #7c3aed; font-weight: 700;">
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Classification *</label>
+            <select name="node_type" id="editSubclanNodeTypeSelect" class="form-control form-control-modern" required>
+              <option value="SUB_CLAN">🏘️ Sub-Clan / Community (SB)</option>
+              <option value="COMMUNITY">🏡 Community / Village (SB)</option>
+            </select>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Sub-Clan Name *</label>
+            <input type="text" name="name" id="editSubclanNameInput" class="form-control form-control-modern" required>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Local Government Area (LGA) / City</label>
+            <select name="city" id="editSubclanCitySelect" class="form-control form-control-modern">
+              <option value="">-- Select LGA / City (optional) --</option>
+            </select>
+            <small class="text-muted" style="font-size: 11px;">Update LGA tied to this sub-clan and its parent clan.</small>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal" onclick="$(this).closest('.modal').modal('hide');">Cancel</button>
+          <button type="submit" class="btn btn-en-cyan font-weight-700">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- ADD MAJOR ROAD FOR SUB-CLAN MODAL -->
+<!-- ============================================== -->
+<div class="modal fade" id="addSubClanMajorRoadModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content en-card p-3" style="border-radius: 20px;">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge pill-badge-cyan mb-1" style="font-size: 11px;">SUB-CLAN MAJOR ROAD NETWORK</span>
+          <h4 class="modal-title font-weight-700" style="color: var(--brand-dark);">
+            🛣️ Add Major Road in Sub-Clan
+          </h4>
+        </div>
+        <button type="button" class="close btn-close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" onclick="$(this).closest('.modal').modal('hide');" style="font-size: 24px; cursor: pointer; background: transparent; border: none; line-height: 1;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'platform_admin:subclan-create' %}" id="addMajorRoadForSubclanForm">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <input type="hidden" name="node_type" value="MAJOR_ROAD">
+        <input type="hidden" name="clan" id="mrModalClanId">
+        <input type="hidden" name="parent_road" id="mrModalParentRoadId">
+        <input type="hidden" name="state" id="mrModalStateId">
+        <input type="hidden" name="city" id="mrModalCityId">
+
+        <div class="modal-body pt-3">
+          <!-- Parent Sub-Clan Info Banner -->
+          <div class="p-3 mb-3" style="background: rgba(14, 116, 144, 0.08); border-radius: 12px; border: 1px solid rgba(14, 116, 144, 0.2);">
+            <div class="d-flex align-items-center">
+              <span style="font-size: 24px; margin-right: 12px;">🏘️</span>
+              <div>
+                <strong id="mrModalSubclanNameDisplay" style="color: var(--brand-dark); font-size: 15px;">Sub-Clan Name</strong>
+                <div class="d-flex align-items-center mt-1" style="gap: 6px;">
+                  <span class="pill-badge pill-badge-subclan node-id-mono" id="mrModalSubclanNodeIdDisplay" style="font-size: 11px;">.../SB/001</span>
+                  <span class="text-muted" style="font-size: 12px;" id="mrModalClanNameDisplay">under Clan</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Road Name -->
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Major Road Name *</label>
+            <input type="text" name="name" id="mrModalRoadNameInput" class="form-control form-control-modern" placeholder="e.g. Community High School Road, Central Market Express" required>
+          </div>
+
+          <!-- Territorial Scope & Alignment -->
+          <div class="form-group mb-3">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Territorial Scope & Alignment *</label>
+            <select name="road_relation" id="mrModalRoadRelationSelect" class="form-control form-control-modern">
+              <option value="CONTAINED_SUBCLAN" selected>📌 Contained inside this Sub-Clan / Community</option>
+              <option value="PASSING_SUBCLAN">🚗 Passing through this Sub-Clan / Community</option>
+            </select>
+            <small class="text-muted" style="font-size: 11px;">Identify if this major road is contained within or passing through this sub-clan.</small>
+          </div>
+
+          <!-- Road Surface & Condition -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Surface</label>
+              <select name="road_surface" class="form-control form-control-modern">
+                {% for val, label in road_surface_choices %}
+                  <option value="{{ val }}" {% if val == 'ASPHALT' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">Road Condition</label>
+              <select name="road_condition" class="form-control form-control-modern">
+                {% for val, label in road_condition_choices %}
+                  <option value="{{ val }}" {% if val == 'GOOD' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- Auto-Generated Territorial Node ID -->
+          <div class="form-group mb-2">
+            <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+              Territorial Node ID <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Auto-generated under Sub-Clan (/SB/.../MR/...)</span>
+            </label>
+            <input type="text" name="node_id" id="mrModalNodeIdInput" class="form-control form-control-modern node-id-mono" placeholder=".../SB/001/MR/001" readonly style="background: #f8fafc; color: #0e7490; font-weight: 700;">
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal" onclick="$(this).closest('.modal').modal('hide');">Cancel</button>
+          <button type="submit" class="btn btn-en-cyan font-weight-700">Confirm & Create Major Road</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function() {
+    function loadLGAsForState(stateId, targetSelect, selectedCityId, callback) {
+      if (!stateId) {
+        $(targetSelect).html('<option value="">-- Select LGA / City (optional) --</option>');
+        if (callback) callback();
+        return;
+      }
+      var citiesUrl = "{% url 'utility:ajax-load-cities' %}";
+      $.ajax({
+        url: citiesUrl,
+        data: { 'state': stateId },
+        success: function(htmlData) {
+          $(targetSelect).html(htmlData);
+          if (selectedCityId) {
+            $(targetSelect).val(selectedCityId);
+          }
+          if (callback) callback();
+        }
+      });
+    }
+
+    function refreshSubclanNodeIdPreview() {
+      var clanId = $('#modalCreateSubclanClanSelect').val();
+      var nodeType = $('#modalCreateSubclanNodeTypeSelect').val() || 'SUB_CLAN';
+      var url = $('#createSubClanForm').attr('data-generate-node-id-url');
+
+      if (!clanId) {
+        $('#modalCreateSubclanNodeIdInput').val('').attr('placeholder', 'Select a Parent Clan first');
+        return;
+      }
+
+      $.ajax({
+        url: url,
+        data: {
+          'clan_id': clanId,
+          'node_type': nodeType
+        },
+        dataType: 'json',
+        success: function(data) {
+          var nid = (data && (data.node_id || data.generated_node_id)) || '';
+          if (nid) {
+            $('#modalCreateSubclanNodeIdInput').val(nid);
+          }
+        },
+        error: function() {
+          var clanOpt = $('#modalCreateSubclanClanSelect option:selected');
+          var clanNid = clanOpt.data('node-id') || 'CLN-001';
+          $('#modalCreateSubclanNodeIdInput').val(clanNid + '/SB/001');
+        }
+      });
+    }
+
+    // When State dropdown changes in Create Modal
+    $('#modalCreateSubclanStateSelect').on('change', function() {
+      var stateId = $(this).val();
+      var clanSelect = $('#modalCreateSubclanClanSelect');
+      var citySelect = $('#modalCreateSubclanCitySelect');
+
+      loadLGAsForState(stateId, citySelect);
+
+      if (stateId) {
+        $.ajax({
+          url: "{% url 'platform_admin:api-load-clans' %}",
+          data: { 'state_id': stateId },
+          dataType: 'json',
+          success: function(data) {
+            var optionsHtml = '<option value="">-- Select Parent Clan (' + (data.clans ? data.clans.length : 0) + ' available) --</option>';
+            if (data && data.clans && data.clans.length > 0) {
+              data.clans.forEach(function(c) {
+                var cityLabel = c.city_name ? ' - ' + c.city_name : '';
+                optionsHtml += '<option value="' + c.id + '" data-node-id="' + c.node_id + '" data-state-id="' + (c.state_id || '') + '" data-city-id="' + (c.city_id || '') + '">' + c.name + ' [' + c.node_id + ']' + cityLabel + '</option>';
+              });
+            } else {
+              optionsHtml = '<option value="">-- No Clans in this State yet --</option>';
+            }
+            clanSelect.html(optionsHtml);
+            clanSelect.trigger('change');
+          }
+        });
+      }
+    });
+
+    // When Clan dropdown changes in Create Modal
+    $('#modalCreateSubclanClanSelect').on('change', function() {
+      var opt = $(this).find('option:selected');
+      var stateId = opt.data('state-id');
+      var cityId = opt.data('city-id');
+
+      if (stateId && !$('#modalCreateSubclanStateSelect').val()) {
+        $('#modalCreateSubclanStateSelect').val(stateId);
+        loadLGAsForState(stateId, '#modalCreateSubclanCitySelect', cityId);
+      } else if (stateId) {
+        loadLGAsForState(stateId, '#modalCreateSubclanCitySelect', cityId);
+      }
+
+      refreshSubclanNodeIdPreview();
+    });
+
+    $('#modalCreateSubclanNodeTypeSelect').on('change', refreshSubclanNodeIdPreview);
+
+    // Edit SubClan modal handler
+    $(document).on('click', '.js-edit-subclan-btn', function() {
+      var id = $(this).data('id');
+      var name = $(this).data('name');
+      var nodeId = $(this).data('node-id');
+      var nodeType = $(this).data('node-type');
+      var cityId = $(this).data('city-id');
+      var stateId = $(this).data('state-id');
+
+      var editUrl = "{% url 'platform_admin:subclan-edit' pk=0 %}".replace('/0/', '/' + id + '/');
+      $('#editSubClanForm').attr('action', editUrl);
+      $('#editSubclanNodeIdInput').val(nodeId);
+      $('#editSubclanNameInput').val(name);
+      $('#editSubclanNodeTypeSelect').val(nodeType);
+
+      loadLGAsForState(stateId, '#editSubclanCitySelect', cityId);
+    });
+
+    // Add Major Road for SubClan modal handler
+    $(document).on('click', '.js-add-road-for-subclan-btn', function() {
+      var clanId = $(this).data('clan-id');
+      var clanName = $(this).data('clan-name');
+      var subclanId = $(this).data('subclan-id');
+      var subclanName = $(this).data('subclan-name');
+      var subclanNodeId = $(this).data('subclan-node-id');
+      var stateId = $(this).data('state-id');
+      var cityId = $(this).data('city-id');
+
+      $('#mrModalClanId').val(clanId);
+      $('#mrModalParentRoadId').val(subclanId);
+      $('#mrModalStateId').val(stateId);
+      $('#mrModalCityId').val(cityId);
+      $('#mrModalRoadNameInput').val('').attr('placeholder', 'e.g. Major Road inside ' + subclanName);
+      $('#mrModalSubclanNameDisplay').text(subclanName);
+      $('#mrModalSubclanNodeIdDisplay').text(subclanNodeId);
+      $('#mrModalClanNameDisplay').text('under ' + (clanName || 'Clan'));
+      $('#mrModalRoadRelationSelect').val('CONTAINED_SUBCLAN');
+
+      // Live fetch sequential Node ID under this Sub-Clan
+      $.ajax({
+        url: "{% url 'platform_admin:api-generate-node-id' %}",
+        data: {
+          clan_id: clanId,
+          node_type: 'MAJOR_ROAD',
+          parent_road_id: subclanId,
+          road_relation: 'CONTAINED_SUBCLAN'
+        },
+        dataType: 'json',
+        success: function(data) {
+          if (data && (data.node_id || data.generated_node_id)) {
+            $('#mrModalNodeIdInput').val(data.node_id || data.generated_node_id);
+          }
+        },
+        error: function() {
+          $('#mrModalNodeIdInput').val(subclanNodeId + '/MR/001');
+        }
+      });
+
+      $('#addSubClanMajorRoadModal').modal('show');
+    });
+
+    $('#mrModalRoadRelationSelect').on('change', function() {
+      var clanId = $('#mrModalClanId').val();
+      var subclanId = $('#mrModalParentRoadId').val();
+      var relation = $(this).val();
+      $.ajax({
+        url: "{% url 'platform_admin:api-generate-node-id' %}",
+        data: {
+          clan_id: clanId,
+          node_type: 'MAJOR_ROAD',
+          parent_road_id: subclanId,
+          road_relation: relation
+        },
+        dataType: 'json',
+        success: function(data) {
+          if (data && (data.node_id || data.generated_node_id)) {
+            $('#mrModalNodeIdInput').val(data.node_id || data.generated_node_id);
+          }
+        }
+      });
+    });
+
+    // Filter Bar Dynamic Cascading
+    $('#filterSubclanStateSelect').on('change', function() {
+      $('#filterSubclanCitySelect').val('');
+      $('#filterSubclanClanSelect').val('');
+      $(this).closest('form').submit();
+    });
+
+    $('#filterSubclanCitySelect').on('change', function() {
+      $('#filterSubclanClanSelect').val('');
+      $(this).closest('form').submit();
+    });
+
+    $('#filterSubclanClanSelect').on('change', function() {
+      $(this).closest('form').submit();
+    });
+
+    // Trigger initial preview if clan pre-selected
+    if ($('#modalCreateSubclanClanSelect').val()) {
+      $('#modalCreateSubclanClanSelect').trigger('change');
+    }
+  });
+</script>
+
+{% endblock %}
