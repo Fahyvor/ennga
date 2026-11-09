@@ -265,6 +265,10 @@
           </div>
         </div>
 
+        <button type="button" class="btn btn-en-outline font-weight-700 js-open-csv-import-modal" data-toggle="modal" data-target="#csvImportModal" data-bs-toggle="modal" data-bs-target="#csvImportModal" style="cursor: pointer;">
+          Import CSV
+        </button>
+
         {% if is_admin %}
         <a href="{% url 'platform_admin:clan-access-management' %}" class="btn btn-en-outline">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2051,5 +2055,7 @@
 
   });
 </script>
+
+{% include 'platform_admin/partials/modal_territorial_csv_import.html' %}
 
 {% endblock content %}

@@ -339,9 +339,20 @@ class Clan(models.Model):
 
     @property
     def display_node_id(self):
+        if self.node_id and (self.node_id.startswith('NG/') or self.node_id.count('/') >= 4):
+            return self.node_id
+        state = self.state or (self.city.state if self.city else None)
+        if state:
+            from .territory_codes import build_clan_node_prefix
+            seq = self.state_number or 1
+            city = self.city
+            country = self.country or state.country
+            geo_zone = self.geo_political_zone or state.geo_political_zone
+            prefix = build_clan_node_prefix(country, geo_zone, state, city)
+            return f"{prefix}{seq:03d}"
         if self.node_id:
             return self.node_id
-        seq = self.state_number
+        seq = self.state_number or 1
         return f"CLN-{seq:03d}"
 
     @property
@@ -386,7 +397,7 @@ class Clan(models.Model):
                 total_clans = total_clans.exclude(pk=self.pk)
             next_seq = total_clans.count() + 1
 
-        if self.city and state:
+        if state:
             from .territory_codes import build_clan_node_prefix
             prefix = build_clan_node_prefix(self.country, self.geo_political_zone, state, self.city)
             return f"{prefix}{next_seq:03d}"
@@ -491,35 +502,55 @@ class SubClan(models.Model):
 
     @property
     def display_node_id(self):
+        clan_nid = (self.clan.display_node_id or self.clan.node_id) if self.clan else None
+
         if self.node_id:
-            clan_nid = (self.clan.node_id or self.clan.display_node_id) if self.clan else None
-            # If node_id is an unnested street/close format (e.g. CLN-082/STR-001),
-            # normalize to the complete territorial hierarchy CLN-082/MR/001/SR/001/STR/001
+            # If already full PRD format (starts with country code / zone / etc.)
+            if self.node_id.startswith('NG/') or self.node_id.count('/') >= 6:
+                return self.node_id
+
+            # Normalize unnested street/close format (e.g. CLN-082/STR-001)
+            normalized_suffix = None
             if self.node_type == 'STREET' and '/STR' in self.node_id and '/MR/' not in self.node_id:
                 m = re.match(r'^(.*?)/STR[-/]?(\d+)$', self.node_id)
                 if m:
-                    clan_part, seq = m.group(1), m.group(2)
-                    return f"{clan_part}/MR/001/SR/001/STR/{int(seq):03d}"
+                    normalized_suffix = f"MR/001/SR/001/STR/{int(m.group(2)):03d}"
             elif self.node_type == 'CLOSE' and '/CLS' in self.node_id and '/STR/' not in self.node_id:
                 m = re.match(r'^(.*?)/CLS[-/]?(\d+)$', self.node_id)
                 if m:
-                    clan_part, seq = m.group(1), m.group(2)
-                    return f"{clan_part}/MR/001/SR/001/STR/001/CLS/{int(seq):03d}"
+                    normalized_suffix = f"MR/001/SR/001/STR/001/CLS/{int(m.group(2)):03d}"
             elif self.node_type in ('SUB_CLAN', 'COMMUNITY') and '/STR/' in self.node_id:
                 m = re.match(r'^(.*?)/(?:MR/\d+/SR/\d+/STR|STR)[-/]?(\d+)$', self.node_id)
                 if m:
-                    clan_part, seq = m.group(1), m.group(2)
-                    return f"{clan_part}/SB/{int(seq):03d}"
-            if clan_nid and not self.node_id.startswith(clan_nid):
+                    normalized_suffix = f"SB/{int(m.group(2)):03d}"
+
+            if normalized_suffix:
+                if clan_nid:
+                    return f"{clan_nid}/{normalized_suffix}"
+                return normalized_suffix
+
+            # If node_id has a legacy clan prefix like CLN-002/... or NDD-CLN-1530/...
+            if clan_nid:
+                m_legacy = re.match(r'^(?:[A-Z0-9]+-)?CLN-\d+/(.*)$', self.node_id, re.IGNORECASE)
+                if m_legacy:
+                    return f"{clan_nid}/{m_legacy.group(1)}"
                 if self.node_id.startswith(('MR/', 'SR/', 'STR/', 'CLS/', 'SB/')):
                     return f"{clan_nid}/{self.node_id}"
+                if not self.node_id.startswith(clan_nid):
+                    m_code = re.match(r'^(?:SB|MR|SR|STR|CLS)[-/]?(\d+)$', self.node_id, re.IGNORECASE)
+                    if m_code:
+                        from .territory_codes import get_node_type_code
+                        code = get_node_type_code(self.node_type)
+                        return f"{clan_nid}/{code}/{int(m_code.group(1)):03d}"
+
             return self.node_id
+
         from .territory_codes import get_node_type_code
         code = get_node_type_code(self.node_type)
         parent = self.parent_road
-        clan_nid = (self.clan.node_id or self.clan.display_node_id) if self.clan else "CLN-001"
+        clan_nid = clan_nid or "CLN-001"
         if parent:
-            parent_nid = parent.node_id or parent.display_node_id
+            parent_nid = parent.display_node_id or parent.node_id
             if clan_nid and not parent_nid.startswith(clan_nid):
                 parent_nid = f"{clan_nid}/{parent_nid.lstrip('/')}"
         elif self.clan:
@@ -582,13 +613,13 @@ class SubClan(models.Model):
         from .territory_codes import get_node_type_code
         parent = self.parent_road
         node_type = self.node_type or 'SUB_CLAN'
-        clan_nid = (self.clan.node_id or self.clan.display_node_id) if self.clan else "CLN-001"
+        clan_nid = (self.clan.display_node_id or self.clan.node_id) if self.clan else "CLN-001"
 
         if node_type in ('SUB_CLAN', 'COMMUNITY'):
             prefix = f"{clan_nid}/SB/"
         elif node_type in ('MAJOR_ROAD', 'META_ROAD'):
             if parent:
-                parent_nid = parent.node_id or parent.display_node_id
+                parent_nid = parent.display_node_id or parent.node_id
                 if clan_nid and not parent_nid.startswith(clan_nid):
                     parent_nid = f"{clan_nid}/{parent_nid.lstrip('/')}"
             else:
@@ -600,14 +631,14 @@ class SubClan(models.Model):
                         node_type__in=['SUB_CLAN', 'COMMUNITY'],
                         is_deleted=False
                     ).first() if self.clan else None
-                    parent_nid = (subclan.node_id or subclan.display_node_id) if subclan else f"{clan_nid}/SB/001"
+                    parent_nid = (subclan.display_node_id or subclan.node_id) if subclan else f"{clan_nid}/SB/001"
             # Ensure parent_nid has territorial node type before /MR/
             if parent_nid == clan_nid and self.road_relation not in ('CONTAINED_CLAN', 'PASSING_CLAN'):
                 parent_nid = f"{parent_nid}/SB/001"
             prefix = f"{parent_nid}/MR/"
         elif node_type in ('SUB_ROAD', 'LINK_ROAD'):
             if parent:
-                parent_nid = parent.node_id or parent.display_node_id
+                parent_nid = parent.display_node_id or parent.node_id
                 if clan_nid and not parent_nid.startswith(clan_nid):
                     parent_nid = f"{clan_nid}/{parent_nid.lstrip('/')}"
             else:
@@ -616,11 +647,11 @@ class SubClan(models.Model):
                     node_type__in=['MAJOR_ROAD', 'META_ROAD'],
                     is_deleted=False
                 ).first() if self.clan else None
-                parent_nid = (mr.node_id or mr.display_node_id) if mr else f"{clan_nid}/MR/001"
+                parent_nid = (mr.display_node_id or mr.node_id) if mr else f"{clan_nid}/MR/001"
             prefix = f"{parent_nid}/SR/"
         elif node_type == 'STREET':
             if parent:
-                parent_nid = parent.node_id or parent.display_node_id
+                parent_nid = parent.display_node_id or parent.node_id
                 if clan_nid and not parent_nid.startswith(clan_nid):
                     parent_nid = f"{clan_nid}/{parent_nid.lstrip('/')}"
             else:
@@ -629,11 +660,11 @@ class SubClan(models.Model):
                     node_type__in=['SUB_ROAD', 'LINK_ROAD'],
                     is_deleted=False
                 ).first() if self.clan else None
-                parent_nid = (sr.node_id or sr.display_node_id) if sr else f"{clan_nid}/MR/001/SR/001"
+                parent_nid = (sr.display_node_id or sr.node_id) if sr else f"{clan_nid}/MR/001/SR/001"
             prefix = f"{parent_nid}/STR/"
         elif node_type == 'CLOSE':
             if parent:
-                parent_nid = parent.node_id or parent.display_node_id
+                parent_nid = parent.display_node_id or parent.node_id
                 if clan_nid and not parent_nid.startswith(clan_nid):
                     parent_nid = f"{clan_nid}/{parent_nid.lstrip('/')}"
             else:
@@ -642,11 +673,11 @@ class SubClan(models.Model):
                     node_type='STREET',
                     is_deleted=False
                 ).first() if self.clan else None
-                parent_nid = (st.node_id or st.display_node_id) if st else f"{clan_nid}/MR/001/SR/001/STR/001"
+                parent_nid = (st.display_node_id or st.node_id) if st else f"{clan_nid}/MR/001/SR/001/STR/001"
             prefix = f"{parent_nid}/CLS/"
         else:
             code = get_node_type_code(node_type)
-            parent_nid = (parent.node_id or parent.display_node_id) if parent else clan_nid
+            parent_nid = (parent.display_node_id or parent.node_id) if parent else clan_nid
             if clan_nid and not parent_nid.startswith(clan_nid):
                 parent_nid = f"{clan_nid}/{parent_nid.lstrip('/')}"
             prefix = f"{parent_nid}/{code}/"
@@ -695,20 +726,24 @@ class SubClan(models.Model):
             if not self.geo_political_zone and self.city.state and self.city.state.geo_political_zone:
                 self.geo_political_zone = self.city.state.geo_political_zone
 
-        clan_nid = (self.clan.node_id or self.clan.display_node_id) if self.clan else None
+        clan_nid = (self.clan.display_node_id or self.clan.node_id) if self.clan else None
         if not self.node_id:
             self.node_id = self.generate_next_node_id()
         elif clan_nid and not self.node_id.startswith(clan_nid):
-            # User or form submitted a partial ID (like 'SB/001', 'MR/001', '001')
+            # User or form submitted a partial ID (like 'SB/001', 'MR/001', '001') or legacy CLN-xxx
             cleaned = self.node_id.strip().lstrip('/')
-            from .territory_codes import get_node_type_code
-            code = get_node_type_code(self.node_type)
-            if cleaned.startswith(f"{code}/"):
-                self.node_id = f"{clan_nid}/{cleaned}"
-            elif re.match(r'^\d+$', cleaned):
-                self.node_id = f"{clan_nid}/{code}/{int(cleaned):03d}"
+            m_legacy = re.match(r'^(?:[A-Z0-9]+-)?CLN-\d+/(.*)$', cleaned, re.IGNORECASE)
+            if m_legacy:
+                self.node_id = f"{clan_nid}/{m_legacy.group(1)}"
             else:
-                self.node_id = f"{clan_nid}/{cleaned}"
+                from .territory_codes import get_node_type_code
+                code = get_node_type_code(self.node_type)
+                if cleaned.startswith(f"{code}/"):
+                    self.node_id = f"{clan_nid}/{cleaned}"
+                elif re.match(r'^\d+$', cleaned):
+                    self.node_id = f"{clan_nid}/{code}/{int(cleaned):03d}"
+                else:
+                    self.node_id = f"{clan_nid}/{cleaned}"
 
         if self.parent_road and self.node_type in ('MAJOR_ROAD', 'META_ROAD'):
             if self.parent_road.node_type in ('SUB_CLAN', 'COMMUNITY') and self.road_relation in ('CONTAINED_CLAN', 'PASSING_CLAN'):

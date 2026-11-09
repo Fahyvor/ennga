@@ -33,6 +33,7 @@ from .views_clans import (
     infrastructure_edit_view,
     infrastructure_delete_view,
 )
+from .views_csv_import import territorial_nodes_import_csv_view
 from .views_market_sector import (
     market_sector_data_list_view, list_search_market_sector_data_view, market_sector_geo_zone_detail_view, list_load_market_sector_geo_zone_details_view, 
     market_sector_state_location_detail_view, list_load_market_sector_state_location_details_view, 
@@ -96,6 +97,7 @@ urlpatterns = [
     path('clans/', clan_list_view, name='clan-list'),
     path('subclans/', subclan_list_view, name='subclan-list'),
     path('roads/', road_list_view, name='road-list'),
+    path('territorial-nodes/import-csv/', territorial_nodes_import_csv_view, name='territorial-nodes-import-csv'),
     path('roads/major/', road_list_view, {'tier': 'major'}, name='major-road-list'),
     path('roads/sub-roads/', road_list_view, {'tier': 'sub'}, name='sub-road-list'),
     path('roads/streets/', road_list_view, {'tier': 'street'}, name='street-list'),

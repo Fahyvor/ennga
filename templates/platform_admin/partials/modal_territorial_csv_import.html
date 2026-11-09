@@ -1,0 +1,696 @@
+{% load static %}
+<!-- Bulk CSV Import Modal for Territorial Nodes (Sub-Clans, Major Roads, Sub Roads, Streets, Closes) -->
+<style>
+  .csv-drop-zone {
+    border: 2px dashed #94a3b8;
+    border-radius: 16px;
+    padding: 30px 20px;
+    text-align: center;
+    background: #f8fafc;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+  }
+  .csv-drop-zone:hover, .csv-drop-zone.dragover {
+    border-color: #0284c7;
+    background: #f0f9ff;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.08);
+  }
+  .csv-file-input-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 10;
+  }
+  .csv-sample-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    position: relative;
+    overflow-x: auto;
+  }
+  .csv-preview-table-container {
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    position: relative;
+    background: #ffffff;
+  }
+  .csv-preview-table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+  .csv-preview-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .csv-preview-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: rgba(248, 250, 252, 0.85) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    backdrop-filter: blur(12px) saturate(160%);
+    border-bottom: 1.5px solid rgba(203, 213, 225, 0.8) !important;
+    border-top: none !important;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
+    color: #0f172a;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 10px;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .csv-preview-table tbody td {
+    vertical-align: middle;
+    padding: 10px 10px;
+  }
+  .csv-stat-pill {
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+</style>
+
+<div class="modal fade" id="csvImportModal" tabindex="-1" role="dialog" aria-labelledby="csvImportModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+    <div class="modal-content en-card p-3 p-md-4" style="border-radius: 20px;">
+      
+      <!-- Modal Header -->
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <span class="pill-badge mb-1" style="font-size: 10px; font-weight: 700; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 2px 8px;">
+            BULK DATA INGESTION
+          </span>
+          <h4 class="modal-title font-weight-700" id="csvImportModalTitle" style="color: var(--brand-dark);">
+            Import Territorial Nodes via CSV
+          </h4>
+          <p class="text-muted mb-0" style="font-size: 13px;">
+            Bulk upload Sub-Clans, Major Roads, Sub Roads, Streets, or Closes. Automatically calculates and structures PRD Territorial Node IDs.
+          </p>
+        </div>
+        <button type="button" class="close btn-close js-modal-close-btn" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" onclick="$(this).closest('.modal').modal('hide');" style="font-size: 24px; cursor: pointer; background: transparent; border: none; line-height: 1;">
+          <span aria-hidden="true" style="pointer-events: none;">&times;</span>
+        </button>
+      </div>
+
+      <!-- Modal Body Form -->
+      <form method="post" action="{% url 'platform_admin:territorial-nodes-import-csv' %}" id="csvImportForm" enctype="multipart/form-data"
+            data-cities-url="{% url 'utility:ajax-load-cities' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <input type="hidden" name="action" id="csvImportActionInput" value="preview">
+        <input type="hidden" name="is_ajax" value="true">
+
+        <div class="modal-body pt-3">
+
+          <!-- Upload & Configuration Section -->
+          <div id="csvConfigSection">
+            <div class="row">
+              <!-- Classification Mode -->
+              <div class="col-md-4 mb-3">
+                <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+                  Import Classification Mode
+                </label>
+                <select name="node_type_override" id="csvNodeTypeSelect" class="form-control form-control-modern" style="font-size: 13px;">
+                  <option value="AUTO" selected>Auto-detect from CSV columns</option>
+                  <option value="SUB_CLAN">Sub-Clans (SB)</option>
+                  <option value="COMMUNITY">Communities / Villages (SB)</option>
+                  <option value="MAJOR_ROAD">Major Roads (MR)</option>
+                  <option value="SUB_ROAD">Sub Roads / Link Roads (SR)</option>
+                  <option value="STREET">Streets (STR)</option>
+                  <option value="CLOSE">Closes / Crescents (CLS)</option>
+                </select>
+                <small class="text-muted" style="font-size: 11px;">Auto-detect identifies columns like <code>subclan</code>, <code>major_road</code>, <code>street</code>.</small>
+              </div>
+
+              <!-- Fallback State -->
+              <div class="col-md-4 mb-3">
+                <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+                  Default State <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Optional</span>
+                </label>
+                <select name="default_state" id="csvModalStateSelect" class="form-control form-control-modern" style="font-size: 13px;">
+                  <option value="">-- Auto-detect / No Default --</option>
+                  {% for st in all_states %}
+                    <option value="{{ st.id }}" {% if selected_state and selected_state.id == st.id %}selected{% endif %}>
+                      {{ st.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+                <small class="text-muted" style="font-size: 11px;">Used if the CSV does not specify a State for new Clans.</small>
+              </div>
+
+              <!-- Fallback LGA / City -->
+              <div class="col-md-4 mb-3">
+                <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+                  Default LGA / City <span class="badge badge-light text-muted font-weight-normal" style="font-size: 10px;">Optional</span>
+                </label>
+                <select name="default_city" id="csvModalCitySelect" class="form-control form-control-modern" style="font-size: 13px;">
+                  <option value="">-- Auto-detect / No Default --</option>
+                  {% for ct in available_cities %}
+                    <option value="{{ ct.id }}" {% if selected_city and selected_city.id == ct.id %}selected{% endif %}>
+                      {{ ct.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+                <small class="text-muted" style="font-size: 11px;">Enables generating full PRD Node IDs (e.g. <code>.../EASTERN-OBOLO/CLN/001</code>).</small>
+              </div>
+            </div>
+
+            <!-- Drag and Drop Zone -->
+            <div class="mb-3">
+              <label class="font-weight-600 mb-1" style="font-size: 13px; color: var(--brand-dark);">
+                CSV File to Upload *
+              </label>
+              
+              <div class="position-relative">
+                <label for="csvFileInput" class="csv-drop-zone d-block w-100 mb-0 position-relative" id="csvDropZone" style="cursor: pointer; min-height: 140px;">
+                  
+                  <!-- Transparent Native File Input Overlay (natively intercepts clicks & drops anywhere on the box) -->
+                  <input type="file" name="csv_file" id="csvFileInput" accept=".csv,text/csv,text/plain" class="csv-file-input-overlay">
+
+                  <!-- Default Prompt State -->
+                  <div id="dropZonePrompt" style="pointer-events: none; padding: 14px 0;">
+                    <strong style="color: var(--brand-dark); font-size: 15px; display: block;">
+                      Click to browse or drag & drop CSV file here
+                    </strong>
+                    <p class="text-muted mb-2 mt-1" style="font-size: 12px;">
+                      Supports .csv files with UTF-8 encoding (Max 10MB)
+                    </p>
+                    <span class="btn btn-sm btn-en-cyan font-weight-700 px-3 py-1" style="border-radius: 8px; pointer-events: none;">
+                      Browse CSV File
+                    </span>
+                  </div>
+
+                  <!-- File Selected View -->
+                  <div id="dropZoneFileInfo" style="display: none; position: relative; z-index: 25; pointer-events: auto; padding: 8px 0;">
+                    <div class="d-inline-flex flex-wrap align-items-center justify-content-between p-3 rounded" style="background: #e0f2fe; border: 1.5px solid #bae6fd; max-width: 100%; gap: 14px;">
+                      <div class="text-left" style="min-width: 140px;">
+                        <strong id="csvSelectedFileName" style="color: #0369a1; font-size: 14px; display: block; word-break: break-all;">file.csv</strong>
+                        <span id="csvSelectedFileSize" class="text-muted" style="font-size: 11px;">0 KB</span>
+                      </div>
+                      <div class="d-flex align-items-center" style="gap: 8px;">
+                        <button type="button" class="btn btn-sm btn-outline-primary font-weight-600 js-trigger-file-change" style="border-radius: 8px;">
+                          Change File
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger font-weight-600 js-trigger-file-remove" style="border-radius: 8px;">
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                </label>
+              </div>
+            </div>
+
+            <!-- Ingestion Options -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between p-3 rounded mb-3" style="background: #f1f5f9; gap: 12px;">
+              <div class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input" id="csvDryRunCheck" checked>
+                <label class="custom-control-label font-weight-600 text-dark" for="csvDryRunCheck" style="font-size: 13px; cursor: pointer;">
+                  Dry-run preview first (extract names & verify calculated Territorial IDs before saving)
+                </label>
+              </div>
+              <div class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input" name="auto_create_clans" id="csvAutoCreateClanCheck" value="true" checked>
+                <label class="custom-control-label font-weight-600 text-dark" for="csvAutoCreateClanCheck" style="font-size: 13px; cursor: pointer;">
+                  Automatically register parent Clans if they don't exist yet
+                </label>
+              </div>
+            </div>
+
+            <!-- CSV Schema Guidelines & Copy-able Templates -->
+            <div class="accordion" id="csvSampleAccordion">
+              <div class="card border-0 mb-0" style="background: transparent;">
+                <div class="card-header p-0 border-0" id="csvSampleHeading" style="background: transparent;">
+                  <button class="btn btn-link btn-sm text-left p-0 font-weight-600 d-flex align-items-center" type="button" data-toggle="collapse" data-target="#csvSampleCollapse" aria-expanded="false" aria-controls="csvSampleCollapse" style="color: #0284c7; text-decoration: none; font-size: 12px; gap: 6px;">
+                    <span>View Supported CSV Format Examples & Templates</span>
+                    <span>&darr;</span>
+                  </button>
+                </div>
+
+                <div id="csvSampleCollapse" class="collapse mt-2" aria-labelledby="csvSampleHeading" data-parent="#csvSampleAccordion">
+                  <div class="p-3 rounded" style="background: #ffffff; border: 1px solid #e2e8f0;">
+                    
+                    <!-- Tabs for format types -->
+                    <ul class="nav nav-pills mb-2" id="sampleTabs" role="tablist" style="gap: 6px;">
+                      <li class="nav-item">
+                        <a class="nav-link active py-1 px-2" style="font-size: 11px; border-radius: 6px;" id="sample-subclans-tab" data-toggle="pill" href="#sample-subclans" role="tab">Sub-Clans Sample</a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link py-1 px-2" style="font-size: 11px; border-radius: 6px;" id="sample-roads-tab" data-toggle="pill" href="#sample-roads" role="tab">Major Roads Sample</a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link py-1 px-2" style="font-size: 11px; border-radius: 6px;" id="sample-subroads-tab" data-toggle="pill" href="#sample-subroads" role="tab">Sub Roads Sample</a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link py-1 px-2" style="font-size: 11px; border-radius: 6px;" id="sample-streets-tab" data-toggle="pill" href="#sample-streets" role="tab">Streets & Closes Sample</a>
+                      </li>
+                    </ul>
+
+                    <div class="tab-content" id="sampleTabsContent">
+                      <!-- Subclans Sample -->
+                      <div class="tab-pane fade show active" id="sample-subclans" role="tabpanel">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                          <small class="text-muted" style="font-size: 11px;">Sub-Clans & Communities mapped to Clan:</small>
+                          <button type="button" class="btn btn-sm btn-link p-0 text-primary js-copy-sample" data-target="#csvSampleSubclansText" style="font-size: 11px;">Copy Sample</button>
+                        </div>
+                        <pre class="csv-sample-box mb-0" id="csvSampleSubclansText">clan,subclan
+Iko,Atabrikang
+Iko,Iko
+Iko,Ikonta
+Iko,Kampa
+Okoro Ete,Akpabom
+Okoro Ete,Ama Ngbuoji
+Okoro Ete,Okoroete</pre>
+                      </div>
+
+                      <!-- Major Roads Sample -->
+                      <div class="tab-pane fade" id="sample-roads" role="tabpanel">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                          <small class="text-muted" style="font-size: 11px;">Major Roads contained inside Clan or Sub-Clan:</small>
+                          <button type="button" class="btn btn-sm btn-link p-0 text-primary js-copy-sample" data-target="#csvSampleRoadsText" style="font-size: 11px;">Copy Sample</button>
+                        </div>
+                        <pre class="csv-sample-box mb-0" id="csvSampleRoadsText">clan,subclan,major_road,road_surface,road_condition
+Iko,Atabrikang,Atabrikang Link Expressway,ASPHALT,GOOD
+Okoro Ete,,Okoro Ete Central Trunk Road,ASPHALT,FAIR</pre>
+                      </div>
+
+                      <!-- Sub Roads Sample -->
+                      <div class="tab-pane fade" id="sample-subroads" role="tabpanel">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                          <small class="text-muted" style="font-size: 11px;">Sub Roads / Link Roads attached to Major Road:</small>
+                          <button type="button" class="btn btn-sm btn-link p-0 text-primary js-copy-sample" data-target="#csvSampleSubroadsText" style="font-size: 11px;">Copy Sample</button>
+                        </div>
+                        <pre class="csv-sample-box mb-0" id="csvSampleSubroadsText">clan,parent_road,sub_road,road_surface,road_condition
+Iko,Atabrikang Link Expressway,Fishery Link Road,INTERLOCKED,GOOD</pre>
+                      </div>
+
+                      <!-- Streets & Closes Sample -->
+                      <div class="tab-pane fade" id="sample-streets" role="tabpanel">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                          <small class="text-muted" style="font-size: 11px;">Streets and Closes hierarchy:</small>
+                          <button type="button" class="btn btn-sm btn-link p-0 text-primary js-copy-sample" data-target="#csvSampleStreetsText" style="font-size: 11px;">Copy Sample</button>
+                        </div>
+                        <pre class="csv-sample-box mb-0" id="csvSampleStreetsText">clan,parent_road,node_type,name
+Iko,Fishery Link Road,STREET,Chief Ikonta Crescent
+Iko,Chief Ikonta Crescent,CLOSE,Sunrise Close</pre>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Loading Spinner Banner -->
+          <div id="csvLoadingSpinner" style="display: none;" class="text-center py-4">
+            <div class="spinner-border text-primary mb-2" role="status" style="width: 2.5rem; height: 2.5rem;">
+              <span class="sr-only">Processing...</span>
+            </div>
+            <h5 class="font-weight-700 text-dark mb-1" id="csvLoadingTitle">Processing CSV Data...</h5>
+            <p class="text-muted mb-0" id="csvLoadingDesc" style="font-size: 13px;">Extracting territorial names and computing Node IDs...</p>
+          </div>
+
+          <!-- Live Preview Results Section (Appears after preview click) -->
+          <div id="csvPreviewSection" style="display: none;" class="mt-3">
+            
+            <!-- Summary Badges Bar -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-3" style="gap: 8px;">
+              <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                <span class="csv-stat-pill" style="background: #e0f2fe; color: #0369a1;">
+                  Total Rows: <strong id="previewTotalRows">0</strong>
+                </span>
+                <span class="csv-stat-pill" style="background: #dcfce7; color: #15803d;">
+                  Ready to Create: <strong id="previewValidRows">0</strong>
+                </span>
+                <span class="csv-stat-pill" style="background: #f3e8ff; color: #7e22ce;">
+                  New Clans: <strong id="previewNewClans">0</strong>
+                </span>
+                <span class="csv-stat-pill" style="background: #fef3c7; color: #b45309;" id="previewSkippedPill">
+                  Existing (Skip): <strong id="previewSkippedRows">0</strong>
+                </span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-secondary font-weight-600" onclick="backToUploadStep();" style="border-radius: 8px;">
+                &larr; Choose Different File
+              </button>
+            </div>
+
+            <!-- Preview Table -->
+            <div class="csv-preview-table-container">
+              <table class="table table-sm table-hover mb-0 csv-preview-table" style="font-size: 12px; background: #ffffff;">
+                <thead>
+                  <tr>
+                    <th style="width: 45px;">#</th>
+                    <th>Clan Name</th>
+                    <th>Node Name</th>
+                    <th>Classification</th>
+                    <th>Parent Node</th>
+                    <th>Calculated Territorial Node ID</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="csvPreviewTableBody">
+                  <!-- Populated dynamically via JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Commit Action Confirmation Banner -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between p-3 rounded mt-3" style="background: #ecfdf5; border: 1.5px solid #a7f3d0; gap: 10px;">
+              <div>
+                <strong style="color: #065f46; font-size: 14px;">Preview verified and IDs calculated successfully.</strong>
+                <p class="text-muted mb-0" style="font-size: 12px;">Click below to write and commit all records to the platform database.</p>
+              </div>
+              <button type="button" class="btn btn-success font-weight-700 px-4 py-2" id="btnExecuteCommit" onclick="executeCsvCommit();" style="border-radius: 10px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                Confirm & Commit Records to Database
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Alert / Error Display -->
+          <div id="csvErrorAlert" class="alert alert-danger mt-3" style="display: none; border-radius: 10px; font-size: 13px;">
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer border-0 pt-0 d-flex justify-content-between">
+          <button type="button" class="btn btn-en-outline" data-dismiss="modal" data-bs-dismiss="modal" onclick="$(this).closest('.modal').modal('hide');">
+            Cancel
+          </button>
+          <div class="d-flex align-items-center" style="gap: 8px;">
+            <button type="button" class="btn btn-en-cyan font-weight-700" id="btnProcessCsv">
+              Preview & Calculate IDs
+            </button>
+          </div>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function resetCsvFileInput() {
+    var fileInput = document.getElementById('csvFileInput');
+    if (fileInput) {
+      fileInput.value = '';
+      $(fileInput).css({ 'z-index': 10, 'pointer-events': 'auto' });
+    }
+    $('#dropZoneFileInfo').hide();
+    $('#dropZonePrompt').show();
+    $('#csvPreviewSection').hide();
+    $('#csvConfigSection').show();
+    $('#btnProcessCsv').show();
+    $('#csvErrorAlert').hide();
+  }
+
+  function backToUploadStep() {
+    $('#csvPreviewSection').hide();
+    $('#csvConfigSection').show();
+    $('#btnProcessCsv').show();
+  }
+
+  $(document).ready(function() {
+    // Explicit trigger handler for all CSV Import buttons across all views
+    $(document).on('click', '.js-open-csv-import-modal, [data-target="#csvImportModal"], [data-bs-target="#csvImportModal"]', function(e) {
+      e.preventDefault();
+      $('#csvImportModal').modal('show');
+    });
+
+    $('#csvImportModal').on('show.bs.modal', function() {
+      $('#csvErrorAlert').hide();
+      var input = document.getElementById('csvFileInput');
+      if (!input || !input.files || !input.files.length) {
+        resetCsvFileInput();
+      }
+    });
+
+    var dropZone = document.getElementById('csvDropZone');
+    var fileInput = document.getElementById('csvFileInput');
+
+    if (dropZone && fileInput) {
+      ['dragenter', 'dragover'].forEach(function(eventName) {
+        dropZone.addEventListener(eventName, function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          $(dropZone).addClass('dragover');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(function(eventName) {
+        dropZone.addEventListener(eventName, function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          $(dropZone).removeClass('dragover');
+        }, false);
+      });
+
+      dropZone.addEventListener('drop', function(e) {
+        var dt = e.dataTransfer;
+        var files = dt.files;
+        if (files && files.length) {
+          fileInput.files = files;
+          handleCsvFileSelected(files[0]);
+        }
+      }, false);
+
+      fileInput.addEventListener('change', function() {
+        if (this.files && this.files.length) {
+          handleCsvFileSelected(this.files[0]);
+        }
+      });
+    }
+
+    function handleCsvFileSelected(file) {
+      if (!file) return;
+      $('#csvSelectedFileName').text(file.name);
+      var sizeKb = (file.size / 1024).toFixed(1);
+      $('#csvSelectedFileSize').text(sizeKb + ' KB');
+      $('#dropZonePrompt').hide();
+      $('#dropZoneFileInfo').show();
+      // Move overlay behind action buttons so Change/Remove can be clicked freely
+      $('#csvFileInput').css({ 'z-index': 1, 'pointer-events': 'none' });
+      $('#csvErrorAlert').hide();
+    }
+
+    // Change & Remove file buttons inside info box
+    $(document).on('click', '.js-trigger-file-change', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var input = document.getElementById('csvFileInput');
+      if (input) {
+        $(input).css({ 'z-index': 10, 'pointer-events': 'auto' });
+        input.click();
+      }
+    });
+
+    $(document).on('click', '.js-trigger-file-remove', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      resetCsvFileInput();
+    });
+
+    // Dynamic LGA loading based on State
+    $('#csvModalStateSelect').on('change', function() {
+      var stateId = $(this).val();
+      var cityUrl = $('#csvImportForm').data('cities-url');
+      var $citySelect = $('#csvModalCitySelect');
+
+      $citySelect.html('<option value="">-- Auto-detect / No Default --</option>');
+      if (!stateId) return;
+
+      $.ajax({
+        url: cityUrl,
+        data: { 'state': stateId },
+        success: function(data) {
+          $citySelect.html(data);
+        }
+      });
+    });
+
+    // Copy Sample CSV Button logic
+    $(document).on('click', '.js-copy-sample', function(e) {
+      e.preventDefault();
+      var targetId = $(this).data('target');
+      var text = $(targetId).text();
+      navigator.clipboard.writeText(text).then(function() {
+        alert('Sample CSV copied to clipboard!');
+      });
+    });
+
+    // Dry Run Toggle
+    $('#csvDryRunCheck').on('change', function() {
+      if ($(this).is(':checked')) {
+        $('#btnProcessCsv').text('Preview & Calculate IDs');
+        $('#csvImportActionInput').val('preview');
+      } else {
+        $('#btnProcessCsv').text('Import & Commit Directly');
+        $('#csvImportActionInput').val('commit');
+      }
+    });
+
+    // Process / Submit Button
+    $('#btnProcessCsv').on('click', function(e) {
+      e.preventDefault();
+      var files = $('#csvFileInput')[0].files;
+      if (!files || !files.length) {
+        $('#csvErrorAlert').text('Please select a CSV file first.').show();
+        return;
+      }
+
+      var isDryRun = $('#csvDryRunCheck').is(':checked');
+      if (isDryRun) {
+        submitCsvAjax('preview');
+      } else {
+        if (confirm('Are you sure you want to write these records directly into the database without previewing?')) {
+          submitCsvAjax('commit');
+        }
+      }
+    });
+
+    function submitCsvAjax(action) {
+      var form = document.getElementById('csvImportForm');
+      var formData = new FormData(form);
+      formData.set('action', action);
+
+      $('#csvErrorAlert').hide();
+      $('#csvConfigSection').hide();
+      $('#csvPreviewSection').hide();
+      $('#btnProcessCsv').hide();
+      $('#csvLoadingSpinner').show();
+
+      if (action === 'preview') {
+        $('#csvLoadingTitle').text('Validating CSV & Calculating IDs...');
+        $('#csvLoadingDesc').text('Simulating hierarchical node ID sequences according to territorial structure...');
+      } else {
+        $('#csvLoadingTitle').text('Saving Records to Database...');
+        $('#csvLoadingDesc').text('Writing Clans, Sub-Clans, and Roads with node relations...');
+      }
+
+      var csrfToken = $('input[name="csrfmiddlewaretoken"]', form).val();
+
+      $.ajax({
+        url: $(form).attr('action'),
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': csrfToken
+        },
+        success: function(resp) {
+          $('#csvLoadingSpinner').hide();
+          if (resp.status === 'success') {
+            if (action === 'preview') {
+              renderPreviewResults(resp);
+            } else {
+              // Commit Success
+              alert(resp.message || 'Records successfully imported to the platform!');
+              window.location.reload();
+            }
+          } else {
+            $('#csvLoadingSpinner').hide();
+            $('#csvConfigSection').show();
+            $('#btnProcessCsv').show();
+            $('#csvErrorAlert').text(resp.message || 'An error occurred processing the file.').show();
+          }
+        },
+        error: function(xhr) {
+          $('#csvLoadingSpinner').hide();
+          $('#csvConfigSection').show();
+          $('#btnProcessCsv').show();
+          var msg = 'Failed to process CSV.';
+          if (xhr.responseJSON && xhr.responseJSON.message) {
+            msg = xhr.responseJSON.message;
+          }
+          $('#csvErrorAlert').text(msg).show();
+        }
+      });
+    }
+
+    function renderPreviewResults(data) {
+      $('#previewTotalRows').text(data.total_rows);
+      $('#previewValidRows').text(data.valid_rows);
+      $('#previewNewClans').text(data.new_clans_count);
+      $('#previewSkippedRows').text(data.skipped_rows);
+
+      var $tbody = $('#csvPreviewTableBody');
+      $tbody.empty();
+
+      if (!data.rows || !data.rows.length) {
+        $tbody.append('<tr><td colspan="7" class="text-center py-3 text-muted">No rows to preview.</td></tr>');
+      } else {
+        data.rows.forEach(function(r) {
+          var typeBadge = '<span class="badge badge-secondary">' + (r.node_type_display || r.node_type) + '</span>';
+          if (r.node_type === 'SUB_CLAN' || r.node_type === 'COMMUNITY') {
+            typeBadge = '<span class="badge" style="background: #f3e8ff; color: #7e22ce;">' + (r.node_type_display || 'Sub-Clan') + '</span>';
+          } else if (r.node_type === 'MAJOR_ROAD') {
+            typeBadge = '<span class="badge" style="background: #ecfeff; color: #0e7490;">' + (r.node_type_display || 'Major Road') + '</span>';
+          } else if (r.node_type === 'SUB_ROAD') {
+            typeBadge = '<span class="badge" style="background: #eff6ff; color: #1d4ed8;">' + (r.node_type_display || 'Sub Road') + '</span>';
+          } else if (r.node_type === 'STREET') {
+            typeBadge = '<span class="badge" style="background: #ecfdf5; color: #047857;">' + (r.node_type_display || 'Street') + '</span>';
+          }
+
+          var statusBadge = '<span class="badge badge-success">Ready</span>';
+          if (r.status_code === 'existing') {
+            statusBadge = '<span class="badge badge-warning text-dark">Already Exists</span>';
+          } else if (r.status_code === 'ready_new_clan') {
+            statusBadge = '<span class="badge badge-info">New Clan + Node</span>';
+          } else if (r.status_code === 'error') {
+            statusBadge = '<span class="badge badge-danger">Error</span>';
+          }
+
+          var clanBadge = '<strong>' + r.clan_name + '</strong>';
+          if (r.clan_status === 'new') {
+            clanBadge += ' <span class="badge badge-pill badge-primary" style="font-size: 9px;">New Clan</span>';
+          }
+
+          var tr = '<tr>' +
+            '<td>' + r.row_num + '</td>' +
+            '<td>' + clanBadge + '</td>' +
+            '<td><strong>' + r.name + '</strong></td>' +
+            '<td>' + typeBadge + '</td>' +
+            '<td><small class="text-muted">' + (r.parent_name || '-') + '</small></td>' +
+            '<td><code class="font-weight-bold" style="color: #0369a1; font-size: 11px;">' + r.generated_node_id + '</code></td>' +
+            '<td>' + statusBadge + '</td>' +
+            '</tr>';
+          $tbody.append(tr);
+        });
+      }
+
+      $('#csvPreviewSection').show();
+    }
+
+    window.executeCsvCommit = function() {
+      if (confirm('Commit and create all calculated territorial records in the platform database now?')) {
+        submitCsvAjax('commit');
+      }
+    };
+  });
+</script>
