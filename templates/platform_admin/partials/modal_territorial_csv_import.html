@@ -670,6 +670,9 @@ Iko,Chief Ikonta Crescent,CLOSE,Sunrise Close</pre>
           if (r.clan_status === 'new') {
             clanBadge += ' <span class="badge badge-pill badge-primary" style="font-size: 9px;">New Clan</span>';
           }
+          if (r.lga_name && r.lga_name !== '-') {
+            clanBadge += '<div style="font-size: 11px; color: #64748b; font-weight: 500;">LGA: ' + r.lga_name + '</div>';
+          }
 
           var tr = '<tr>' +
             '<td>' + r.row_num + '</td>' +

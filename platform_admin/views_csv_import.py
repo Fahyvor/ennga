@@ -160,10 +160,10 @@ def process_territorial_nodes_csv(
     )
 
     # In-memory tracking structures across the CSV batch
-    clans_cache = {}          # clan_name.lower() -> dict of clan metadata & object
-    nodes_cache = {}          # (clan_name.lower(), node_name.lower()) -> dict of node metadata & object
+    clans_cache = {}          # (lga_key, clan_name.lower()) -> dict of clan metadata & object
+    nodes_cache = {}          # (lga_key, clan_name.lower(), node_name.lower(), node_type) -> dict of node metadata & object
     allocated_seqs = {}       # prefix -> int sequence counter
-    next_new_clan_seq = None  # sequential tracker for brand new clans created in this batch
+    next_clan_seq_by_state = {}  # state_key -> sequential tracker for brand new clans created in this batch
 
     preview_rows = []
     total_valid = 0
@@ -278,15 +278,39 @@ def process_territorial_nodes_csv(
             else:
                 road_relation = 'CONTAINED_CLAN'
 
-        # 4. Resolve or Plan Clan
-        clan_key = clan_name.lower()
-        clan_info = clans_cache.get(clan_key)
+        # 4. Resolve Target State & Target LGA (City) for this row
+        row_state_val = (row.get('state') or row.get('state_name') or '').strip()
+        st = resolve_state(row_state_val) if row_state_val else default_state
+
+        row_city_val = (row.get('city') or row.get('lga') or row.get('city_name') or '').strip()
+        ct = None
+        if row_city_val:
+            if st:
+                ct = City.objects.filter(name__iexact=row_city_val, state=st, is_deleted=False).first()
+            if not ct:
+                ct = City.objects.filter(name__iexact=row_city_val, is_deleted=False).first()
+        if not ct and default_city:
+            ct = default_city
+
+        if ct and not st and ct.state:
+            st = ct.state
+
+        gz = (st.geo_political_zone if st else None) or (ct.state.geo_political_zone if ct and ct.state else None) or default_geo_zone
+        co = (st.country if st else None) or default_country
+
+        lga_key = ct.id if ct else (row_city_val.lower() if row_city_val else 'no_lga')
+        clan_cache_key = (lga_key, clan_name.lower())
+
+        clan_info = clans_cache.get(clan_cache_key)
 
         if not clan_info:
-            # Query existing Clan from Database
+            # Query existing Clan strictly scoped to the same LGA / City
             clan_qs = Clan.objects.filter(name__iexact=clan_name, is_deleted=False).select_related('city', 'state', 'country', 'geo_political_zone')
-            if default_state:
-                clan_obj = clan_qs.filter(Q(state=default_state) | Q(city__state=default_state)).first() or clan_qs.first()
+            clan_obj = None
+            if ct:
+                clan_obj = clan_qs.filter(city=ct).first()
+            elif st:
+                clan_obj = clan_qs.filter(Q(state=st) | Q(city__state=st)).first()
             else:
                 clan_obj = clan_qs.first()
 
@@ -301,39 +325,24 @@ def process_territorial_nodes_csv(
                     'country': clan_obj.country or default_country,
                     'geo_political_zone': clan_obj.geo_political_zone or default_geo_zone,
                 }
-                clans_cache[clan_key] = clan_info
+                clans_cache[clan_cache_key] = clan_info
             else:
-                # Clan does not exist yet
-                # Resolve state / city from row or defaults
-                row_state_val = row.get('state') or row.get('state_name')
-                st = resolve_state(row_state_val) if row_state_val else default_state
-                ct = None
-                row_city_val = row.get('city') or row.get('lga') or row.get('city_name')
-                if row_city_val:
-                    ct = City.objects.filter(name__iexact=row_city_val, is_deleted=False).first()
-                if not ct and default_city:
-                    ct = default_city
-                if ct and not st and ct.state:
-                    st = ct.state
-
-                gz = (st.geo_political_zone if st else None) or (ct.state.geo_political_zone if ct and ct.state else None) or default_geo_zone
-                co = (st.country if st else None) or default_country
-
-                # Calculate next Clan sequence number
-                if next_new_clan_seq is None:
+                # Clan does not exist yet in this specific LGA
+                state_seq_key = st.id if st else 'no_state'
+                if state_seq_key not in next_clan_seq_by_state:
                     if st:
                         existing_count = Clan.objects.filter(Q(state=st) | Q(city__state=st), is_deleted=False).count()
                     else:
                         existing_count = Clan.objects.filter(is_deleted=False).count()
-                    next_new_clan_seq = existing_count + 1
-                else:
-                    next_new_clan_seq += 1
+                    next_clan_seq_by_state[state_seq_key] = existing_count
+                next_clan_seq_by_state[state_seq_key] += 1
+                next_seq = next_clan_seq_by_state[state_seq_key]
 
                 if st:
                     c_prefix = build_clan_node_prefix(co, gz, st, ct)
-                    new_clan_node_id = f"{c_prefix}{next_new_clan_seq:03d}"
+                    new_clan_node_id = f"{c_prefix}{next_seq:03d}"
                 else:
-                    new_clan_node_id = f"CLN-{next_new_clan_seq:03d}"
+                    new_clan_node_id = f"CLN-{next_seq:03d}"
 
                 code = generate_territory_code(clan_name)
 
@@ -373,26 +382,32 @@ def process_territorial_nodes_csv(
                     }
 
                 new_clans_planned += 1
-                clans_cache[clan_key] = clan_info
+                clans_cache[clan_cache_key] = clan_info
 
-        # 5. Resolve Parent Road (if applicable)
+        # 5. Resolve Parent Road (if applicable, scoped to same LGA)
         parent_obj = None
         parent_nid = None
         parent_display = '-'
 
         if parent_road_name:
-            parent_key = (clan_key, parent_road_name.lower())
+            parent_key = (lga_key, clan_name.lower(), parent_road_name.lower())
             if parent_key in nodes_cache:
                 parent_data = nodes_cache[parent_key]
-                parent_obj = parent_data['obj']
-                parent_nid = parent_data['node_id']
+                parent_obj = parent_data.get('obj')
+                parent_nid = parent_data.get('node_id')
                 parent_display = f"{parent_road_name} [{parent_nid}]"
             else:
-                db_parent = SubClan.objects.filter(
-                    clan__name__iexact=clan_name,
+                db_parent_qs = SubClan.objects.filter(
                     name__iexact=parent_road_name,
                     is_deleted=False
-                ).first()
+                )
+                if clan_info.get('obj'):
+                    db_parent = db_parent_qs.filter(clan=clan_info['obj']).first()
+                elif ct:
+                    db_parent = db_parent_qs.filter(Q(city=ct) | Q(clan__city=ct), clan__name__iexact=clan_name).first()
+                else:
+                    db_parent = db_parent_qs.filter(clan__name__iexact=clan_name).first()
+
                 if db_parent:
                     parent_obj = db_parent
                     parent_nid = db_parent.node_id or db_parent.display_node_id
@@ -488,25 +503,43 @@ def process_territorial_nodes_csv(
         allocated_seqs[prefix] += 1
         generated_node_id = f"{prefix}{allocated_seqs[prefix]:03d}"
 
-        # 7. Check for Duplicate Existence in Database
+        # 7. Check for Duplicate Existence in Database (strictly scoped to the SAME LGA)
         is_existing = False
-        if not clan_info['is_new'] and clan_info['obj']:
-            existing_node = SubClan.objects.filter(
-                clan=clan_info['obj'],
+        target_lga = ct or (clan_info['obj'].city if clan_info.get('obj') else None)
+
+        # Check A: Duplicate row within the same CSV batch in the SAME LGA
+        node_batch_key = (lga_key, clan_name.lower(), name.lower(), node_type)
+        if node_batch_key in nodes_cache and nodes_cache[node_batch_key].get('seen_in_batch'):
+            is_existing = True
+            existing_info = nodes_cache[node_batch_key]
+            generated_node_id = existing_info.get('node_id', generated_node_id)
+        else:
+            # Check B: Check in Database for existing node strictly in the SAME LGA
+            existing_qs = SubClan.objects.filter(
                 name__iexact=name,
                 node_type=node_type,
                 is_deleted=False
-            ).first()
+            )
+            if clan_info.get('obj'):
+                existing_qs = existing_qs.filter(clan=clan_info['obj'])
+            if target_lga:
+                existing_qs = existing_qs.filter(Q(city=target_lga) | Q(clan__city=target_lga))
+
+            existing_node = existing_qs.first()
             if existing_node:
                 is_existing = True
                 generated_node_id = existing_node.node_id or existing_node.display_node_id
+
+        resolved_lga_name = ct.name if ct else (row_city_val or getattr(clan_info.get('city'), 'name', '-'))
+        resolved_state_name = st.name if st else (row_state_val or getattr(clan_info.get('state'), 'name', '-'))
 
         # 8. Commit to Database if not dry_run
         status_msg = ""
         status_code = ""
 
         if is_existing:
-            status_msg = f"Already exists ({generated_node_id}) - skipped"
+            lga_suffix = f" in {resolved_lga_name}" if resolved_lga_name and resolved_lga_name != '-' else ""
+            status_msg = f"Already exists{lga_suffix} ({generated_node_id}) - skipped"
             status_code = "existing"
             total_skipped += 1
         elif dry_run:
@@ -538,11 +571,6 @@ def process_territorial_nodes_csv(
                 if user_profile:
                     subclan_obj.managers.add(user_profile)
 
-                nodes_cache[(clan_key, name.lower())] = {
-                    'obj': subclan_obj,
-                    'node_id': generated_node_id,
-                    'node_type': node_type
-                }
                 status_msg = "Created successfully"
                 status_code = "created"
                 total_valid += 1
@@ -551,6 +579,21 @@ def process_territorial_nodes_csv(
                 status_msg = f"Failed to save: {str(e)}"
                 status_code = "error"
 
+        # Register in in-memory nodes_cache so subsequent rows in same CSV recognize it
+        if not is_existing:
+            nodes_cache[node_batch_key] = {
+                'obj': subclan_obj if not dry_run and 'subclan_obj' in locals() else None,
+                'node_id': generated_node_id,
+                'node_type': node_type,
+                'seen_in_batch': True
+            }
+            parent_reg_key = (lga_key, clan_name.lower(), name.lower())
+            nodes_cache[parent_reg_key] = {
+                'obj': subclan_obj if not dry_run and 'subclan_obj' in locals() else None,
+                'node_id': generated_node_id,
+                'node_type': node_type
+            }
+
         # Append row to results
         preview_rows.append({
             'row_num': row_num,
@@ -558,6 +601,8 @@ def process_territorial_nodes_csv(
             'clan_status': 'new' if clan_info['is_new'] else 'existing',
             'clan_node_id': clan_info['node_id'],
             'name': name,
+            'lga_name': resolved_lga_name,
+            'state_name': resolved_state_name,
             'node_type': node_type,
             'node_type_display': dict(NODE_TYPE_CHOICES).get(node_type, node_type),
             'parent_name': parent_display,
@@ -570,14 +615,6 @@ def process_territorial_nodes_csv(
             'is_valid': (status_code != 'error'),
             'warnings': warnings
         })
-
-        # Cache newly planned node in dry_run mode so child rows in same CSV link to it
-        if dry_run and not is_existing:
-            nodes_cache[(clan_key, name.lower())] = {
-                'obj': None,
-                'node_id': generated_node_id,
-                'node_type': node_type
-            }
 
     return {
         'total_rows': len(preview_rows),
